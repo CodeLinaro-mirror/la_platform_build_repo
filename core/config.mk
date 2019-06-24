@@ -365,6 +365,7 @@ endif
 
 # ---------------------------------------------------------------
 # Generic tools.
+XMLLINT := $(HOST_OUT_EXECUTABLES)/xmllint
 
 LEX := prebuilts/misc/$(BUILD_OS)-$(HOST_PREBUILT_ARCH)/flex/flex-2.5.39
 # The default PKGDATADIR built in the prebuilt bison is a relative path
