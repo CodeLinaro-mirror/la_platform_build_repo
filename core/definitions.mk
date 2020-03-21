@@ -1181,6 +1181,7 @@ define transform-cpp-to-o
 $(if $(PRIVATE_TIDY_CHECKS),$(clang-tidy-cpp))
 $(hide) $(RELATIVE_PWD) $(PRIVATE_CXX) \
   $(transform-cpp-to-o-compiler-args) \
+  $(if $(findstring $(SDCLANG_PATH),$(PRIVATE_CXX)),$(SDCLANG_COMMON_FLAGS)) \
   -MD -MF $(patsubst %.o,%.d,$@) -o $@ $<
 endef
 endif
@@ -1227,6 +1228,7 @@ define transform-c-to-o
 $(if $(PRIVATE_TIDY_CHECKS),$(clang-tidy-c))
 $(hide) $(RELATIVE_PWD) $(PRIVATE_CC) \
   $(transform-c-to-o-compiler-args) \
+  $(if $(findstring $(SDCLANG_PATH),$(PRIVATE_CC)),$(SDCLANG_COMMON_FLAGS)) \
   -MD -MF $(patsubst %.o,%.d,$@) -o $@ $<
 endef
 endif
@@ -1236,6 +1238,7 @@ define transform-s-to-o
 @mkdir -p $(dir $@)
 $(RELATIVE_PWD) $(PRIVATE_CC) \
   $(call transform-c-or-s-to-o-compiler-args, $(PRIVATE_ASFLAGS)) \
+  $(if $(findstring $(SDCLANG_PATH),$(PRIVATE_CC)),$(SDCLANG_COMMON_FLAGS)) \
   -MD -MF $(patsubst %.o,%.d,$@) -o $@ $<
 endef
 
