@@ -193,6 +193,21 @@ def AddVendor(output_zip):
               block_list=block_list)
   return img.name
 
+def AddEarly_services(output_zip):
+  """Adds the Early_services image.
+
+  Uses the image under IMAGES/ if it already exists. Otherwise looks for the
+  image under EARLY_SERVICES/, signs it as needed, and returns the image name.
+  """
+  img = OutputFile(output_zip, OPTIONS.input_tmp, "IMAGES", "early_services.img")
+  if os.path.exists(img.name):
+    print("early_services.img already exists; no need to rebuild...")
+    return img.name
+
+  block_list = OutputFile(output_zip, OPTIONS.input_tmp, "IMAGES", "early_services.map")
+  CreateImage(OPTIONS.input_tmp, OPTIONS.info_dict, "early_services", img,
+              block_list=block_list)
+  return img.name
 
 def AddProduct(output_zip):
   """Turn the contents of PRODUCT into a product image and store it in
@@ -293,6 +308,7 @@ def CreateImage(input_dir, info_dict, what, output_file, block_list=None):
     fs_config_prefix = ""
   else:
     fs_config_prefix = what + "_"
+
 
   fs_config = os.path.join(
       input_dir, "META/" + fs_config_prefix + "filesystem_config.txt")
@@ -729,6 +745,9 @@ def AddImagesToTargetFiles(filename):
   has_odm = (os.path.isdir(os.path.join(OPTIONS.input_tmp, "ODM")) or
              os.path.exists(os.path.join(OPTIONS.input_tmp, "IMAGES",
                                          "odm.img")))
+  has_early_services = (os.path.isdir(os.path.join(OPTIONS.input_tmp, "EARLY_SERVICES")) or
+                 os.path.exists(os.path.join(OPTIONS.input_tmp, "IMAGES",
+                                             "early_services.img")))
   has_product = (os.path.isdir(os.path.join(OPTIONS.input_tmp, "PRODUCT")) or
                  os.path.exists(os.path.join(OPTIONS.input_tmp, "IMAGES",
                                              "product.img")))
@@ -810,6 +829,10 @@ def AddImagesToTargetFiles(filename):
   if has_vendor:
     banner("vendor")
     partitions['vendor'] = AddVendor(output_zip)
+
+  if has_early_services:
+    banner("early_services")
+    partitions['early_services'] = AddEarly_services(output_zip)
 
   if has_product:
     banner("product")
