@@ -1897,6 +1897,7 @@ endif
 ifdef BUILDING_ODM_IMAGE
   PROP_DICTIONARY_IMAGES += odm
 endif
+PROP_DICTIONARY_IMAGES += early_services
 define generate-userimage-prop-dictionary
   $(call generate-image-prop-dictionary,$(1),$(PROP_DICTIONARY_IMAGES),$(2))
 endef
@@ -4878,6 +4879,14 @@ ifdef BUILDING_VENDOR_IMAGE
 	$(hide) $(call package_files-copy-root, \
 	    $(TARGET_OUT_VENDOR),$(zip_root)/VENDOR)
 endif
+
+ifeq ($(BOARD_SUPPORTS_EARLY_INIT),true)
+	mkdir -p $(zip_root)/EARLY_SERVICES;
+	@# Contents of the early_services image
+	$(hide) $(call package_files-copy-root, \
+		$(TARGET_OUT_EARLY_SERVICES),$(zip_root)/EARLY_SERVICES)
+endif
+
 ifdef BUILDING_PRODUCT_IMAGE
 	@# Contents of the product image
 	$(hide) $(call package_files-copy-root, \
@@ -5004,6 +5013,9 @@ ifdef BUILDING_SYSTEM_IMAGE
 endif
 ifdef BUILDING_VENDOR_IMAGE
 	$(hide) $(call fs_config,$(zip_root)/VENDOR,vendor/) > $(zip_root)/META/vendor_filesystem_config.txt
+endif
+ifeq ($(BOARD_SUPPORTS_EARLY_INIT),true)
+	$(hide) $(call fs_config,$(zip_root)/EARLY_SERVICES,early_services/) > $(zip_root)/META/early_services_filesystem_config.txt
 endif
 ifdef BUILDING_PRODUCT_IMAGE
 	$(hide) $(call fs_config,$(zip_root)/PRODUCT,product/) > $(zip_root)/META/product_filesystem_config.txt
