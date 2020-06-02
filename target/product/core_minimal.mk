@@ -25,8 +25,6 @@ PRODUCT_NAME := core
 PRODUCT_PACKAGES += \
     BackupRestoreConfirmation \
     CompanionDeviceManager \
-    CtsShimPrebuilt \
-    CtsShimPrivPrebuilt \
     DownloadProvider \
     ExtShared \
     ExtServices \
