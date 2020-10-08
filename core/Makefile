@@ -1753,6 +1753,28 @@ $(if $(filter $(2),system_ext),\
     $(if $(BOARD_SYSTEM_EXTIMAGE_PARTITION_RESERVED_SIZE),$(hide) echo "system_ext_reserved_size=$(BOARD_SYSTEM_EXTIMAGE_PARTITION_RESERVED_SIZE)" >> $(1))
     $(hide) echo "system_ext_selinux_fc=$(SELINUX_FC)" >> $(1)
 )
+$(if $(filter $(2),early_services),\
+    $(if $(BOARD_EARLY_IMAGE_PARTITION_SIZE),$(hide) echo "early_services_size=$(BOARD_EARLY_IMAGE_PARTITION_SIZE)" >> $(1))
+    $(if $(BOARD_EARLY_IMAGE_PARTITION_NAME),$(hide) echo "early_services_name=$(BOARD_EARLY_IMAGE_PARTITION_NAME)" >> $(1))
+    $(if $(BOARD_EARLY_SERVICESIMAGE_FILE_SYSTEM_TYPE),$(hide) echo "early_services_fs_type=$(BOARD_EARLY_SERVICESIMAGE_FILE_SYSTEM_TYPE)" >> $(1))
+    $(if $(BOARD_EARLY_SERVICESIMAGE_EXTFS_INODE_COUNT),$(hide) echo "early_services_extfs_inode_count=$(BOARD_EARLY_SERVICESIMAGE_EXTFS_INODE_COUNT)" >> $(1))
+    $(if $(BOARD_EARLY_SERVICESMIMAGE_EXTFS_RSV_PCT),$(hide) echo "early_services_extfs_rsv_pct=$(BOARD_EARLY_SERVICESIMAGE_EXTFS_RSV_PCT)" >> $(1))
+    $(if $(BOARD_EARLY_SERVICESIMAGE_JOURNAL_SIZE),$(hide) echo "early_services_journal_size=$(BOARD_EARLY_SERVICESIMAGE_JOURNAL_SIZE)" >> $(1))
+    $(if $(BOARD_EARLY_SERVICESIMAGE_SQUASHFS_COMPRESSOR),$(hide) echo "early_services_squashfs_compressor=$(BOARD_EARLY_SERVICESIMAGE_SQUASHFS_COMPRESSOR)" >> $(1))
+    $(if $(BOARD_EARLY_SERVICESIMAGE_SQUASHFS_COMPRESSOR_OPT),$(hide) echo "early_services_squashfs_compressor_opt=$(BOARD_EARLY_SERVICESIMAGE_SQUASHFS_COMPRESSOR_OPT)" >> $(1))
+    $(if $(BOARD_EARLY_SERVICESIMAGE_SQUASHFS_BLOCK_SIZE),$(hide) echo "early_services_squashfs_block_size=$(BOARD_EARLY_SERVICESIMAGE_SQUASHFS_BLOCK_SIZE)" >> $(1))
+    $(if $(BOARD_EARLY_SERVICESIMAGE_SQUASHFS_DISABLE_4K_ALIGN),$(hide) echo "early_services_squashfs_disable_4k_align=$(BOARD_EARLY_SERVICESIMAGE_SQUASHFS_DISABLE_4K_ALIGN)" >> $(1))
+    $(if $(PRODUCT_EARLY_SERVICES_BASE_FS_PATH),$(hide) echo "early_services_base_fs_file=$(PRODUCT_EARLY_SERVICES_BASE_FS_PATH)" >> $(1))
+    $(if $(PRODUCT_EARLY_SERVICES_VERITY_PARTITION),$(hide) echo "early_services_verity_block_device=$(PRODUCT_EARLY_SERVICES_VERITY_PARTITION)" >> $(1))
+    $(if $(BOARD_AVB_ENABLE),$(hide) echo "avb_early_services_hashtree_enable=$(BOARD_AVB_ENABLE)" >> $(1))
+    $(if $(BOARD_AVB_ENABLE),$(hide) echo "avb_early_services_add_hashtree_footer_args=$(BOARD_AVB_EARLY_SERVICES_ADD_HASHTREE_FOOTER_ARGS)" >> $(1))
+    $(if $(BOARD_AVB_ENABLE),\
+    $(if $(BOARD_AVB_EARLY_SERVICES_KEY_PATH),\
+        $(hide) echo "avb_early_services_key_path=$(BOARD_AVB_EARLY_SERVICES_KEY_PATH)" >> $(1)
+        $(hide) echo "avb_early_services_algorithm=$(BOARD_AVB_EARLY_SERVICES_ALGORITHM)" >> $(1)
+        $(hide) echo "avb_early_services_rollback_index_location=$(BOARD_AVB_EARLY_SERVICES_ROLLBACK_INDEX_LOCATION)" >> $(1)))
+    $(hide) echo "early_services_selinux_fc=$(SELINUX_FC)" >> $(1)
+)
 $(if $(filter $(2),odm),\
     $(if $(BOARD_ODMIMAGE_FILE_SYSTEM_TYPE),$(hide) echo "odm_fs_type=$(BOARD_ODMIMAGE_FILE_SYSTEM_TYPE)" >> $(1))
     $(if $(BOARD_ODMIMAGE_EXTFS_INODE_COUNT),$(hide) echo "odm_extfs_inode_count=$(BOARD_ODMIMAGE_EXTFS_INODE_COUNT)" >> $(1))
@@ -1773,11 +1795,6 @@ $(if $(filter $(2),oem),\
     $(if $(BOARD_OEMIMAGE_EXTFS_INODE_COUNT),$(hide) echo "oem_extfs_inode_count=$(BOARD_OEMIMAGE_EXTFS_INODE_COUNT)" >> $(1))
     $(if $(BOARD_OEMIMAGE_EXTFS_RSV_PCT),$(hide) echo "oem_extfs_rsv_pct=$(BOARD_OEMIMAGE_EXTFS_RSV_PCT)" >> $(1))
     $(hide) echo "oem_selinux_fc=$(SELINUX_FC)" >> $(1)
-)
-$(if $(filter $(2),early_services),\
-    $(if $(BOARD_EARLY_IMAGE_PARTITION_SIZE),$(hide) echo "early_services_size=$(BOARD_EARLY_IMAGE_PARTITION_SIZE)" >> $(1))
-    $(if $(BOARD_EARLY_SERVICESIMAGE_FILE_SYSTEM_TYPE),$(hide) echo "early_services_fs_type=$(BOARD_EARLY_SERVICESIMAGE_FILE_SYSTEM_TYPE)" >> $(1))
-    $(hide) echo "early_services_selinux_fc=$(SELINUX_FC)" >> $(1)
 )
 $(hide) echo "ext_mkuserimg=$(notdir $(MKEXTUSERIMG))" >> $(1)
 
@@ -2679,8 +2696,10 @@ $(call dist-for-goals, sdk win_sdk sdk_addon, $(INSTALLED_FILES_FILE))
 systemimage_intermediates := \
     $(call intermediates-dir-for,PACKAGING,systemimage)
 BUILT_SYSTEMIMAGE := $(systemimage_intermediates)/system.img
+
 early_servicesimage_intermediates := $(call intermediates-dir-for,PACKAGING,early_servicesimage)
 BUILT_EARLY_SERVICESIMAGE := $(PRODUCT_OUT)/early_services.img
+INSTALLED_EARLY_SERVICESIMAGE_TARGET := $(PRODUCT_OUT)/early_services.img
 EARLY_SERVICES_PARTITION := early_services
 
 # Create symlink /system/vendor to /vendor if necessary.
@@ -2728,12 +2747,28 @@ define create-system-system_ext-symlink
 endef
 endif
 
+# Create symlink /system/early_services to /early_services if necessary.
+ifdef BOARD_USES_EARLY_SERVICESIMAGE
+define create-system-early_services-symlink
+$(hide) if [ -d $(TARGET_OUT)/early_services ] && [ ! -h $(TARGET_OUT)/early_services ]; then \
+  echo 'Non-symlink $(TARGET_OUT)/early_services detected!' 1>&2; \
+  echo 'You cannot install files to $(TARGET_OUT)/early_services while building a separate early_services.img!' 1>&2; \
+  exit 1; \
+fi
+$(hide) ln -sf /early_services $(TARGET_OUT)/early_services
+endef
+else
+define create-system-early_services-symlink
+endef
+endif
+
 # $(1): output file
 define build-systemimage-target
   @echo "Target system fs image: $(1)"
   $(call create-system-vendor-symlink)
   $(call create-system-product-symlink)
   $(call create-system-system_ext-symlink)
+  $(call create-system-early_services-symlink)
   @mkdir -p $(dir $(1)) $(systemimage_intermediates) && rm -rf $(systemimage_intermediates)/system_image_info.txt
   $(call generate-image-prop-dictionary, $(systemimage_intermediates)/system_image_info.txt,system, \
       skip_fsck=true)
@@ -3606,6 +3641,10 @@ BOARD_AVB_ODM_ADD_HASHTREE_FOOTER_ARGS += \
 BOARD_AVB_DTBO_ADD_HASH_FOOTER_ARGS += \
     --prop com.android.build.dtbo.fingerprint:$(BUILD_FINGERPRINT_FROM_FILE)
 
+BOARD_AVB_EARLY_SERVICES_ADD_HASHTREE_FOOTER_ARGS += \
+    --prop com.android.build.early_services.os_version:$(PLATFORM_VERSION_LAST_STABLE) \
+    --prop com.android.build.early_services.security_patch:$(PLATFORM_SECURITY_PATCH)
+
 # The following vendor- and odm-specific images needs explicit SPL set per board.
 ifdef BOOT_SECURITY_PATCH
 BOARD_AVB_BOOT_ADD_HASH_FOOTER_ARGS += \
@@ -3631,6 +3670,7 @@ RECOVERY_FOOTER_ARGS := BOARD_AVB_RECOVERY_ADD_HASH_FOOTER_ARGS
 PRODUCT_FOOTER_ARGS := BOARD_AVB_PRODUCT_ADD_HASHTREE_FOOTER_ARGS
 SYSTEM_EXT_FOOTER_ARGS := BOARD_AVB_SYSTEM_EXT_ADD_HASHTREE_FOOTER_ARGS
 ODM_FOOTER_ARGS := BOARD_AVB_ODM_ADD_HASHTREE_FOOTER_ARGS
+EARLY_SERVICES_FOOTER_ARGS := BOARD_AVB_EARLY_SERVICES_ADD_HASHTREE_FOOTER_ARGS
 
 # Helper function that checks and sets required build variables for an AVB chained partition.
 # $(1): the partition to enable AVB chain, e.g., boot or system or vbmeta_system.
@@ -3759,6 +3799,10 @@ BOARD_AVB_SYSTEM_ADD_HASHTREE_FOOTER_ARGS += --setup_as_rootfs_from_kernel
 endif
 endif
 
+ifeq ($(BOARD_SUPPORTS_EARLY_INIT),true)
+BOARD_AVB_EARLY_SERVICES_ADD_HASHTREE_FOOTER_ARGS += --setup_as_rootfs_from_kernel
+endif
+
 BOARD_AVB_MAKE_VBMETA_IMAGE_ARGS += --padding_size 4096
 BOARD_AVB_MAKE_VBMETA_SYSTEM_IMAGE_ARGS += --padding_size 4096
 BOARD_AVB_MAKE_VBMETA_VENDOR_IMAGE_ARGS += --padding_size 4096
@@ -3793,6 +3837,9 @@ define extract-avb-chain-public-keys
   $(if $(BOARD_AVB_SYSTEM_KEY_PATH),\
     $(hide) $(AVBTOOL) extract_public_key --key $(BOARD_AVB_SYSTEM_KEY_PATH) \
       --output $(1)/system.avbpubkey)
+  $(if $(BOARD_AVB_EARLY_SERVICES_KEY_PATH),\
+    $(hide) $(AVBTOOL) extract_public_key --key $(BOARD_AVB_EARLY_SERVICES_KEY_PATH) \
+      --output $(1)/early_services.avbpubkey)
   $(if $(BOARD_AVB_VENDOR_KEY_PATH),\
     $(hide) $(AVBTOOL) extract_public_key --key $(BOARD_AVB_VENDOR_KEY_PATH) \
       --output $(1)/vendor.avbpubkey)
