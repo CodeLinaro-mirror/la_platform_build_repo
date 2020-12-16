@@ -16,6 +16,7 @@
 
 # Base modules and settings for the system partition.
 PRODUCT_PACKAGES += \
+    abx \
     adbd_system_api \
     am \
     android.hidl.allocator@1.0-service \
@@ -37,7 +38,6 @@ PRODUCT_PACKAGES += \
     bcc \
     blank_screen \
     blkid \
-    service-blobstore \
     bmgr \
     bootanimation \
     bootstat \
@@ -118,11 +118,12 @@ PRODUCT_PACKAGES += \
     iptables \
     ip-up-vpn \
     javax.obex \
-    service-jobscheduler \
     keystore \
+    keystore2 \
     credstore \
     ld.mc \
     libaaudio \
+    libalarm_jni \
     libamidi \
     libandroid \
     libandroidfw \
@@ -251,6 +252,7 @@ PRODUCT_PACKAGES += \
     shell_and_utilities_system \
     sm \
     snapshotctl \
+    snapuserd \
     SoundPicker \
     storaged \
     surfaceflinger \
@@ -282,6 +284,12 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     system_manifest.xml \
     system_compatibility_matrix.xml \
+
+# HWASAN runtime for SANITIZE_TARGET=hwaddress builds
+ifneq (,$(filter hwaddress,$(SANITIZE_TARGET)))
+  PRODUCT_PACKAGES += \
+   libclang_rt.hwasan-aarch64-android.bootstrap
+endif
 
 # Host tools to install
 PRODUCT_HOST_PACKAGES += \
@@ -382,6 +390,8 @@ PRODUCT_PACKAGES_DEBUG := \
     logpersist.start \
     logtagd.rc \
     procrank \
+    profcollectd \
+    profcollectctl \
     remount \
     showmap \
     sqlite3 \

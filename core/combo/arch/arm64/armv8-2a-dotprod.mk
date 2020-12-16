@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2017 The Android Open-Source Project
+# Copyright (C) 2020 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,12 +14,6 @@
 # limitations under the License.
 #
 
-include build/make/target/board/BoardConfigGsiCommon.mk
-
-TARGET_CPU_ABI := x86_64
-TARGET_ARCH := x86_64
-TARGET_ARCH_VARIANT := x86_64
-
-TARGET_2ND_CPU_ABI := x86
-TARGET_2ND_ARCH := x86
-TARGET_2ND_ARCH_VARIANT := x86_64
+# .mk file required to support build for the new armv8-2a-dotprod Arm64 arch
+# variant. The file just needs to be present but does not require to contain
+# anything

@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2017 The Android Open-Source Project
+# Copyright (C) 2020 The Android Open-Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,11 +14,8 @@
 # limitations under the License.
 #
 
-include build/make/target/board/BoardConfigGsiCommon.mk
+$(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota.mk)
 
-TARGET_CPU_ABI := x86
-TARGET_ARCH := x86
-TARGET_ARCH_VARIANT := x86
+PRODUCT_VENDOR_PROPERTIES += ro.virtual_ab.compression.enabled=true
 
-# Legacy GSI keeps 32 bits binder for 32 bits CPU Arch
-TARGET_USES_64_BIT_BINDER := false
+PRODUCT_PACKAGES += snapuserd_ramdisk snapuserd
