@@ -51,6 +51,7 @@ import logging
 import os
 import shlex
 import shutil
+import stat
 import sys
 import uuid
 import zipfile
@@ -330,6 +331,9 @@ def AddDtbo(output_zip):
 
   # AVB-sign the image as needed.
   if OPTIONS.info_dict.get("avb_enable") == "true":
+    # Signing requires +w
+    os.chmod(img.name, os.stat(img.name).st_mode | stat.S_IWUSR)
+
     avbtool = OPTIONS.info_dict["avb_avbtool"]
     part_size = OPTIONS.info_dict["dtbo_size"]
     # The AVB hash footer will be replaced if already present.
@@ -959,8 +963,9 @@ def AddImagesToTargetFiles(filename):
           if item not in vbmeta_vendor.split()]
       vbmeta_partitions.append("vbmeta_vendor")
 
-    banner("vbmeta")
-    AddVBMeta(output_zip, partitions, "vbmeta", vbmeta_partitions)
+    if OPTIONS.info_dict.get("avb_building_vbmeta_image") == "true":
+      banner("vbmeta")
+      AddVBMeta(output_zip, partitions, "vbmeta", vbmeta_partitions)
 
   if OPTIONS.info_dict.get("use_dynamic_partitions") == "true":
     banner("super_empty")

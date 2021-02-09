@@ -1,5 +1,4 @@
-#
-# Copyright (C) 2020 The Android Open-Source Project
+# Copyright (C) 2020 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,8 +13,6 @@
 # limitations under the License.
 #
 
-$(call inherit-product, $(SRC_TARGET_DIR)/product/virtual_ab_ota.mk)
-
-PRODUCT_VENDOR_PROPERTIES += ro.virtual_ab.compression.enabled=true
-
-PRODUCT_PACKAGES += snapuserd_ramdisk snapuserd
+PRODUCT_NAME := mainline_sdk
+PRODUCT_BRAND := Android
+PRODUCT_DEVICE := mainline_sdk

@@ -10,7 +10,7 @@ else ifeq (true,$(DISABLE_PREOPT))
 endif
 
 # The default value for LOCAL_DEX_PREOPT
-DEX_PREOPT_DEFAULT ?= true
+DEX_PREOPT_DEFAULT ?= $(ENABLE_PREOPT)
 
 # The default filter for which files go into the system_other image (if it is
 # being used). Note that each pattern p here matches both '/<p>' and /system/<p>'.
@@ -108,6 +108,7 @@ ifeq ($(WRITE_SOONG_VARIABLES),true)
   $(call add_json_str,  Dex2oatXms,                              $(DEX2OAT_XMS))
   $(call add_json_str,  EmptyDirectory,                          $(OUT_DIR)/empty)
 
+ifdef TARGET_ARCH
   $(call add_json_map,  CpuVariant)
   $(call add_json_str,  $(TARGET_ARCH), $(DEX2OAT_TARGET_CPU_VARIANT))
   ifdef TARGET_2ND_ARCH
@@ -121,6 +122,7 @@ ifeq ($(WRITE_SOONG_VARIABLES),true)
     $(call add_json_str, $(TARGET_2ND_ARCH), $($(TARGET_2ND_ARCH_VAR_PREFIX)DEX2OAT_TARGET_INSTRUCTION_SET_FEATURES))
   endif
   $(call end_json_map)
+endif
 
   $(call add_json_str,  DirtyImageObjects,                  $(DIRTY_IMAGE_OBJECTS))
   $(call add_json_list, BootImageProfiles,                  $(PRODUCT_DEX_PREOPT_BOOT_IMAGE_PROFILE_LOCATION))
