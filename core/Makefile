@@ -2311,6 +2311,10 @@ define build-systemimage-target
   mkdir -p $(dir $(1)) $(early_servicesimage_intermediates) && rm -rf $(early_servicesimage_intermediates)/early_services_image_info.txt
   $(call generate-image-prop-dictionary, $(early_servicesimage_intermediates)/early_services_image_info.txt, \
       early_services,skip_fsck=true)
+endef
+
+define build-earlyservicesimage-target
+  $(call pretty,"Target early_services image: $(INSTALLED_EARLY_SERVICESIMAGE_TARGET)")
   if [ "$(BOARD_SUPPORTS_EARLY_INIT)" == "true" ]; then \
 	cp -ar $(PRODUCT_OUT)/vendor/firmware $(PRODUCT_OUT)/early_services/ ;\
 	cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.audio.common@4.0.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
@@ -2386,6 +2390,9 @@ endef
 $(BUILT_SYSTEMIMAGE): $(FULL_SYSTEMIMAGE_DEPS) $(INSTALLED_FILES_FILE) $(BUILD_IMAGE_SRCS)
 	$(call build-systemimage-target,$@)
 
+$(BUILT_EARLY_SERVICESIMAGE): $(BUILT_SYSTEMIMAGE) $(INSTALLED_FILES_FILE) $(BUILD_IMAGE_SRCS)
+	$(call build-earlyservicesimage-target,$@)
+
 INSTALLED_SYSTEMIMAGE_TARGET := $(PRODUCT_OUT)/system.img
 SYSTEMIMAGE_SOURCE_DIR := $(TARGET_OUT)
 
@@ -2429,7 +2436,7 @@ $(INSTALLED_SYSTEMIMAGE_TARGET): $(BUILT_SYSTEMIMAGE) $(RECOVERY_FROM_BOOT_PATCH
 
 systemimage: $(INSTALLED_SYSTEMIMAGE_TARGET)
 
-early_servicesimage: $(INSTALLED_SYSTEMIMAGE_TARGET)
+early_servicesimage: $(INSTALLED_EARLY_SERVICESIMAGE_TARGET)
 
 .PHONY: systemimage-nodeps snod
 systemimage-nodeps snod: $(filter-out systemimage-nodeps snod,$(MAKECMDGOALS)) \
@@ -3336,6 +3343,10 @@ endif
 
 $(eval $(call check-and-set-avb-args,system))
 
+ifdef INSTALLED_EARLY_SERVICESIMAGE_TARGET
+$(eval $(call check-and-set-avb-args,early_services))
+endif
+
 ifdef INSTALLED_VENDORIMAGE_TARGET
 $(eval $(call check-and-set-avb-args,vendor))
 endif
@@ -3508,16 +3519,19 @@ $(INSTALLED_VBMETAIMAGE_TARGET): \
 	    $(INSTALLED_PRODUCT_SERVICESIMAGE_TARGET) \
 	    $(INSTALLED_ODMIMAGE_TARGET) \
 	    $(INSTALLED_DTBOIMAGE_TARGET) \
+	    $(INSTALLED_EARLY_SERVICESIMAGE_TARGET) \
 	    $(INSTALLED_RECOVERYIMAGE_TARGET) \
 	    $(INSTALLED_VBMETA_SYSTEMIMAGE_TARGET) \
 	    $(INSTALLED_VBMETA_VENDORIMAGE_TARGET) \
 	    $(BOARD_AVB_VBMETA_SYSTEM_KEY_PATH) \
 	    $(BOARD_AVB_VBMETA_VENDOR_KEY_PATH) \
 	    $(BOARD_AVB_KEY_PATH)
+	$(build-earlyservicesimage-target)
 	$(build-vbmetaimage-target)
 
 .PHONY: vbmetaimage-nodeps
 vbmetaimage-nodeps:
+	$(build-earlyservicesimage-target)
 	$(build-vbmetaimage-target)
 
 endif # BOARD_AVB_ENABLE
@@ -3972,6 +3986,7 @@ $(BUILT_TARGET_FILES_PACKAGE): \
 	    $(INSTALLED_ANDROID_INFO_TXT_TARGET) \
 	    $(INSTALLED_KERNEL_TARGET) \
 	    $(INSTALLED_DTBIMAGE_TARGET) \
+	    $(INSTALLED_EARLY_SERVICESIMAGE_TARGET) \
 	    $(INSTALLED_2NDBOOTLOADER_TARGET) \
 	    $(BOARD_PREBUILT_DTBOIMAGE) \
 	    $(BOARD_PREBUILT_RECOVERY_DTBOIMAGE) \
@@ -4215,6 +4230,13 @@ ifdef BOARD_AVB_RECOVERY_KEY_PATH
 	$(hide) echo "avb_recovery_algorithm=$(BOARD_AVB_RECOVERY_ALGORITHM)" >> $(zip_root)/META/misc_info.txt
 	$(hide) echo "avb_recovery_rollback_index_location=$(BOARD_AVB_RECOVERY_ROLLBACK_INDEX_LOCATION)" >> $(zip_root)/META/misc_info.txt
 endif # BOARD_AVB_RECOVERY_KEY_PATH
+ifeq (,$(strip $(BOARD_AVB_EARLY_SERVICES)))
+	$(hide) echo "avb_vbmeta_system=$(BOARD_AVB_EARLY_SERVICES)" >> $(zip_root)/META/misc_info.txt
+	$(hide) echo "avb_vbmeta_system_args=$(BOARD_AVB_MAKE_VBMETA_SYSTEM_IMAGE_ARGS)" >> $(zip_root)/META/misc_info.txt
+	$(hide) echo "avb_vbmeta_system_key_path=$(BOARD_AVB_EARLY_SERVICES_KEY_PATH)" >> $(zip_root)/META/misc_info.txt
+	$(hide) echo "avb_vbmeta_system_algorithm=$(BOARD_AVB_EARLY_SERVICES_ALGORITHM)" >> $(zip_root)/META/misc_info.txt
+	$(hide) echo "avb_vbmeta_system_rollback_index_location=$(BOARD_AVB_EARLY_SERVICES_ROLLBACK_INDEX_LOCATION)" >> $(zip_root)/META/misc_info.txt
+endif # BOARD_AVB_EARLY_SERVICES
 ifneq (,$(strip $(BOARD_AVB_VBMETA_SYSTEM)))
 	$(hide) echo "avb_vbmeta_system=$(BOARD_AVB_VBMETA_SYSTEM)" >> $(zip_root)/META/misc_info.txt
 	$(hide) echo "avb_vbmeta_system_args=$(BOARD_AVB_MAKE_VBMETA_SYSTEM_IMAGE_ARGS)" >> $(zip_root)/META/misc_info.txt
