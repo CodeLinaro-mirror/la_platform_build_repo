@@ -2782,6 +2782,10 @@ define build-systemimage-target
   mkdir -p $(dir $(1)) $(early_servicesimage_intermediates) && rm -rf $(early_servicesimage_intermediates)/early_services_image_info.txt
   $(call generate-image-prop-dictionary, $(early_servicesimage_intermediates)/early_services_image_info.txt, \
       early_services,skip_fsck=true)
+endef
+
+define build-earlyservicesimage-target
+  $(call pretty,"Target early_services image: $(INSTALLED_EARLY_SERVICESIMAGE_TARGET)")
   if [ "$(BOARD_SUPPORTS_EARLY_INIT)" == "true" ]; then \
 	  cp -r $(PRODUCT_OUT)/system/etc/selinux/* $(PRODUCT_OUT)/early_services/system/etc/selinux/ ;\
 	  cp -r $(PRODUCT_OUT)/vendor/etc/selinux/* $(PRODUCT_OUT)/early_services/vendor/etc/selinux/ ;\
@@ -2877,6 +2881,9 @@ endif
 $(BUILT_SYSTEMIMAGE): $(FULL_SYSTEMIMAGE_DEPS) $(INSTALLED_FILES_FILE)
 	$(call build-systemimage-target,$@)
 
+$(BUILT_EARLY_SERVICESIMAGE): $(BUILT_SYSTEMIMAGE) $(INSTALLED_FILES_FILE) $(BUILD_IMAGE_SRCS)
+	$(call build-earlyservicesimage-target,$@)
+
 INSTALLED_SYSTEMIMAGE_TARGET := $(PRODUCT_OUT)/system.img
 SYSTEMIMAGE_SOURCE_DIR := $(TARGET_OUT)
 
@@ -2920,7 +2927,7 @@ $(INSTALLED_SYSTEMIMAGE_TARGET): $(BUILT_SYSTEMIMAGE)
 
 systemimage: $(INSTALLED_SYSTEMIMAGE_TARGET)
 
-early_servicesimage: $(INSTALLED_SYSTEMIMAGE_TARGET)
+early_servicesimage: $(INSTALLED_EARLY_SERVICESIMAGE_TARGET)
 
 .PHONY: systemimage-nodeps snod
 systemimage-nodeps snod: $(filter-out systemimage-nodeps snod,$(MAKECMDGOALS)) \
@@ -3750,6 +3757,10 @@ endif
 
 $(eval $(call check-and-set-avb-args,system))
 
+ifdef INSTALLED_EARLY_SERVICESIMAGE_TARGET
+$(eval $(call check-and-set-avb-args,early_services))
+endif
+
 ifdef INSTALLED_VENDORIMAGE_TARGET
 $(eval $(call check-and-set-avb-args,vendor))
 endif
@@ -3936,6 +3947,7 @@ $(INSTALLED_VBMETAIMAGE_TARGET): \
 	    $(INSTALLED_SYSTEM_EXTIMAGE_TARGET) \
 	    $(INSTALLED_ODMIMAGE_TARGET) \
 	    $(INSTALLED_DTBOIMAGE_TARGET) \
+	    $(INSTALLED_EARLY_SERVICESIMAGE_TARGET) \
 	    $(INSTALLED_CUSTOMIMAGES_TARGET) \
 	    $(INSTALLED_RECOVERYIMAGE_TARGET) \
 	    $(INSTALLED_VBMETA_SYSTEMIMAGE_TARGET) \
@@ -3943,12 +3955,14 @@ $(INSTALLED_VBMETAIMAGE_TARGET): \
 	    $(BOARD_AVB_VBMETA_SYSTEM_KEY_PATH) \
 	    $(BOARD_AVB_VBMETA_VENDOR_KEY_PATH) \
 	    $(BOARD_AVB_KEY_PATH)
+	$(build-earlyservicesimage-target)
 	$(build-vbmetaimage-target)
 
 .PHONY: vbmetaimage-nodeps
 vbmetaimage-nodeps: PRIVATE_AVB_VBMETA_SIGNING_ARGS := \
     --algorithm $(BOARD_AVB_ALGORITHM) --key $(BOARD_AVB_KEY_PATH)
 vbmetaimage-nodeps:
+	$(build-earlyservicesimage-target)
 	$(build-vbmetaimage-target)
 endif # BUILDING_VBMETA_IMAGE
 
@@ -4500,6 +4514,13 @@ ifdef BOARD_AVB_RECOVERY_KEY_PATH
 	$(hide) echo "avb_recovery_algorithm=$(BOARD_AVB_RECOVERY_ALGORITHM)" >> $@
 	$(hide) echo "avb_recovery_rollback_index_location=$(BOARD_AVB_RECOVERY_ROLLBACK_INDEX_LOCATION)" >> $@
 endif # BOARD_AVB_RECOVERY_KEY_PATH
+ifeq (,$(strip $(BOARD_AVB_EARLY_SERVICES)))
+	$(hide) echo "avb_vbmeta_system=$(BOARD_AVB_EARLY_SERVICES)" >> $@
+	$(hide) echo "avb_vbmeta_system_args=$(BOARD_AVB_MAKE_VBMETA_SYSTEM_IMAGE_ARGS)" >> $@
+	$(hide) echo "avb_vbmeta_system_key_path=$(BOARD_AVB_EARLY_SERVICES_KEY_PATH)" >> $@
+	$(hide) echo "avb_vbmeta_system_algorithm=$(BOARD_AVB_EARLY_SERVICES_ALGORITHM)" >> $@
+	$(hide) echo "avb_vbmeta_system_rollback_index_location=$(BOARD_AVB_EARLY_SERVICES_ROLLBACK_INDEX_LOCATION)" >> $@
+endif # BOARD_AVB_EARLY_SERVICES
 ifneq (,$(strip $(BOARD_CUSTOMIMAGES_PARTITION_LIST)))
 	$(hide) echo "avb_custom_images_partition_list=$(BOARD_CUSTOMIMAGES_PARTITION_LIST)" >> $@
 	$(hide) $(foreach partition,$(BOARD_CUSTOMIMAGES_PARTITION_LIST), \
@@ -4748,6 +4769,7 @@ $(BUILT_TARGET_FILES_PACKAGE): \
 	    $(INSTALLED_ANDROID_INFO_TXT_TARGET) \
 	    $(INSTALLED_KERNEL_TARGET) \
 	    $(INSTALLED_DTBIMAGE_TARGET) \
+	    $(INSTALLED_EARLY_SERVICESIMAGE_TARGET) \
 	    $(INSTALLED_2NDBOOTLOADER_TARGET) \
 	    $(BOARD_PREBUILT_DTBOIMAGE) \
 	    $(BOARD_PREBUILT_RECOVERY_DTBOIMAGE) \
