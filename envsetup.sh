@@ -27,13 +27,17 @@ Invoke ". build/envsetup.sh" from your shell to add the following functions to y
 - mangrep:    Greps on all local AndroidManifest.xml files.
 - mgrep:      Greps on all local Makefiles and *.bp files.
 - owngrep:    Greps on all local OWNERS files.
+- rsgrep:     Greps on all local Rust files.
 - sepgrep:    Greps on all local sepolicy files.
 - sgrep:      Greps on all local source files.
 - godir:      Go to the directory containing a file.
 - allmod:     List all modules.
 - gomod:      Go to the directory containing a module.
 - pathmod:    Get the directory containing a module.
-- refreshmod: Refresh list of modules for allmod/gomod/pathmod.
+- outmod:     Gets the location of a module's installed outputs with a certain extension.
+- dirmods:    Gets the modules defined in a given directory.
+- installmod: Adb installs a module's built APK.
+- refreshmod: Refresh list of modules for allmod/gomod/pathmod/outmod/installmod.
 - syswrite:   Remount partitions (e.g. system.img) as writable, rebooting if necessary.
 
 Environment options:
@@ -411,7 +415,10 @@ function addcompletions()
     fi
     complete -F _lunch lunch
 
+    complete -F _complete_android_module_names pathmod
     complete -F _complete_android_module_names gomod
+    complete -F _complete_android_module_names outmod
+    complete -F _complete_android_module_names installmod
     complete -F _complete_android_module_names m
 }
 
@@ -1032,6 +1039,12 @@ function jgrep()
         -exec grep --color -n "$@" {} +
 }
 
+function rsgrep()
+{
+    find . -name .repo -prune -o -name .git -prune -o -name out -prune -o -type f -name "*\.rs" \
+        -exec grep --color -n "$@" {} +
+}
+
 function cgrep()
 {
     find . -name .repo -prune -o -name .git -prune -o -name out -prune -o -type f \( -name '*.c' -o -name '*.cc' -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' \) \
@@ -1378,9 +1391,8 @@ function refreshmod() {
         > $ANDROID_PRODUCT_OUT/module-info.json.build.log 2>&1
 }
 
-# List all modules for the current device, as cached in module-info.json. If any build change is
-# made and it should be reflected in the output, you should run 'refreshmod' first.
-function allmod() {
+# Verifies that module-info.txt exists, creating it if it doesn't.
+function verifymodinfo() {
     if [ ! "$ANDROID_PRODUCT_OUT" ]; then
         echo "No ANDROID_PRODUCT_OUT. Try running 'lunch' first." >&2
         return 1
@@ -1390,27 +1402,26 @@ function allmod() {
         echo "Could not find module-info.json. It will only be built once, and it can be updated with 'refreshmod'" >&2
         refreshmod || return 1
     fi
+}
+
+# List all modules for the current device, as cached in module-info.json. If any build change is
+# made and it should be reflected in the output, you should run 'refreshmod' first.
+function allmod() {
+    verifymodinfo || return 1
 
     python -c "import json; print('\n'.join(sorted(json.load(open('$ANDROID_PRODUCT_OUT/module-info.json')).keys())))"
 }
 
-# Get the path of a specific module in the android tree, as cached in module-info.json. If any build change
-# is made, and it should be reflected in the output, you should run 'refreshmod' first.
+# Get the path of a specific module in the android tree, as cached in module-info.json.
+# If any build change is made, and it should be reflected in the output, you should run
+# 'refreshmod' first.  Note: This is the inverse of dirmods.
 function pathmod() {
-    if [ ! "$ANDROID_PRODUCT_OUT" ]; then
-        echo "No ANDROID_PRODUCT_OUT. Try running 'lunch' first." >&2
-        return 1
-    fi
-
     if [[ $# -ne 1 ]]; then
         echo "usage: pathmod <module>" >&2
         return 1
     fi
 
-    if [ ! -f "$ANDROID_PRODUCT_OUT/module-info.json" ]; then
-        echo "Could not find module-info.json. It will only be built once, and it can be updated with 'refreshmod'" >&2
-        refreshmod || return 1
-    fi
+    verifymodinfo || return 1
 
     local relpath=$(python -c "import json, os
 module = '$1'
@@ -1427,6 +1438,36 @@ print(module_info[module]['path'][0])" 2>/dev/null)
     fi
 }
 
+# Get the path of a specific module in the android tree, as cached in module-info.json.
+# If any build change is made, and it should be reflected in the output, you should run
+# 'refreshmod' first.  Note: This is the inverse of pathmod.
+function dirmods() {
+    if [[ $# -ne 1 ]]; then
+        echo "usage: dirmods <path>" >&2
+        return 1
+    fi
+
+    verifymodinfo || return 1
+
+    python -c "import json, os
+dir = '$1'
+while dir.endswith('/'):
+    dir = dir[:-1]
+prefix = dir + '/'
+module_info = json.load(open('$ANDROID_PRODUCT_OUT/module-info.json'))
+results = set()
+for m in module_info.values():
+    for path in m.get(u'path', []):
+        if path == dir or path.startswith(prefix):
+            name = m.get(u'module_name')
+            if name:
+                results.add(name)
+for name in sorted(results):
+    print(name)
+"
+}
+
+
 # Go to a specific module in the android tree, as cached in module-info.json. If any build change
 # is made, and it should be reflected in the output, you should run 'refreshmod' first.
 function gomod() {
@@ -1440,6 +1481,59 @@ function gomod() {
         return 1
     fi
     cd $path
+}
+
+# Gets the list of a module's installed outputs, as cached in module-info.json.
+# If any build change is made, and it should be reflected in the output, you should run 'refreshmod' first.
+function outmod() {
+    if [[ $# -ne 1 ]]; then
+        echo "usage: outmod <module>" >&2
+        return 1
+    fi
+
+    verifymodinfo || return 1
+
+    local relpath
+    relpath=$(python -c "import json, os
+module = '$1'
+module_info = json.load(open('$ANDROID_PRODUCT_OUT/module-info.json'))
+if module not in module_info:
+    exit(1)
+for output in module_info[module]['installed']:
+    print(os.path.join('$ANDROID_BUILD_TOP', output))" 2>/dev/null)
+
+    if [ $? -ne 0 ]; then
+        echo "Could not find module '$1' (try 'refreshmod' if there have been build changes?)" >&2
+        return 1
+    elif [ ! -z "$relpath" ]; then
+        echo "$relpath"
+    fi
+}
+
+# adb install a module's apk, as cached in module-info.json. If any build change
+# is made, and it should be reflected in the output, you should run 'refreshmod' first.
+# Usage: installmod [adb install arguments] <module>
+# For example: installmod -r Dialer -> adb install -r /path/to/Dialer.apk
+function installmod() {
+    if [[ $# -eq 0 ]]; then
+        echo "usage: installmod [adb install arguments] <module>" >&2
+        return 1
+    fi
+
+    local _path
+    _path=$(outmod ${@:$#:1})
+    if [ $? -ne 0 ]; then
+        return 1
+    fi
+
+    _path=$(echo "$_path" | grep -E \\.apk$ | head -n 1)
+    if [ -z "$_path" ]; then
+        echo "Module '$1' does not produce a file ending with .apk (try 'refreshmod' if there have been build changes?)" >&2
+        return 1
+    fi
+    local length=$(( $# - 1 ))
+    echo adb install ${@:1:$length} $_path
+    adb install ${@:1:$length} $_path
 }
 
 function _complete_android_module_names() {

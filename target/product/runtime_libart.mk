@@ -16,6 +16,8 @@
 
 # Provides a functioning ART environment without Android frameworks
 
+$(call inherit-product, $(SRC_TARGET_DIR)/product/default_art_config.mk)
+
 # Additional mixins to the boot classpath.
 PRODUCT_PACKAGES += \
     android.test.base \
@@ -28,10 +30,43 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += com.android.runtime
 
 # ART APEX module.
-# Note that this package includes the minimal boot classpath JARs (listed in
-# ART_APEX_JARS), which should no longer be added directly to PRODUCT_PACKAGES.
-PRODUCT_PACKAGES += com.android.art-autoselect
-PRODUCT_HOST_PACKAGES += com.android.art-autoselect
+#
+# Select either release (com.android.art) or debug (com.android.art.debug)
+# variant of the ART APEX. By default, "user" build variants contain the release
+# module, while the "eng" build variant contain the debug module. However, if
+# `PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD` is defined, it overrides the previous
+# logic:
+# - if `PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD` is set to `false`, the
+#   build will include the release module (whatever the build
+#   variant);
+# - if `PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD` is set to `true`, the
+#   build will include the debug module (whatever the build variant).
+#
+# Note that the ART APEX package includes the minimal boot classpath JARs
+# (listed in ART_APEX_JARS), which should no longer be added directly to
+# PRODUCT_PACKAGES.
+
+art_target_include_debug_build := $(PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD)
+ifneq (false,$(art_target_include_debug_build))
+  ifneq (,$(filter eng,$(TARGET_BUILD_VARIANT)))
+    art_target_include_debug_build := true
+  endif
+endif
+
+ifeq (true,$(art_target_include_debug_build))
+  PRODUCT_PACKAGES += com.android.art.debug
+  apex_test_module := art-check-debug-apex-gen-fakebin
+else
+  PRODUCT_PACKAGES += com.android.art
+  apex_test_module := art-check-release-apex-gen-fakebin
+endif
+
+ifeq (true,$(SOONG_CONFIG_art_module_source_build)
+  PRODUCT_HOST_PACKAGES += $(apex_test_module)
+endif
+
+art_target_include_debug_build :=
+apex_test_module :=
 
 # Certificates.
 PRODUCT_PACKAGES += \
@@ -41,10 +76,6 @@ PRODUCT_PACKAGES += \
     hiddenapi-package-whitelist.xml \
 
 PRODUCT_SYSTEM_PROPERTIES += \
-    dalvik.vm.image-dex2oat-Xms=64m \
-    dalvik.vm.image-dex2oat-Xmx=64m \
-    dalvik.vm.dex2oat-Xms=64m \
-    dalvik.vm.dex2oat-Xmx=512m \
     dalvik.vm.usejit=true \
     dalvik.vm.usejitprofiles=true \
     dalvik.vm.dexopt.secondary=true \
@@ -58,17 +89,18 @@ PRODUCT_SYSTEM_PROPERTIES += \
 ifeq (eng,$(TARGET_BUILD_VARIANT))
     PRODUCT_SYSTEM_PROPERTIES += \
         pm.dexopt.first-boot?=extract \
-        pm.dexopt.boot?=extract
+        pm.dexopt.boot-after-ota?=extract
 else
     PRODUCT_SYSTEM_PROPERTIES += \
-        pm.dexopt.first-boot?=quicken \
-        pm.dexopt.boot?=verify
+        pm.dexopt.first-boot?=verify \
+        pm.dexopt.boot-after-ota?=verify
 endif
 
 # The install filter is speed-profile in order to enable the use of
 # profiles from the dex metadata files. Note that if a profile is not provided
 # or if it is empty speed-profile is equivalent to (quicken + empty app image).
 PRODUCT_SYSTEM_PROPERTIES += \
+    pm.dexopt.post-boot?=extract \
     pm.dexopt.install?=speed-profile \
     pm.dexopt.install-fast?=skip \
     pm.dexopt.install-bulk?=speed-profile \
@@ -97,4 +129,14 @@ PRODUCT_SYSTEM_PROPERTIES += \
     dalvik.vm.minidebuginfo=true \
     dalvik.vm.dex2oat-minidebuginfo=true
 
-PRODUCT_USES_DEFAULT_ART_CONFIG := true
+# Two other device configs are added to IORap besides "ro.iorapd.enable".
+# IORap by default is off and starts when
+# (https://source.corp.google.com/android/system/iorap/iorapd.rc?q=iorapd.rc)
+#
+# * "ro.iorapd.enable" is true excluding unset
+# * One of the device configs is true.
+#
+# "ro.iorapd.enable" has to be set to true, so that iorap can be started.
+PRODUCT_SYSTEM_PROPERTIES += \
+    ro.iorapd.enable?=true
+

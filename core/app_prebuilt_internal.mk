@@ -102,19 +102,30 @@ ifndef LOCAL_ENFORCE_USES_LIBRARIES
   endif
 endif
 
+# Disable verify_uses_libraries check if dexpreopt is globally disabled.
+# Without dexpreopt the check is not necessary, and although it is good to have,
+# it is difficult to maintain on non-linux build platforms where dexpreopt is
+# generally disabled (the check may fail due to various unrelated reasons, such
+# as a failure to get manifest from an APK).
+ifneq ($(WITH_DEXPREOPT),true)
+  LOCAL_ENFORCE_USES_LIBRARIES :=
+endif
+
 my_enforced_uses_libraries :=
 ifdef LOCAL_ENFORCE_USES_LIBRARIES
-  my_enforced_uses_libraries := $(intermediates.COMMON)/enforce_uses_libraries.timestamp
+  my_enforced_uses_libraries := $(intermediates.COMMON)/enforce_uses_libraries.status
   $(my_enforced_uses_libraries): PRIVATE_USES_LIBRARIES := $(LOCAL_USES_LIBRARIES)
   $(my_enforced_uses_libraries): PRIVATE_OPTIONAL_USES_LIBRARIES := $(LOCAL_OPTIONAL_USES_LIBRARIES)
+  $(my_enforced_uses_libraries): PRIVATE_RELAX_CHECK := $(RELAX_USES_LIBRARY_CHECK)
   $(my_enforced_uses_libraries): $(BUILD_SYSTEM)/verify_uses_libraries.sh $(AAPT)
   $(my_enforced_uses_libraries): $(my_prebuilt_src_file)
 	@echo Verifying uses-libraries: $<
+	rm -f $@
 	aapt_binary=$(AAPT) \
 	  uses_library_names="$(strip $(PRIVATE_USES_LIBRARIES))" \
 	  optional_uses_library_names="$(strip $(PRIVATE_OPTIONAL_USES_LIBRARIES))" \
-	  $(BUILD_SYSTEM)/verify_uses_libraries.sh $<
-	touch $@
+	  relax_check="$(strip $(PRIVATE_RELAX_CHECK))" \
+	  $(BUILD_SYSTEM)/verify_uses_libraries.sh $< $@
   $(built_module) : $(my_enforced_uses_libraries)
 endif
 
@@ -237,6 +248,7 @@ endif
 $(built_module) : $(my_prebuilt_src_file) | $(ZIPALIGN) $(ZIP2ZIP) $(SIGNAPK_JAR)
 	$(transform-prebuilt-to-target)
 	$(uncompress-prebuilt-embedded-jni-libs)
+	$(remove-unwanted-prebuilt-embedded-jni-libs)
 ifeq (true, $(LOCAL_UNCOMPRESS_DEX))
 	$(uncompress-dexs)
 endif  # LOCAL_UNCOMPRESS_DEX
