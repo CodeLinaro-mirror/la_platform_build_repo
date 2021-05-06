@@ -831,6 +831,7 @@ function lunch()
         return 1
     fi
     export TARGET_PRODUCT=$(get_build_var TARGET_PRODUCT)
+    export TARGET_BOARD_PLATFORM=$(get_build_var TARGET_BOARD_PLATFORM)
     export TARGET_BUILD_VARIANT=$(get_build_var TARGET_BUILD_VARIANT)
     export TARGET_RELEASE=$release
     # Note this is the string "release", not the value of the variable.
