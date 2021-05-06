@@ -765,6 +765,7 @@ function lunch()
         return 1
     fi
     export TARGET_PRODUCT=$(get_build_var TARGET_PRODUCT)
+    export TARGET_BOARD_PLATFORM=$(get_build_var TARGET_BOARD_PLATFORM)
     export TARGET_BUILD_VARIANT=$(get_build_var TARGET_BUILD_VARIANT)
     if [ -n "$version" ]; then
       export TARGET_PLATFORM_VERSION=$(get_build_var TARGET_PLATFORM_VERSION)
