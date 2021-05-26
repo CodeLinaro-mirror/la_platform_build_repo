@@ -254,6 +254,7 @@ ifeq ($(PRODUCT_BUILD_SYSTEM_IMAGE),)
 else ifeq ($(PRODUCT_BUILD_SYSTEM_IMAGE),false)
   BUILDING_SYSTEM_IMAGE :=
 endif
+BUILDING_SYSTEM_IMAGE := true
 .KATI_READONLY := BUILDING_SYSTEM_IMAGE
 
 # Are we building a system_other image
