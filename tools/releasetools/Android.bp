@@ -114,6 +114,25 @@ python_library_host {
     },
 }
 
+java_library_static {
+    name: "ota_metadata_proto_java",
+    host_supported: true,
+    proto: {
+        type: "nano",
+    },
+    srcs: ["ota_metadata.proto"],
+    sdk_version: "9",
+    target: {
+        android: {
+            jarjar_rules: "jarjar-rules.txt",
+        },
+        host: {
+            static_libs: ["libprotobuf-java-nano"],
+        },
+    },
+    visibility: ["//frameworks/base:__subpackages__"]
+}
+
 python_defaults {
     name: "releasetools_ota_from_target_files_defaults",
     srcs: [
@@ -133,6 +152,7 @@ python_defaults {
     required: [
         "brillo_update_payload",
         "checkvintf",
+        "minigzip",
         "lz4",
         "toybox",
         "unpack_bootimg",
@@ -520,6 +540,23 @@ python_binary_host {
     ],
     libs: [
         "releasetools_common",
+    ],
+}
+
+python_binary_host {
+    name: "verity_utils",
+    defaults: ["releasetools_binary_defaults"],
+    srcs: [
+        "verity_utils.py",
+    ],
+    libs: [
+        "releasetools_common",
+    ],
+    required: [
+        "append2simg",
+        "build_verity_metadata",
+        "build_verity_tree",
+        "fec",
     ],
 }
 

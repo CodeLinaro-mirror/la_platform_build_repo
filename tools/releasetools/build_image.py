@@ -73,9 +73,9 @@ def GetInodeUsage(path):
   """
   cmd = ["find", path, "-print"]
   output = common.RunAndCheckOutput(cmd, verbose=False)
-  # increase by > 4% as number of files and directories is not whole picture.
+  # increase by > 6% as number of files and directories is not whole picture.
   inodes = output.count('\n')
-  spare_inodes = inodes * 4 // 100
+  spare_inodes = inodes * 6 // 100
   min_spare_inodes = 12
   if spare_inodes < min_spare_inodes:
     spare_inodes = min_spare_inodes
@@ -386,13 +386,14 @@ def BuildImageMkfs(in_dir, prop_dict, out_file, target_out, fs_config):
             in_dir, du_str,
             int(prop_dict.get("partition_reserved_size", 0)),
             int(prop_dict.get("partition_reserved_size", 0)) // BYTES_IN_MB))
-    print(
-        "The max image size for filesystem files is {} bytes ({} MB), out of a "
-        "total partition size of {} bytes ({} MB).".format(
-            int(prop_dict["image_size"]),
-            int(prop_dict["image_size"]) // BYTES_IN_MB,
-            int(prop_dict["partition_size"]),
-            int(prop_dict["partition_size"]) // BYTES_IN_MB))
+    if ("image_size" in prop_dict and "partition_size" in prop_dict):
+      print(
+          "The max image size for filesystem files is {} bytes ({} MB), "
+          "out of a total partition size of {} bytes ({} MB).".format(
+              int(prop_dict["image_size"]),
+              int(prop_dict["image_size"]) // BYTES_IN_MB,
+              int(prop_dict["partition_size"]),
+              int(prop_dict["partition_size"]) // BYTES_IN_MB))
     raise
 
   if run_e2fsck and prop_dict.get("skip_fsck") != "true":

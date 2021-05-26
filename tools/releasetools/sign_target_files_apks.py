@@ -123,6 +123,17 @@ Usage:  sign_target_files_apks [flags] input_target_files output_target_files
       mounted on the partition (e.g. "--signing_helper /path/to/helper"). The
       args will be appended to the existing ones in info dict.
 
+  --gki_signing_algorithm <algorithm>
+  --gki_signing_key <key>
+      Use the specified algorithm (e.g. SHA256_RSA4096) and the key to generate
+      'boot signature' in a v4 boot.img. Otherwise it uses the existing values
+      in info dict.
+
+  --gki_signing_extra_args <args>
+      Specify any additional args that are needed to generate 'boot signature'
+      (e.g. --prop foo:bar). The args will be appended to the existing ones
+      in info dict.
+
   --android_jar_path <path>
       Path to the android.jar to repack the apex file.
 """
@@ -174,6 +185,9 @@ OPTIONS.tag_changes = ("-test-keys", "-dev-keys", "+release-keys")
 OPTIONS.avb_keys = {}
 OPTIONS.avb_algorithms = {}
 OPTIONS.avb_extra_args = {}
+OPTIONS.gki_signing_key = None
+OPTIONS.gki_signing_algorithm = None
+OPTIONS.gki_signing_extra_args = None
 OPTIONS.android_jar_path = None
 
 
@@ -615,6 +629,10 @@ def ProcessTargetFiles(input_tf_zip, output_tf_zip, misc_info,
     elif OPTIONS.replace_verity_keyid and filename == "BOOT/cmdline":
       pass
 
+    # Skip the vbmeta digest as we will recalculate it.
+    elif filename == "META/vbmeta_digest.txt":
+      pass
+
     # Skip the care_map as we will regenerate the system/vendor images.
     elif filename in ["META/care_map.pb", "META/care_map.txt"]:
       pass
@@ -676,6 +694,9 @@ def ProcessTargetFiles(input_tf_zip, output_tf_zip, misc_info,
   # Rewrite the props in AVB signing args.
   if misc_info.get('avb_enable') == 'true':
     RewriteAvbProps(misc_info)
+
+  # Replace the GKI signing key for boot.img, if any.
+  ReplaceGkiSigningKey(misc_info)
 
   # Write back misc_info with the latest values.
   ReplaceMiscInfoTxt(input_tf_zip, output_tf_zip, misc_info)
@@ -782,7 +803,7 @@ def RewriteProps(data):
         value = "/".join(pieces)
       elif key == "ro.build.description":
         pieces = value.split(" ")
-        assert len(pieces) == 5
+        assert pieces[-1].endswith("-keys")
         pieces[-1] = EditTags(pieces[-1])
         value = " ".join(pieces)
       elif key.startswith("ro.") and key.endswith(".build.tags"):
@@ -993,6 +1014,28 @@ def RewriteAvbProps(misc_info):
       print('  replace: {}'.format(args))
       print('     with: {}'.format(result))
       misc_info[args_key] = result
+
+
+def ReplaceGkiSigningKey(misc_info):
+  """Replaces the GKI signing key."""
+
+  key = OPTIONS.gki_signing_key
+  if not key:
+    return
+
+  algorithm = OPTIONS.gki_signing_algorithm
+  if not algorithm:
+    raise ValueError("Missing --gki_signing_algorithm")
+
+  print('Replacing GKI signing key with "%s" (%s)' % (key, algorithm))
+  misc_info["gki_signing_algorithm"] = algorithm
+  misc_info["gki_signing_key_path"] = key
+
+  extra_args = OPTIONS.gki_signing_extra_args
+  if extra_args:
+    print('Setting extra GKI signing args: "%s"' % (extra_args))
+    misc_info["gki_signing_signature_args"] = (
+        misc_info.get("gki_signing_signature_args", '') + ' ' + extra_args)
 
 
 def BuildKeyMap(misc_info, key_mapping_options):
@@ -1226,6 +1269,12 @@ def main(argv):
       # 'oem=--signing_helper_with_files=/tmp/avbsigner.sh'.
       partition, extra_args = a.split("=", 1)
       OPTIONS.avb_extra_args[partition] = extra_args
+    elif o == "--gki_signing_key":
+      OPTIONS.gki_signing_key = a
+    elif o == "--gki_signing_algorithm":
+      OPTIONS.gki_signing_algorithm = a
+    elif o == "--gki_signing_extra_args":
+      OPTIONS.gki_signing_extra_args = a
     else:
       return False
     return True
@@ -1273,6 +1322,9 @@ def main(argv):
           "avb_extra_custom_image_key=",
           "avb_extra_custom_image_algorithm=",
           "avb_extra_custom_image_extra_args=",
+          "gki_signing_key=",
+          "gki_signing_algorithm=",
+          "gki_signing_extra_args=",
       ],
       extra_option_handler=option_handler)
 
@@ -1335,6 +1387,6 @@ if __name__ == '__main__':
     main(sys.argv[1:])
   except common.ExternalError as e:
     print("\n   ERROR: %s\n" % (e,))
-    sys.exit(1)
+    raise
   finally:
     common.Cleanup()
