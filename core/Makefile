@@ -1324,6 +1324,14 @@ bootimage-nodeps: $(MKBOOTIMG)
 endif # TARGET_BOOTIMAGE_USE_EXT2
 endif # BUILDING_BOOT_IMAGE
 
+P_NAME="$(TARGET_PRODUCT)"
+ifeq ($(P_NAME),"msmnile_gvmgh")
+SCRIPT_PATH = $(TARGET_DEVICE_DIR)/generate_linux_image.sh
+IMAGE_PATH = $(PRODUCT_OUT)/obj/KERNEL_OBJ/arch/arm64/boot/Image
+GENERATE_HEADER := $(shell $(SCRIPT_PATH) $(IMAGE_PATH))
+RES_HEADER = $(GENERATE_HEADER)
+endif
+
 else # TARGET_NO_KERNEL == "true"
 ifdef BOARD_PREBUILT_BOOTIMAGE
 ifneq ($(BOARD_BUILD_SYSTEM_ROOT_IMAGE),true)
