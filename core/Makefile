@@ -2315,7 +2315,6 @@ define build-systemimage-target
 	cp -r $(PRODUCT_OUT)/system/apex/com.android.runtime.debug/bin/linker64 $(PRODUCT_OUT)/early_services/system/bin/ ;\
 	cp -r $(PRODUCT_OUT)/system/apex/com.android.runtime.debug/lib64/* $(PRODUCT_OUT)/early_services/system/lib64/ ;\
 	cp -r $(PRODUCT_OUT)/vendor/lib64/* $(PRODUCT_OUT)/early_services/system/lib64/ ;\
-	cp -r $(PRODUCT_OUT)/early_services/system/lib64/egl/* $(PRODUCT_OUT)/early_services/system/lib64/ ;\
 	PATH=$(foreach p,$(INTERNAL_USERIMAGES_BINARY_PATHS),$(p):)$$PATH build/make/tools/releasetools/build_image.py $(PRODUCT_OUT)/early_services $(early_servicesimage_intermediates)/early_services_image_info.txt $(BUILT_EARLY_SERVICESIMAGE) $(PRODUCT_OUT) ;\
   fi
 endef
