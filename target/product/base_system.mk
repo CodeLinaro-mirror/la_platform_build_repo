@@ -117,7 +117,6 @@ PRODUCT_PACKAGES += \
     ip-up-vpn \
     javax.obex \
     service-jobscheduler \
-    keystore \
     credstore \
     ld.mc \
     libaaudio \
