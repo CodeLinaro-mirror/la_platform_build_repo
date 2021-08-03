@@ -404,13 +404,6 @@ $(intermediate_system_build_prop): $(BUILDINFO_SH) $(BUILDINFO_COMMON_SH) $(INTE
 	@echo Target buildinfo: $@
 	@mkdir -p $(dir $@)
 	$(hide) echo > $@
-ifneq ($(PRODUCT_OEM_PROPERTIES),)
-	$(hide) echo "#" >> $@; \
-	        echo "# PRODUCT_OEM_PROPERTIES" >> $@; \
-	        echo "#" >> $@;
-	$(hide) $(foreach prop,$(PRODUCT_OEM_PROPERTIES), \
-	    echo "import /oem/oem.prop $(prop)" >> $@;)
-endif
 	$(hide) PRODUCT_BRAND="$(PRODUCT_SYSTEM_BRAND)" \
 	        PRODUCT_MANUFACTURER="$(PRODUCT_SYSTEM_MANUFACTURER)" \
 	        PRODUCT_MODEL="$(PRODUCT_SYSTEM_MODEL)" \
@@ -491,6 +484,19 @@ ifdef TARGET_VENDOR_PROP
 vendor_prop_files := $(TARGET_VENDOR_PROP)
 else
 vendor_prop_files := $(wildcard $(TARGET_DEVICE_DIR)/vendor.prop)
+endif
+
+# Vendors with GRF must define BOARD_SHIPPING_API_LEVEL for the vendor API level.
+# This must not be defined for the non-GRF devices.
+ifdef BOARD_SHIPPING_API_LEVEL
+FINAL_VENDOR_BUILD_PROPERTIES += \
+    ro.board.first_api_level=$(BOARD_SHIPPING_API_LEVEL)
+
+# To manually set the vendor API level of the vendor modules, BOARD_API_LEVEL can be used.
+ifdef BOARD_API_LEVEL
+FINAL_VENDOR_BUILD_PROPERTIES += \
+    ro.board.api_level=$(BOARD_API_LEVEL)
+endif
 endif
 
 ifdef property_overrides_split_enabled
@@ -589,6 +595,13 @@ $(INSTALLED_PRODUCT_BUILD_PROP_TARGET): $(BUILDINFO_COMMON_SH) $(POST_PROCESS_PR
 	$(hide) $(foreach line,$(FINAL_PRODUCT_PROPERTIES), \
 	    echo "$(line)" >> $@;)
 	$(hide) $(POST_PROCESS_PROPS) $@
+ifneq ($(PRODUCT_OEM_PROPERTIES),)
+	$(hide) echo "#" >> $@; \
+	        echo "# PRODUCT_OEM_PROPERTIES" >> $@; \
+	        echo "#" >> $@;
+	$(hide) $(foreach prop,$(PRODUCT_OEM_PROPERTIES), \
+	    echo "import /oem/oem.prop $(prop)" >> $@;)
+endif
 
 # ----------------------------------------------------------------
 # odm build.prop
