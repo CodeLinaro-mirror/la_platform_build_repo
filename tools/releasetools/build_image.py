@@ -718,6 +718,10 @@ def ImagePropFromGlobalDict(glob_dict, mount_point):
     if not copy_prop("oem_extfs_rsv_pct", "extfs_rsv_pct"):
       d["extfs_rsv_pct"] = "0"
     copy_prop("oem_selinux_fc", "selinux_fc")
+  elif mount_point == "early_services":
+      copy_prop("early_services_fs_type", "fs_type")
+      copy_prop("early_services_size", "partition_size")
+      copy_prop("early_services_selinux_fc", "selinux_fc")
   d["partition_name"] = mount_point
   return d
 
@@ -797,6 +801,8 @@ def main(argv):
       mount_point = "product"
     elif image_filename == "system_ext.img":
       mount_point = "system_ext"
+    elif image_filename == "early_services.img":
+      mount_point = "early_services"
     else:
       logger.error("Unknown image file name %s", image_filename)
       sys.exit(1)

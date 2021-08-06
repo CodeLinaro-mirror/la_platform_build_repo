@@ -1038,6 +1038,10 @@ systemimage:
 
 # -----------------------------------------------------------------
 
+.PHONY: early_servicesimage
+early_servicesimage:
+
+# -----------------------------------------------------------------
 .PHONY: event-log-tags
 
 # Produce an event logs tag file for everything we know about, in order
@@ -1769,6 +1773,11 @@ $(if $(filter $(2),oem),\
     $(if $(BOARD_OEMIMAGE_EXTFS_INODE_COUNT),$(hide) echo "oem_extfs_inode_count=$(BOARD_OEMIMAGE_EXTFS_INODE_COUNT)" >> $(1))
     $(if $(BOARD_OEMIMAGE_EXTFS_RSV_PCT),$(hide) echo "oem_extfs_rsv_pct=$(BOARD_OEMIMAGE_EXTFS_RSV_PCT)" >> $(1))
     $(hide) echo "oem_selinux_fc=$(SELINUX_FC)" >> $(1)
+)
+$(if $(filter $(2),early_services),\
+    $(if $(BOARD_EARLY_IMAGE_PARTITION_SIZE),$(hide) echo "early_services_size=$(BOARD_EARLY_IMAGE_PARTITION_SIZE)" >> $(1))
+    $(if $(BOARD_EARLY_SERVICESIMAGE_FILE_SYSTEM_TYPE),$(hide) echo "early_services_fs_type=$(BOARD_EARLY_SERVICESIMAGE_FILE_SYSTEM_TYPE)" >> $(1))
+    $(hide) echo "early_services_selinux_fc=$(SELINUX_FC)" >> $(1)
 )
 $(hide) echo "ext_mkuserimg=$(notdir $(MKEXTUSERIMG))" >> $(1)
 
@@ -2670,6 +2679,9 @@ $(call dist-for-goals, sdk win_sdk sdk_addon, $(INSTALLED_FILES_FILE))
 systemimage_intermediates := \
     $(call intermediates-dir-for,PACKAGING,systemimage)
 BUILT_SYSTEMIMAGE := $(systemimage_intermediates)/system.img
+early_servicesimage_intermediates := $(call intermediates-dir-for,PACKAGING,early_servicesimage)
+BUILT_EARLY_SERVICESIMAGE := $(PRODUCT_OUT)/early_services.img
+EARLY_SERVICES_PARTITION := early_services
 
 # Create symlink /system/vendor to /vendor if necessary.
 ifdef BOARD_USES_VENDORIMAGE
@@ -2731,6 +2743,96 @@ define build-systemimage-target
           || ( mkdir -p $${DIST_DIR}; \
                cp $(INSTALLED_FILES_FILE) $${DIST_DIR}/installed-files-rescued.txt; \
                exit 1 )
+  mkdir -p $(dir $(1)) $(early_servicesimage_intermediates) && rm -rf $(early_servicesimage_intermediates)/early_services_image_info.txt
+  $(call generate-image-prop-dictionary, $(early_servicesimage_intermediates)/early_services_image_info.txt, \
+      early_services,skip_fsck=true)
+  if [ "$(BOARD_SUPPORTS_EARLY_INIT)" == "true" ]; then \
+	  cp -r $(PRODUCT_OUT)/system/etc/selinux/* $(PRODUCT_OUT)/early_services/system/etc/selinux/ ;\
+	  cp -r $(PRODUCT_OUT)/vendor/etc/selinux/* $(PRODUCT_OUT)/early_services/vendor/etc/selinux/ ;\
+	  cp -r $(PRODUCT_OUT)/vendor/etc/bike_bell.wav $(PRODUCT_OUT)/early_services/etc/ ;\
+	  cp -r $(PRODUCT_OUT)/vendor/bin/audio-nxp-auto $(PRODUCT_OUT)/early_services/vendor/bin/ ;\
+	  cp -r $(PRODUCT_OUT)/dlkm/lib/modules/snd_event_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/q6_notifier_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/apr_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/adsp_loader_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/q6_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/machine_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/stub_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/platform_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/native_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/hdmi_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.audio.common@4.0.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.audio.effect@4.0.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.audio@4.0.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libbacktrace.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libbase.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libbinder.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/apex/com.android.runtime/lib64/bionic/* $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libhidlbase.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libhidltransport.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libhwbinder.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/liblzma.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libtinyalsa.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libunwindstack.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libutilscallstack.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libc++.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libcrypto.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libcutils.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libutils.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/liblog.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libpackagelistparser.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libpcre2.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libselinux.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libprocessgroup.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libz.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libvndksupport.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/bin/bootstrap $(PRODUCT_OUT)/early_services/system/bin ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libui.so                                              $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libgraphicsenv.so                                     $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libnativewindow.so                                    $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.configstore@1.0.so                   $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.configstore-utils.so                 $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libnativebridge_lazy.so                               $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libnativeloader_lazy.so                               $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libSurfaceFlingerProp.so                              $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@2.0.so            $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@3.0.so            $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@4.0.so            $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common-V1-ndk_platform.so   $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.2.so               $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@2.0.so               $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@2.1.so               $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@3.0.so               $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@4.0.so               $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libgralloctypes.so                                    $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.1.so               $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.configstore@1.1.so                   $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.0.so               $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.common-V1-ndk_platform.so            $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libbinder_ndk.so libdexfile_support.so                $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libandroid_runtime_lazy.so                            $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libsync.so                                            $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libion.so                                             $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libcgrouprc.so                                        $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/lib64/libnetd_client.so                                     $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/vendor/lib64/libmmosal.so                                          $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/vendor/lib64/libC2D2.so                                            $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/vendor/lib64/libgsl.so                                             $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/vendor/lib64/libadreno_utils.so                                    $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/vendor/lib64/libEGL_adreno.so                                      $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/vendor/lib64/libGLESv2_adreno.so                                   $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/vendor/lib64/libllvm-glnext.so                                     $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/apex/com.android.art.debug/lib64/libandroidicu.so           $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/apex/com.android.art.debug/lib64/libicuuc.so                $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/apex/com.android.art.debug/lib64/libicui18n.so              $(PRODUCT_OUT)/early_services/system/lib64 ;\
+          cp -rf $(PRODUCT_OUT)/vendor/lib64/libais* $(PRODUCT_OUT)/early_services/system/lib64/ ;\
+          cp -rf $(PRODUCT_OUT)/vendor/lib64/*_early.so $(PRODUCT_OUT)/early_services/system/lib64/ ;\
+          cp -rf $(PRODUCT_OUT)/vendor/lib64/libc2d30_bltlib.so $(PRODUCT_OUT)/early_services/system/lib64/ ;\
+          cp -rf $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(PRODUCT_OUT)/early_services/system/lib64/ ;\
+          cp -rf $(PRODUCT_OUT)/system/lib64/libxml2.so   $(PRODUCT_OUT)/early_services/system/lib64/ ;\
+          cp -ar $(PRODUCT_OUT)/vendor/firmware $(PRODUCT_OUT)/early_services/ ;\
+	PATH=$(foreach p,$(INTERNAL_USERIMAGES_BINARY_PATHS),$(p):)$$PATH build/make/tools/releasetools/build_image.py $(PRODUCT_OUT)/early_services $(early_servicesimage_intermediates)/early_services_image_info.txt $(BUILT_EARLY_SERVICESIMAGE) $(PRODUCT_OUT) ;\
+  fi
 endef
 
 ifeq ($(BOARD_AVB_ENABLE),true)
@@ -2781,6 +2883,8 @@ $(INSTALLED_SYSTEMIMAGE_TARGET): $(BUILT_SYSTEMIMAGE)
 	$(hide) $(call assert-max-image-size,$@,$(BOARD_SYSTEMIMAGE_PARTITION_SIZE))
 
 systemimage: $(INSTALLED_SYSTEMIMAGE_TARGET)
+
+early_servicesimage: $(INSTALLED_SYSTEMIMAGE_TARGET)
 
 .PHONY: systemimage-nodeps snod
 systemimage-nodeps snod: $(filter-out systemimage-nodeps snod,$(MAKECMDGOALS)) \
@@ -3133,9 +3237,17 @@ endif
 vendorimage_intermediates := \
     $(call intermediates-dir-for,PACKAGING,vendor)
 BUILT_VENDORIMAGE_TARGET := $(PRODUCT_OUT)/vendor.img
+TARGET_OUT_FIRMWARE := $(PRODUCT_OUT)/vendor/firmware_mnt
 define build-vendorimage-target
   $(call pretty,"Target vendor fs image: $(INSTALLED_VENDORIMAGE_TARGET)")
   @mkdir -p $(TARGET_OUT_VENDOR)
+  if [ "$(BOARD_SUPPORTS_EARLY_INIT)" == "true" ]; then \
+        ln -sf /early_services/vendor/firmware_mnt/image $(TARGET_OUT_FIRMWARE)/image; \
+        ln -sf /early_services/vendor/firmware_mnt/verinfo $(TARGET_OUT_FIRMWARE)/verinfo; \
+        cp -r $(PRODUCT_OUT)/vendor/lib64/libadsp_default_listener.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+        cp -r $(PRODUCT_OUT)/vendor/lib64/libadsprpc.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+        cp -r $(PRODUCT_OUT)/vendor/etc/selinux/* $(PRODUCT_OUT)/early_services/vendor/etc/selinux/ ;\
+  fi;
   $(call create-vendor-odm-symlink)
   @mkdir -p $(vendorimage_intermediates) && rm -rf $(vendorimage_intermediates)/vendor_image_info.txt
   $(call generate-image-prop-dictionary, $(vendorimage_intermediates)/vendor_image_info.txt,vendor,skip_fsck=true)
