@@ -29,6 +29,10 @@ $(call add_soong_config_namespace,ANDROID)
 $(call add_soong_config_var,ANDROID,TARGET_ENABLE_MEDIADRM_64)
 $(call add_soong_config_var,ANDROID,BOARD_USES_ODMIMAGE)
 
+ifeq (,$(filter com.google.android.conscrypt,$(PRODUCT_PACKAGES)))
+MODULE_BUILD_FROM_SOURCE := true
+endif
+
 # TODO(b/172480615): Remove when platform uses ART Module prebuilts by default.
 ifeq (,$(filter art_module,$(SOONG_CONFIG_NAMESPACES)))
   $(call add_soong_config_namespace,art_module)
