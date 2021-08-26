@@ -1165,6 +1165,7 @@ define product-installed-files
   $(eval ### Filter out the overridden packages and executables before doing expansion) \
   $(eval _pif_overrides := $(call module-overrides,$(_pif_modules))) \
   $(eval _pif_modules := $(filter-out $(_pif_overrides), $(_pif_modules))) \
+  $(eval _pif_modules := $(filter-out $(TARGET_REMOVE_PACKAGES), $(_pif_modules))) \
   $(eval ### Resolve the :32 :64 module name) \
   $(eval _pif_modules_32 := $(patsubst %:32,%,$(filter %:32, $(_pif_modules)))) \
   $(eval _pif_modules_64 := $(patsubst %:64,%,$(filter %:64, $(_pif_modules)))) \
