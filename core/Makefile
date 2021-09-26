@@ -2325,7 +2325,6 @@ define build-earlyservicesimage-target
 	cp -r $(PRODUCT_OUT)/system/lib64/libbinder.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	cp -r $(PRODUCT_OUT)/system/lib64/libdexfile.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	cp -r $(PRODUCT_OUT)/system/apex/com.android.runtime.release/bin/linker64 $(PRODUCT_OUT)/early_services/system/bin/ ;\
-	cp -r $(PRODUCT_OUT)/system/apex/com.android.runtime.release/lib64/* $(PRODUCT_OUT)/early_services/system/lib64/ ;\
 	cp -r $(PRODUCT_OUT)/system/apex/com.android.runtime.release/lib64/bionic/* $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	cp -r $(PRODUCT_OUT)/system/lib64/libhidlbase.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	cp -r $(PRODUCT_OUT)/system/lib64/libhidltransport.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
@@ -2346,19 +2345,8 @@ define build-earlyservicesimage-target
 	cp -r $(PRODUCT_OUT)/system/lib64/libprocessgroup.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	cp -r $(PRODUCT_OUT)/system/lib64/libz.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	cp -r $(PRODUCT_OUT)/system/lib64/libvndksupport.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
-	cp -r $(PRODUCT_OUT)/vendor/lib/modules/audio_adsp_loader.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules ;\
-	cp -r $(PRODUCT_OUT)/vendor/lib/modules/audio_q6.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules ;\
-	cp -r $(PRODUCT_OUT)/vendor/lib/modules/modules.dep $(PRODUCT_OUT)/early_services/vendor/lib/modules ;\
-	cp -r $(PRODUCT_OUT)/vendor/lib/modules/audio_native.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules ;\
-	cp -r $(PRODUCT_OUT)/vendor/lib/modules/audio_platform.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules ;\
-	cp -r $(PRODUCT_OUT)/vendor/lib/modules/audio_stub.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules ;\
-	cp -r $(PRODUCT_OUT)/vendor/lib/modules/audio_machine_talos.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules ;\
-	cp -r $(PRODUCT_OUT)/vendor/lib/modules/audio_apr.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules ;\
-	cp -r $(PRODUCT_OUT)/vendor/lib/modules/audio_q6_notifier.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules ;\
-	cp -r $(PRODUCT_OUT)/vendor/bin/audio_chime $(PRODUCT_OUT)/early_services/usr/sbin/ ;\
-	cp -r $(PRODUCT_OUT)/system/bin/* $(PRODUCT_OUT)/early_services/system/bin ;\
+	cp -r $(PRODUCT_OUT)/system/bin/bootstrap $(PRODUCT_OUT)/early_services/system/bin ;\
 	cp -r $(PRODUCT_OUT)/system/etc/selinux/* $(PRODUCT_OUT)/early_services/system/etc/selinux/ ;\
-	cp -r $(PRODUCT_OUT)/vendor/lib/modules/* $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
 	cp -r $(PRODUCT_OUT)/system/lib64/libdl_android.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	cp -r $(PRODUCT_OUT)/system/lib64/libcgrouprc.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	cp -r $(PRODUCT_OUT)/system/lib64/libsync.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
@@ -2369,22 +2357,27 @@ define build-earlyservicesimage-target
 	cp -r $(PRODUCT_OUT)/system/lib64/libxml2.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	cp -r $(PRODUCT_OUT)/vendor/lib64/libais* $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	cp -r $(PRODUCT_OUT)/vendor/lib64/libmmosal_proprietary.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
-	cp -r $(PRODUCT_OUT)/system/lib64/libdrm.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
-	cp -r $(PRODUCT_OUT)/system/lib64/libmmosal.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	cp -r $(PRODUCT_OUT)/system/lib64/libhardware.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	cp -r $(PRODUCT_OUT)/system/lib64/libbinderthreadstate.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
-	cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@3.0.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
-	cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.0.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
-	cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.1.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
-	cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.2.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
-	cp -r $(PRODUCT_OUT)/system/lib64/vendor/lib64/egl/eglSubDriverAndroid.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
-	cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@2.0.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
-	cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@2.1.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
-        cp -r $(PRODUCT_OUT)/system/apex/com.android.runtime.debug/bin/linker64 $(PRODUCT_OUT)/early_services/system/bin/ ;\
-	cp -r $(PRODUCT_OUT)/system/apex/com.android.runtime.debug/lib64/* $(PRODUCT_OUT)/early_services/system/lib64/ ;\
-	cp -r $(PRODUCT_OUT)/vendor/lib64/* $(PRODUCT_OUT)/early_services/system/lib64/ ;\
-        cp -r $(PRODUCT_OUT)/vendor/etc/bike_bell.wav $(PRODUCT_OUT)/early_services/etc/ ;\
-        cp -r $(PRODUCT_OUT)/vendor/bin/audio-nxp-auto $(PRODUCT_OUT)/early_services/vendor/bin/ ;\
+	cp -r $(PRODUCT_OUT)/system/apex/com.android.runtime.debug/bin/linker64 $(PRODUCT_OUT)/early_services/system/bin/ ;\
+	cp -r $(PRODUCT_OUT)/system/apex/com.android.runtime.debug/lib64/libandroidicu.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	cp -r $(PRODUCT_OUT)/system/apex/com.android.runtime.debug/lib64/libicuuc.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	cp -r $(PRODUCT_OUT)/system/apex/com.android.runtime.debug/lib64/libicui18n.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	cp -r $(PRODUCT_OUT)/system/apex/com.android.runtime.release/lib64/libandroidicu.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	cp -r $(PRODUCT_OUT)/system/apex/com.android.runtime.release/lib64/libicuuc.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	cp -r $(PRODUCT_OUT)/system/apex/com.android.runtime.release/lib64/libicui18n.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	cp -rf $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(PRODUCT_OUT)/early_services/system/lib64/ ;\
+	cp -r $(PRODUCT_OUT)/vendor/lib64/*_early.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	cp -rf $(PRODUCT_OUT)/vendor/lib64/libc2d30_bltlib.so $(PRODUCT_OUT)/early_services/system/lib64/ ;\
+	cp -r $(PRODUCT_OUT)/vendor/lib64/libmmosal.so                                          $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	cp -r $(PRODUCT_OUT)/vendor/lib64/libC2D2.so                                            $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	cp -r $(PRODUCT_OUT)/vendor/lib64/libgsl.so                                             $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	cp -r $(PRODUCT_OUT)/vendor/lib64/libadreno_utils.so                                    $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	cp -r $(PRODUCT_OUT)/vendor/lib64/libEGL_adreno.so                                      $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	cp -r $(PRODUCT_OUT)/vendor/lib64/libGLESv2_adreno.so                                   $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	cp -r $(PRODUCT_OUT)/vendor/lib64/libllvm-glnext.so                                     $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	cp -r $(PRODUCT_OUT)/vendor/etc/bike_bell.wav $(PRODUCT_OUT)/early_services/etc/ ;\
+	cp -r $(PRODUCT_OUT)/vendor/bin/audio-nxp-auto $(PRODUCT_OUT)/early_services/vendor/bin/ ;\
 	PATH=$(foreach p,$(INTERNAL_USERIMAGES_BINARY_PATHS),$(p):)$$PATH build/make/tools/releasetools/build_image.py $(PRODUCT_OUT)/early_services $(early_servicesimage_intermediates)/early_services_image_info.txt $(BUILT_EARLY_SERVICESIMAGE) $(PRODUCT_OUT) ;\
   fi
 endef
