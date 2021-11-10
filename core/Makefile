@@ -1097,7 +1097,7 @@ ifneq (,$(PRODUCT_AAPT_PREF_CONFIG))
 recovery_density := $(filter %dpi,$(PRODUCT_AAPT_PREF_CONFIG))
 else
 # Otherwise, use the default medium density.
-recovery_densities := mdpi
+recovery_density := mdpi
 endif
 
 ifneq (,$(wildcard $(recovery_resources_common)-$(recovery_density)))
