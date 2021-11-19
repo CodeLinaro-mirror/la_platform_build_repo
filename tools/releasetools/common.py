@@ -387,7 +387,9 @@ class BuildInfo(object):
       # need a fingerprint when creating the image.
       self._partition_fingerprints[
           "system_other"] = self._partition_fingerprints["system"]
-
+      # Added fingerprint for early_services image.
+      self._partition_fingerprints[
+          "early_services"] = self._partition_fingerprints["system"]
     # These two should be computed only after setting self._oem_props.
     self._device = self.GetOemProperty("ro.product.device")
     self._fingerprint = self.CalculateFingerprint()
