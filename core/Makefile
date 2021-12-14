@@ -2849,7 +2849,6 @@ define build-earlyservicesimage-target
 	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.configstore@1.1.so                   $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.0.so               $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.common-V1-ndk_platform.so            $(PRODUCT_OUT)/early_services/system/lib64 ;\
-	  cp -r $(PRODUCT_OUT)/system/lib64/libbinder_ndk.so libdexfile_support.so                $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	  cp -r $(PRODUCT_OUT)/system/lib64/libandroid_runtime_lazy.so                            $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	  cp -r $(PRODUCT_OUT)/system/lib64/libsync.so                                            $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	  cp -r $(PRODUCT_OUT)/system/lib64/libion.so                                             $(PRODUCT_OUT)/early_services/system/lib64 ;\
@@ -2865,6 +2864,9 @@ define build-earlyservicesimage-target
 	  cp -r $(PRODUCT_OUT)/system/apex/com.android.art.debug/lib64/libandroidicu.so           $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	  cp -r $(PRODUCT_OUT)/system/apex/com.android.art.debug/lib64/libicuuc.so                $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	  cp -r $(PRODUCT_OUT)/system/apex/com.android.art.debug/lib64/libicui18n.so              $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/apex/com.android.art.release/lib64/libandroidicu.so         $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/apex/com.android.art.release/lib64/libicuuc.so              $(PRODUCT_OUT)/early_services/system/lib64 ;\
+	  cp -r $(PRODUCT_OUT)/system/apex/com.android.art.release/lib64/libicui18n.so            $(PRODUCT_OUT)/early_services/system/lib64 ;\
           cp -rf $(PRODUCT_OUT)/vendor/lib64/libais* $(PRODUCT_OUT)/early_services/system/lib64/ ;\
           cp -rf $(PRODUCT_OUT)/vendor/lib64/*_early.so $(PRODUCT_OUT)/early_services/system/lib64/ ;\
           cp -rf $(PRODUCT_OUT)/vendor/lib64/libc2d30_bltlib.so $(PRODUCT_OUT)/early_services/system/lib64/ ;\
