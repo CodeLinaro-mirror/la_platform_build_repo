@@ -3759,8 +3759,10 @@ endif
 
 $(eval $(call check-and-set-avb-args,system))
 
+ifeq ($(BOARD_SUPPORTS_EARLY_INIT),true)
 ifdef INSTALLED_EARLY_SERVICESIMAGE_TARGET
 $(eval $(call check-and-set-avb-args,early_services))
+endif
 endif
 
 ifdef INSTALLED_VENDORIMAGE_TARGET
