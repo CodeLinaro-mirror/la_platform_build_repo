@@ -37,6 +37,7 @@ PRODUCT_PACKAGES += \
     Bluetooth \
     BluetoothMidiService \
     BookmarkProvider \
+    BuiltInPrintService \
     CalendarProvider \
     cameraserver \
     CaptivePortalLogin \
@@ -55,6 +56,8 @@ PRODUCT_PACKAGES += \
     MtpService \
     MusicFX \
     PacProcessor \
+    PrintRecommendationService \
+    PrintSpooler \
     ProxyHandler \
     screenrecord \
     SharedStorageBackup \
@@ -75,13 +78,6 @@ endif #TARGET_NO_TELEPHONY
 ifneq ($(TARGET_HAS_LOW_RAM), true)
 PRODUCT_PACKAGES += \
     SecureElement
-endif
-
-ifneq ($(TARGET_SUPPORTS_WEARABLES), true)
-PRODUCT_PACKAGES += \
-    BuiltInPrintService \
-    PrintRecommendationService \
-    PrintSpooler
 endif
 
 PRODUCT_SYSTEM_SERVER_APPS += \
