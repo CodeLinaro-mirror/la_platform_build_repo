@@ -1785,8 +1785,8 @@ function make()
         return 1
     fi
 
-    if [ -f $ANDROID_BUILD_TOP/$QTI_BUILDTOOLS_DIR/build/update-vendor-hal-makefiles.sh ]; then
-        vendor_hal_script=$ANDROID_BUILD_TOP/$QTI_BUILDTOOLS_DIR/build/update-vendor-hal-makefiles.sh
+    if [ -f $QTI_BUILDTOOLS_DIR/build/update-vendor-hal-makefiles.sh ]; then
+        vendor_hal_script=$QTI_BUILDTOOLS_DIR/build/update-vendor-hal-makefiles.sh
         source $vendor_hal_script --check
         regen_needed=$?
     else
