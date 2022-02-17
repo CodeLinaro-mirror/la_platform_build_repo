@@ -107,14 +107,13 @@ SPECIAL_CERT_STRINGS = ("PRESIGNED", "EXTERNAL")
 # that system_other is not in the list because we don't want to include its
 # descriptor into vbmeta.img.
 AVB_PARTITIONS = ('boot', 'dtbo', 'odm', 'product', 'recovery', 'system',
-                  'system_ext', 'vendor', 'vendor_boot')
+                  'system_ext', 'vendor', 'vendor_boot', 'early_services')
 
 # Chained VBMeta partitions.
 AVB_VBMETA_PARTITIONS = ('vbmeta_system', 'vbmeta_vendor')
 
 # Partitions that should have their care_map added to META/care_map.pb
-PARTITIONS_WITH_CARE_MAP = ('system', 'vendor', 'product', 'system_ext', 'odm')
-
+PARTITIONS_WITH_CARE_MAP = ('system', 'vendor', 'product', 'system_ext', 'odm', 'early_services')
 
 class ErrorCode(object):
   """Define error_codes for failures that happen during the actual
@@ -388,7 +387,9 @@ class BuildInfo(object):
       # need a fingerprint when creating the image.
       self._partition_fingerprints[
           "system_other"] = self._partition_fingerprints["system"]
-
+      # Added fingerprint for early_services image.
+      self._partition_fingerprints[
+          "early_services"] = self._partition_fingerprints["system"]
     # These two should be computed only after setting self._oem_props.
     self._device = self.GetOemProperty("ro.product.device")
     self._fingerprint = self.CalculateFingerprint()
