@@ -183,6 +183,7 @@ _product_list_vars += PRODUCT_COPY_FILES
 # signing tools can substitute them for the test key embedded by
 # default.
 _product_list_vars += PRODUCT_OTA_PUBLIC_KEYS
+_product_list_vars += PRODUCT_EXTRA_OTA_KEYS
 _product_list_vars += PRODUCT_EXTRA_RECOVERY_KEYS
 
 # Should we use the default resources or add any product specific overlays
@@ -232,11 +233,19 @@ _product_single_value_vars += PRODUCT_SUPPORTS_VBOOT
 _product_single_value_vars += PRODUCT_SUPPORTS_VERITY
 _product_single_value_vars += PRODUCT_SUPPORTS_VERITY_FEC
 _product_list_vars += PRODUCT_SYSTEM_SERVER_APPS
+# List of system_server classpath jars on the platform.
 _product_list_vars += PRODUCT_SYSTEM_SERVER_JARS
-# List of system_server jars delivered via apex. Format = <apex name>:<jar name>.
+# List of system_server classpath jars delivered via apex. Format = <apex name>:<jar name>.
 _product_list_vars += PRODUCT_APEX_SYSTEM_SERVER_JARS
+# List of jars on the platform that system_server loads dynamically using separate classloaders.
+_product_list_vars += PRODUCT_STANDALONE_SYSTEM_SERVER_JARS
+# List of jars delivered via apex that system_server loads dynamically using separate classloaders.
+# Format = <apex name>:<jar name>
+_product_list_vars += PRODUCT_APEX_STANDALONE_SYSTEM_SERVER_JARS
 # If true, then suboptimal order of system server jars does not cause an error.
 _product_single_value_vars += PRODUCT_BROKEN_SUBOPTIMAL_ORDER_OF_SYSTEM_SERVER_JARS
+# If true, then system server jars defined in Android.mk are supported.
+_product_single_value_vars += PRODUCT_BROKEN_DEPRECATED_MK_SYSTEM_SERVER_JARS
 
 # Additional system server jars to be appended at the end of the common list.
 # This is necessary to avoid jars reordering due to makefile inheritance order.
@@ -273,14 +282,11 @@ _product_single_value_vars += PRODUCT_DEX_PREOPT_NEVER_ALLOW_STRIPPING
 _product_single_value_vars += PRODUCT_DEX_PREOPT_RESOLVE_STARTUP_STRINGS
 
 # Boot image options.
+_product_list_vars += PRODUCT_DEX_PREOPT_BOOT_IMAGE_PROFILE_LOCATION
 _product_single_value_vars += \
     PRODUCT_EXPORT_BOOT_IMAGE_TO_DIST \
     PRODUCT_USE_PROFILE_FOR_BOOT_IMAGE \
-    PRODUCT_DEX_PREOPT_BOOT_IMAGE_PROFILE_LOCATION \
     PRODUCT_USES_DEFAULT_ART_CONFIG \
-
-# The file name for the boot image with a debug ramdisk.
-_product_single_value_vars += PRODUCT_DEBUG_RAMDISK_BOOT_IMAGE_NAME
 
 _product_single_value_vars += PRODUCT_SYSTEM_SERVER_COMPILER_FILTER
 # Per-module sanitizer configs
@@ -378,6 +384,7 @@ _product_list_vars += PRODUCT_CERTIFICATE_OVERRIDES
 
 # Controls for whether different partitions are built for the current product.
 _product_single_value_vars += PRODUCT_BUILD_SYSTEM_IMAGE
+_product_single_value_vars += PRODUCT_BUILD_SYSTEM_DLKM_IMAGE
 _product_single_value_vars += PRODUCT_BUILD_SYSTEM_OTHER_IMAGE
 _product_single_value_vars += PRODUCT_BUILD_VENDOR_IMAGE
 _product_single_value_vars += PRODUCT_BUILD_PRODUCT_IMAGE
@@ -390,6 +397,7 @@ _product_single_value_vars += PRODUCT_BUILD_RAMDISK_IMAGE
 _product_single_value_vars += PRODUCT_BUILD_USERDATA_IMAGE
 _product_single_value_vars += PRODUCT_BUILD_RECOVERY_IMAGE
 _product_single_value_vars += PRODUCT_BUILD_BOOT_IMAGE
+_product_single_value_vars += PRODUCT_BUILD_INIT_BOOT_IMAGE
 _product_single_value_vars += PRODUCT_BUILD_DEBUG_BOOT_IMAGE
 _product_single_value_vars += PRODUCT_BUILD_VENDOR_BOOT_IMAGE
 _product_single_value_vars += PRODUCT_BUILD_DEBUG_VENDOR_BOOT_IMAGE
@@ -438,8 +446,18 @@ _product_single_value_vars += PRODUCT_INSTALL_EXTRA_FLATTENED_APEXES
 
 # Install a copy of the debug policy to the system_ext partition, and allow
 # init-second-stage to load debug policy from system_ext.
-# This option is only meant to be set by GSI products.
+# This option is only meant to be set by compliance GSI targets.
 _product_single_value_vars += PRODUCT_INSTALL_DEBUG_POLICY_TO_SYSTEM_EXT
+
+# If set, metadata files for the following artifacts will be generated.
+# - system/framework/*.jar
+# - system/framework/oat/<arch>/*.{oat,vdex,art}
+# - system/etc/boot-image.prof
+# - system/etc/dirty-image-objects
+# One fsverity metadata container file per one input file will be generated in
+# system.img, with a suffix ".fsv_meta". e.g. a container file for
+# "/system/framework/foo.jar" will be "system/framework/foo.jar.fsv_meta".
+_product_single_value_vars += PRODUCT_SYSTEM_FSVERITY_GENERATE_METADATA
 
 .KATI_READONLY := _product_single_value_vars _product_list_vars
 _product_var_list :=$= $(_product_single_value_vars) $(_product_list_vars)

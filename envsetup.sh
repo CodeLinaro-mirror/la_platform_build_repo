@@ -252,9 +252,7 @@ function setpaths()
     esac
 
     ANDROID_BUILD_PATHS=$(get_build_var ANDROID_BUILD_PATHS):$ANDROID_TOOLCHAIN
-    if [ -n "$ANDROID_TOOLCHAIN_2ND_ARCH" ]; then
-        ANDROID_BUILD_PATHS=$ANDROID_BUILD_PATHS:$ANDROID_TOOLCHAIN_2ND_ARCH
-    fi
+    ANDROID_BUILD_PATHS=$ANDROID_BUILD_PATHS:$ANDROID_TOOLCHAIN_2ND_ARCH
     ANDROID_BUILD_PATHS=$ANDROID_BUILD_PATHS:$ANDROID_DEV_SCRIPTS
 
     # Append llvm binutils prebuilts path to ANDROID_BUILD_PATHS.
@@ -287,8 +285,9 @@ function setpaths()
     local ACLOUD_PATH="$T/prebuilts/asuite/acloud/$os_arch"
     local AIDEGEN_PATH="$T/prebuilts/asuite/aidegen/$os_arch"
     local ATEST_PATH="$T/prebuilts/asuite/atest/$os_arch"
-    export ANDROID_BUILD_PATHS=$ANDROID_BUILD_PATHS:$ACLOUD_PATH:$AIDEGEN_PATH:$ATEST_PATH:
+    ANDROID_BUILD_PATHS=$ANDROID_BUILD_PATHS:$ACLOUD_PATH:$AIDEGEN_PATH:$ATEST_PATH
 
+    export ANDROID_BUILD_PATHS=$(tr -s : <<<"${ANDROID_BUILD_PATHS}:")
     export PATH=$ANDROID_BUILD_PATHS$PATH
 
     # out with the duplicate old
@@ -1465,7 +1464,7 @@ function refreshmod() {
         > $ANDROID_PRODUCT_OUT/module-info.json.build.log 2>&1
 }
 
-# Verifies that module-info.txt exists, creating it if it doesn't.
+# Verifies that module-info.txt exists, returning nonzero if it doesn't.
 function verifymodinfo() {
     if [ ! "$ANDROID_PRODUCT_OUT" ]; then
         if [ "$QUIET_VERIFYMODINFO" != "true" ] ; then
@@ -1476,7 +1475,7 @@ function verifymodinfo() {
 
     if [ ! -f "$ANDROID_PRODUCT_OUT/module-info.json" ]; then
         if [ "$QUIET_VERIFYMODINFO" != "true" ] ; then
-            echo "Could not find module-info.json. It will only be built once, and it can be updated with 'refreshmod'" >&2
+            echo "Could not find module-info.json. Please run 'refreshmod' first." >&2
         fi
         return 1
     fi
@@ -1595,6 +1594,10 @@ for output in module_info[module]['installed']:
 function installmod() {
     if [[ $# -eq 0 ]]; then
         echo "usage: installmod [adb install arguments] <module>" >&2
+        echo "" >&2
+        echo "Only flags to be passed after the \"install\" in adb install are supported," >&2
+        echo "with the exception of -s. If -s is passed it will be placed before the \"install\"." >&2
+        echo "-s must be the first flag passed if it exists." >&2
         return 1
     fi
 
@@ -1609,9 +1612,18 @@ function installmod() {
         echo "Module '$1' does not produce a file ending with .apk (try 'refreshmod' if there have been build changes?)" >&2
         return 1
     fi
+    local serial_device=""
+    if [[ "$1" == "-s" ]]; then
+        if [[ $# -le 2 ]]; then
+            echo "-s requires an argument" >&2
+            return 1
+        fi
+        serial_device="-s $2"
+        shift 2
+    fi
     local length=$(( $# - 1 ))
-    echo adb install ${@:1:$length} $_path
-    adb install ${@:1:$length} $_path
+    echo adb $serial_device install ${@:1:$length} $_path
+    adb $serial_device install ${@:1:$length} $_path
 }
 
 function _complete_android_module_names() {
@@ -1968,16 +1980,6 @@ function showcommands() {
     fi
 }
 
-# Source necessary setup scripts needed to run the build with Remote Execution.
-function source_rbe() {
-    local T=$(gettop)
-
-    if [[ "x$USE_RBE" != "x" && "$USE_RBE" != "false" ]]; then
-        . $T/build/make/rbesetup.sh --skip-envsetup
-    fi
-}
-
 validate_current_shell
 source_vendorsetup
-source_rbe
 addcompletions

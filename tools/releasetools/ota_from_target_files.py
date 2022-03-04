@@ -227,6 +227,16 @@ A/B OTA specific options
 
   --force_minor_version
       Override the update_engine minor version for delta generation.
+
+  --compressor_types
+      A colon ':' separated list of compressors. Allowed values are bz2 and brotli.
+
+  --enable_zucchini
+      Whether to enable to zucchini feature. Will generate smaller OTA but uses more memory.
+
+  --enable_lz4diff
+      Whether to enable lz4diff feature. Will generate smaller OTA for EROFS but
+      uses more memory.
 """
 
 from __future__ import print_function
@@ -248,6 +258,7 @@ import common
 import ota_utils
 from ota_utils import (UNZIP_PATTERN, FinalizeMetadata, GetPackageMetadata,
                        PropertyFiles, SECURITY_PATCH_LEVEL_PROP_NAME, GetZipEntryOffset)
+from common import IsSparseImage
 import target_files_diff
 from check_target_files_vintf import CheckVintfIfTrebleEnabled
 from non_ab_ota import GenerateNonAbOtaPackage
@@ -294,6 +305,9 @@ OPTIONS.spl_downgrade = False
 OPTIONS.vabc_downgrade = False
 OPTIONS.enable_vabc_xor = True
 OPTIONS.force_minor_version = None
+OPTIONS.compressor_types = None
+OPTIONS.enable_zucchini = True
+OPTIONS.enable_lz4diff = False
 
 POSTINSTALL_CONFIG = 'META/postinstall_config.txt'
 DYNAMIC_PARTITION_INFO = 'META/dynamic_partitions_info.txt'
@@ -1017,13 +1031,6 @@ def GeneratePartitionTimestampFlagsDowngrade(
   ]
 
 
-def IsSparseImage(filepath):
-  with open(filepath, 'rb') as fp:
-    # Magic for android sparse image format
-    # https://source.android.com/devices/bootloader/images
-    return fp.read(4) == b'\x3A\xFF\x26\xED'
-
-
 def SupportsMainlineGkiUpdates(target_file):
   """Return True if the build supports MainlineGKIUpdates.
 
@@ -1143,12 +1150,40 @@ def GenerateAbOtaPackage(target_file, output_file, source_file=None):
     partition_timestamps_flags = GeneratePartitionTimestampFlags(
         metadata.postcondition.partition_state)
 
+  if not ota_utils.IsZucchiniCompatible(source_file, target_file):
+    OPTIONS.enable_zucchini = False
+
+  additional_args += ["--enable_zucchini",
+                      str(OPTIONS.enable_zucchini).lower()]
+
+  if not ota_utils.IsLz4diffCompatible(source_file, target_file):
+    logger.warn(
+        "Source build doesn't support lz4diff, or source/target don't have compatible lz4diff versions. Disabling lz4diff.")
+    OPTIONS.enable_lz4diff = False
+
+  additional_args += ["--enable_lz4diff",
+                      str(OPTIONS.enable_lz4diff).lower()]
+
+  if source_file and OPTIONS.enable_lz4diff:
+    input_tmp = common.UnzipTemp(source_file, ["META/liblz4.so"])
+    liblz4_path = os.path.join(input_tmp, "META", "liblz4.so")
+    assert os.path.exists(
+        liblz4_path), "liblz4.so not found in META/ dir of target file {}".format(liblz4_path)
+    logger.info("Enabling lz4diff %s", liblz4_path)
+    additional_args += ["--liblz4_path", liblz4_path]
+    erofs_compression_param = OPTIONS.target_info_dict.get(
+        "erofs_default_compressor")
+    assert erofs_compression_param is not None, "'erofs_default_compressor' not found in META/misc_info.txt of target build. This is required to enable lz4diff."
+    additional_args += ["--erofs_compression_param", erofs_compression_param]
+
   if OPTIONS.disable_vabc:
     additional_args += ["--disable_vabc", "true"]
   if OPTIONS.enable_vabc_xor:
     additional_args += ["--enable_vabc_xor", "true"]
   if OPTIONS.force_minor_version:
     additional_args += ["--force_minor_version", OPTIONS.force_minor_version]
+  if OPTIONS.compressor_types:
+    additional_args += ["--compressor_types", OPTIONS.compressor_types]
   additional_args += ["--max_timestamp", max_timestamp]
 
   if SupportsMainlineGkiUpdates(source_file):
@@ -1321,9 +1356,18 @@ def main(argv):
     elif o == "--vabc_downgrade":
       OPTIONS.vabc_downgrade = True
     elif o == "--enable_vabc_xor":
+      assert a.lower() in ["true", "false"]
       OPTIONS.enable_vabc_xor = a.lower() != "false"
     elif o == "--force_minor_version":
       OPTIONS.force_minor_version = a
+    elif o == "--compressor_types":
+      OPTIONS.compressor_types = a
+    elif o == "--enable_zucchini":
+      assert a.lower() in ["true", "false"]
+      OPTIONS.enable_zucchini = a.lower() != "false"
+    elif o == "--enable_lz4diff":
+      assert a.lower() in ["true", "false"]
+      OPTIONS.enable_lz4diff = a.lower() != "false"
     else:
       return False
     return True
@@ -1370,6 +1414,9 @@ def main(argv):
                                  "vabc_downgrade",
                                  "enable_vabc_xor=",
                                  "force_minor_version=",
+                                 "compressor_types=",
+                                 "enable_zucchin=",
+                                 "enable_lz4diff=",
                              ], extra_option_handler=option_handler)
 
   if len(args) != 2:
@@ -1401,8 +1448,8 @@ def main(argv):
     # We should only allow downgrading incrementals (as opposed to full).
     # Otherwise the device may go back from arbitrary build with this full
     # OTA package.
-    if OPTIONS.incremental_source is None:
-      raise ValueError("Cannot generate downgradable full OTAs")
+  if OPTIONS.incremental_source is None and OPTIONS.downgrade:
+    raise ValueError("Cannot generate downgradable full OTAs")
 
   # TODO(xunchang) for retrofit and partial updates, maybe we should rebuild the
   # target-file and reload the info_dict. So the info will be consistent with
@@ -1470,13 +1517,23 @@ def main(argv):
           "build/make/target/product/security/testkey")
     # Get signing keys
     OPTIONS.key_passwords = common.GetKeyPasswords([OPTIONS.package_key])
-    private_key_path = OPTIONS.package_key + OPTIONS.private_key_suffix
-    if not os.path.exists(private_key_path):
-      raise common.ExternalError(
-          "Private key {} doesn't exist. Make sure you passed the"
-          " correct key path through -k option".format(
-              private_key_path)
-      )
+
+    # Only check for existence of key file if using the default signer.
+    # Because the custom signer might not need the key file AT all.
+    # b/191704641
+    if not OPTIONS.payload_signer:
+      private_key_path = OPTIONS.package_key + OPTIONS.private_key_suffix
+      if not os.path.exists(private_key_path):
+        raise common.ExternalError(
+            "Private key {} doesn't exist. Make sure you passed the"
+            " correct key path through -k option".format(
+                private_key_path)
+        )
+      signapk_abs_path = os.path.join(
+          OPTIONS.search_path, OPTIONS.signapk_path)
+      if not os.path.exists(signapk_abs_path):
+        raise common.ExternalError(
+            "Failed to find sign apk binary {} in search path {}. Make sure the correct search path is passed via -p".format(OPTIONS.signapk_path, OPTIONS.search_path))
 
   if OPTIONS.source_info_dict:
     source_build_prop = OPTIONS.source_info_dict["build.prop"]
@@ -1528,8 +1585,5 @@ if __name__ == '__main__':
   try:
     common.CloseInheritedPipes()
     main(sys.argv[1:])
-  except common.ExternalError:
-    logger.exception("\n   ERROR:\n")
-    sys.exit(1)
   finally:
     common.Cleanup()
