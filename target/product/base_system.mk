@@ -50,8 +50,9 @@ PRODUCT_PACKAGES += \
     charger \
     cmd \
     com.android.adbd \
+    com.android.adservices \
     com.android.appsearch \
-    com.android.auxiliary \
+    com.android.bluetooth \
     com.android.conscrypt \
     com.android.cronet \
     com.android.extservices \
@@ -61,7 +62,7 @@ PRODUCT_PACKAGES += \
     com.android.media \
     com.android.media.swcodec \
     com.android.mediaprovider \
-    com.android.nearby \
+    com.android.ondevicepersonalization \
     com.android.os.statsd \
     com.android.permission \
     com.android.resolv \
@@ -69,7 +70,6 @@ PRODUCT_PACKAGES += \
     com.android.scheduling \
     com.android.sdkext \
     com.android.sepolicy \
-    com.android.supplementalprocess \
     com.android.tethering \
     com.android.tzdata \
     com.android.uwb \
@@ -82,6 +82,7 @@ PRODUCT_PACKAGES += \
     device_config \
     dmctl \
     dnsmasq \
+    dmesgd \
     DownloadProvider \
     dpm \
     dump.erofs \
@@ -122,7 +123,6 @@ PRODUCT_PACKAGES += \
     input \
     installd \
     IntentResolver \
-    iorapd \
     ip \
     iptables \
     ip-up-vpn \
@@ -299,7 +299,7 @@ PRODUCT_PACKAGES += \
 # HWASAN runtime for SANITIZE_TARGET=hwaddress builds
 ifneq (,$(filter hwaddress,$(SANITIZE_TARGET)))
   PRODUCT_PACKAGES += \
-   libclang_rt.hwasan-aarch64-android.bootstrap
+   libclang_rt.hwasan.bootstrap
 endif
 
 # Jacoco agent JARS to be built and installed, if any.

@@ -11,10 +11,6 @@ endif
 
 ifneq (,$(strip $(LOCAL_LICENSE_PACKAGE_NAME)))
 license_package_name:=$(strip $(LOCAL_LICENSE_PACKAGE_NAME))
-else ifdef my_register_name
-license_package_name:=$(my_register_name)
-else
-license_package_name:=$(strip $(LOCAL_MODULE))
 endif
 
 ifneq (,$(strip $(LOCAL_LICENSE_INSTALL_MAP)))
@@ -131,7 +127,7 @@ module_license_metadata :=
 ifdef my_register_name
   module_license_metadata := $(call local-intermediates-dir)/$(my_register_name).meta_lic
 
-  $(foreach target,$(ALL_MODULES.$(my_register_name).BUILT) $(ALL_MODULES.$(my_register_name).INSTALLED),\
+  $(foreach target,$(ALL_MODULES.$(my_register_name).BUILT) $(ALL_MODULES.$(my_register_name).INSTALLED) $(my_test_data) $(my_test_config),\
     $(eval ALL_TARGETS.$(target).META_LIC := $(module_license_metadata)))
 
   ALL_MODULES.$(my_register_name).META_LIC := $(strip $(ALL_MODULES.$(my_register_name).META_LIC) $(module_license_metadata))
