@@ -1258,7 +1258,9 @@ else ifdef LOCAL_USE_VNDK
         # Modules installed to /vendor cannot directly depend on modules marked
         # with vendor_available: false
         my_link_type := native:vendor
-        my_warn_types :=
+        ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT),true)
+          my_warn_types := native:platform
+        endif
         my_allowed_types := native:vendor native:vndk native:platform_vndk
     endif
 else ifneq ($(filter $(TARGET_RECOVERY_OUT)/%,$(call get_non_asan_path,$(LOCAL_MODULE_PATH))),)
