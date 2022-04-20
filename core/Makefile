@@ -1169,10 +1169,106 @@ INSTALLED_VENDOR_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot.img
 $(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
 $(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_BOOTCONFIG_TARGET)
 ifeq ($(BOARD_AVB_ENABLE),true)
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
 $(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH)
 	$(call pretty,"Target vendor_boot image: $@")
+	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/aes_tmpfs; \
+	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/early_services/vendor/firmware_mnt; \
+	cp -r $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+        cp -r $(PRODUCT_OUT)/system/etc/selinux/* $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/etc/selinux/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/* $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/etc/selinux/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/vendor_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
+  cp -rf $(PRODUCT_OUT)/system/etc/selinux/plat_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.audio.common@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.audio.effect@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.audio@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libbacktrace.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libbase.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libbinder.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.runtime/lib64/bionic/* $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libhidlbase.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libhidltransport.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libhwbinder.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/liblzma.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libtinyalsa.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libunwindstack.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libutilscallstack.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libc++.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libcrypto.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libcutils.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libutils.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/liblog.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libpackagelistparser.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libpcre2.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libselinux.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libprocessgroup.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libz.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libvndksupport.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/bin/bootstrap $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libui.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libgraphicsenv.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libnativewindow.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.configstore@1.0.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.configstore-utils.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libnativebridge_lazy.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libnativeloader_lazy.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libSurfaceFlingerProp.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@2.0.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@3.0.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common-V1-ndk_platform.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.2.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@2.0.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@2.1.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@3.0.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libgralloctypes.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.1.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.configstore@1.1.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.0.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.common-V1-ndk_platform.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libbinder_ndk.so libdexfile_support.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libandroid_runtime_lazy.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libsync.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libion.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libcgrouprc.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libnetd_client.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libmmosal.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libC2D2.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libgsl.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libadreno_utils.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libEGL_adreno.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libGLESv2_adreno.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libllvm-glnext.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.art.debug/lib64/libandroidicu.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.art.debug/lib64/libicuuc.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.art.debug/lib64/libicui18n.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libais* $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/*_early.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libc2d30_bltlib.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libxml2.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -ar $(PRODUCT_OUT)/vendor/firmware $(TARGET_VENDOR_RAMDISK_OUT)/early_services/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/bike_bell.wav $(TARGET_VENDOR_RAMDISK_OUT)/early_services/etc/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/audio-nxp-auto $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/dlkm/lib/modules/snd_event_dlkm.ko $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/lib/modules/ ;\
+  cp -rf $(PRODUCT_OUT)/dlkm/lib/modules/q6_notifier_dlkm.ko $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/lib/modules/ ;\
+  cp -rf $(PRODUCT_OUT)/dlkm/lib/modules/apr_dlkm.ko $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/lib/modules/ ;\
+  cp -rf $(PRODUCT_OUT)/dlkm/lib/modules/adsp_loader_dlkm.ko $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/lib/modules/ ;\
+  cp -rf $(PRODUCT_OUT)/dlkm/lib/modules/q6_dlkm.ko $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/lib/modules/ ;\
+  cp -rf $(PRODUCT_OUT)/dlkm/lib/modules/machine_dlkm.ko $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/lib/modules/ ;\
+  cp -rf $(PRODUCT_OUT)/dlkm/lib/modules/stub_dlkm.ko $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/lib/modules/ ;\
+  cp -rf $(PRODUCT_OUT)/dlkm/lib/modules/platform_dlkm.ko $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/lib/modules/ ;\
+  cp -rf $(PRODUCT_OUT)/dlkm/lib/modules/native_dlkm.ko $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/lib/modules/ ;\
+  cp -rf $(PRODUCT_OUT)/dlkm/lib/modules/hdmi_dlkm.ko $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/lib/modules/ ;\
+	$(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_VENDOR_RAMDISK_OUT) $(TARGET_DEBUG_RAMDISK_OUT) $(TARGET_VENDOR_DEBUG_RAMDISK_OUT) $(PRIVATE_ADDITIONAL_DIR) | $(COMPRESSION_COMMAND) > $(INTERNAL_VENDOR_RAMDISK_TARGET)
+else
+$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH)
+	$(call pretty,"Target vendor_boot image: $@")
+endif
 	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
 	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
+	$(call pretty,"Target vendor_boot image: $@")
 	$(AVBTOOL) add_hash_footer \
            --image $@ \
 	   --partition_size $(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE) \
