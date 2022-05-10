@@ -2791,16 +2791,16 @@ define build-earlyservicesimage-target
 	  cp -r $(PRODUCT_OUT)/vendor/etc/selinux/* $(PRODUCT_OUT)/early_services/vendor/etc/selinux/ ;\
 	  cp -r $(PRODUCT_OUT)/vendor/etc/bike_bell.wav $(PRODUCT_OUT)/early_services/etc/ ;\
 	  cp -r $(PRODUCT_OUT)/vendor/bin/audio-nxp-auto $(PRODUCT_OUT)/early_services/vendor/bin/ ;\
-	  cp -r $(PRODUCT_OUT)/dlkm/lib/modules/snd_event_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
-          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/q6_notifier_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
-          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/apr_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
-          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/adsp_loader_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
-          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/q6_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
-          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/machine_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
-          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/stub_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
-          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/platform_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
-          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/native_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
-          cp -r $(PRODUCT_OUT)/dlkm/lib/modules/hdmi_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+	  cp -r $(PRODUCT_OUT)/vendor/lib/modules/snd_event_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/vendor/lib/modules/q6_notifier_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/vendor/lib/modules/apr_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/vendor/lib/modules/adsp_loader_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/vendor/lib/modules/q6_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/vendor/lib/modules/machine_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/vendor/lib/modules/stub_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/vendor/lib/modules/platform_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/vendor/lib/modules/native_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
+          cp -r $(PRODUCT_OUT)/vendor/lib/modules/hdmi_dlkm.ko $(PRODUCT_OUT)/early_services/vendor/lib/modules/ ;\
 	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.audio.common@4.0.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.audio.effect@4.0.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
 	  cp -r $(PRODUCT_OUT)/system/lib64/android.hardware.audio@4.0.so $(PRODUCT_OUT)/early_services/system/lib64 ;\
