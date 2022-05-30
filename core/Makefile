@@ -3004,9 +3004,9 @@ $(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KE
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libEGL_adreno.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libGLESv2_adreno.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libllvm-glnext.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
-  cp -rf $(PRODUCT_OUT)/system/apex/com.android.art.debug/lib64/libandroidicu.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
-  cp -rf $(PRODUCT_OUT)/system/apex/com.android.art.debug/lib64/libicuuc.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
-  cp -rf $(PRODUCT_OUT)/system/apex/com.android.art.debug/lib64/libicui18n.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libandroidicu.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libicuuc.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libicui18n.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libais* $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/*_early.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libc2d30_bltlib.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
