@@ -1164,6 +1164,7 @@ $(foreach vendor_ramdisk_fragment,$(INTERNAL_VENDOR_RAMDISK_FRAGMENTS), \
   $(eval INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS += $(vendor_ramdisk_fragment_target)) \
   $(eval INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS += $(BOARD_VENDOR_RAMDISK_FRAGMENT.$(vendor_ramdisk_fragment).MKBOOTIMG_ARGS) --vendor_ramdisk_fragment $(vendor_ramdisk_fragment_target)) \
 )
+endif # BUILDING_VENDOR_BOOT_IMAGE
 
 # -----------------------------------------------------------------
 # NOTICE files
@@ -2480,6 +2481,7 @@ $(INSTALLED_VENDOR_DEBUG_RAMDISK_TARGET): $(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET
 	$(call pretty,"Target vendor debug ramdisk: $@")
 	$(copy-file-to-target)
 endif
+endif #BUILDING_DEBUG_VENDOR_BOOT_IMAGE
 
 # Creates a compatibility symlink between two partitions, e.g. /system/vendor to /vendor
 # $1: from location (e.g $(TARGET_OUT)/vendor)
@@ -2927,6 +2929,7 @@ $(eval $(call copy-one-file,$(BOARD_PREBUILT_VENDORIMAGE),$(INSTALLED_VENDORIMAG
 endif
 #-----------------------------------------------------------------
 
+ifdef BUILDING_VENDOR_BOOT_IMAGE
 INSTALLED_VENDOR_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot.img
 $(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
 $(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(INSTALLED_SYSTEMIMAGE_TARGET) $(INSTALLED_VENDORIMAGE_TARGET)
@@ -3025,7 +3028,7 @@ $(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KE
   cp -rf $(PRODUCT_OUT)/dlkm/lib/modules/platform_dlkm.ko $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/lib/modules/ ;\
   cp -rf $(PRODUCT_OUT)/dlkm/lib/modules/native_dlkm.ko $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/lib/modules/ ;\
   cp -rf $(PRODUCT_OUT)/dlkm/lib/modules/hdmi_dlkm.ko $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/lib/modules/ ;\
-	$(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_VENDOR_RAMDISK_OUT) $(TARGET_DEBUG_RAMDISK_OUT) $(TARGET_VENDOR_DEBUG_RAMDISK_OUT) $(PRIVATE_ADDITIONAL_DIR) | $(COMPRESSION_COMMAND) > $(INTERNAL_VENDOR_RAMDISK_TARGET)
+	$(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_VENDOR_RAMDISK_OUT) $(PRIVATE_ADDITIONAL_DIR) | $(COMPRESSION_COMMAND) > $(INTERNAL_VENDOR_RAMDISK_TARGET)
 else
 $(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH)
 	$(call pretty,"Target vendor_boot image: $@")
@@ -3048,6 +3051,7 @@ endif # BUILDING_VENDOR_BOOT_IMAGE
 
 # -----------------------------------------------------------------
 # vendor_boot-debug.img.
+ifdef BUILDING_DEBUG_VENDOR_BOOT_IMAGE
 INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot-debug.img
 
 # The util to sign vendor_boot-debug.img with a test key.
