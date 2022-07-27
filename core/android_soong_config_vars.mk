@@ -48,6 +48,18 @@ ifneq ($(SANITIZE_TARGET)$(EMMA_INSTRUMENT_FRAMEWORK),)
   BRANCH_DEFAULT_MODULE_BUILD_FROM_SOURCE := true
 endif
 
+ifneq ($(CLANG_COVERAGE)$(NATIVE_COVERAGE_PATHS),)
+  # Always use sources when building with clang coverage and native coverage.
+  # It is possible that there are certain situations when building with coverage
+  # would work with prebuilts, e.g. when the coverage is not being applied to
+  # modules for which we provide prebuilts. Unfortunately, determining that
+  # would require embedding knowledge of which coverage paths affect which
+  # modules here. That would duplicate a lot of information, add yet another
+  # location  module authors have to update and complicate the logic here.
+  # For nowe we will just always build from sources when doing coverage builds.
+  BRANCH_DEFAULT_MODULE_BUILD_FROM_SOURCE := true
+endif
+
 # TODO(b/172063604): Remove once products no longer use dex2oat(d)s.
 # If the product uses dex2oats and/or dex2oatds then build from sources as
 # ART does not currently provide prebuilts of those tools.
@@ -81,13 +93,13 @@ endif
 
 ifneq (,$(MODULE_BUILD_FROM_SOURCE))
   # Keep an explicit setting.
-else ifeq (,$(filter sdk win_sdk sdk_addon,$(MAKECMDGOALS))$(findstring com.google.android.conscrypt,$(PRODUCT_PACKAGES)))
+else ifeq (,$(filter docs sdk win_sdk sdk_addon,$(MAKECMDGOALS))$(findstring com.google.android.conscrypt,$(PRODUCT_PACKAGES)))
   # Prebuilt module SDKs require prebuilt modules to work, and currently
   # prebuilt modules are only provided for com.google.android.xxx. If we can't
   # find one of them in PRODUCT_PACKAGES then assume com.android.xxx are in use,
   # and disable prebuilt SDKs. In particular this applies to AOSP builds.
   #
-  # However, sdk/win_sdk/sdk_addon builds might not include com.google.android.xxx
+  # However, docs/sdk/win_sdk/sdk_addon builds might not include com.google.android.xxx
   # packages, so for those we respect the default behavior.
   MODULE_BUILD_FROM_SOURCE := true
 else ifneq (,$(PRODUCT_MODULE_BUILD_FROM_SOURCE))
@@ -108,6 +120,18 @@ else
 endif
 
 $(call soong_config_set,art_module,source_build,$(ART_MODULE_BUILD_FROM_SOURCE))
+
+# Ensure that those mainline modules who have individually toggleable prebuilts
+# are controlled by the MODULE_BUILD_FROM_SOURCE environment variable by
+# default.
+INDIVIDUALLY_TOGGLEABLE_PREBUILT_MODULES := \
+  bluetooth \
+  uwb \
+  wifi \
+
+$(foreach m, $(INDIVIDUALLY_TOGGLEABLE_PREBUILT_MODULES),\
+  $(if $(call soong_config_get,$(m)_module,source_build),,\
+    $(call soong_config_set,$(m)_module,source_build,$(MODULE_BUILD_FROM_SOURCE))))
 
 # Apex build mode variables
 ifdef APEX_BUILD_FOR_PRE_S_DEVICES
