@@ -60,10 +60,6 @@ def GetDirmap(input_tmp):
       if os.path.isdir(target_files_path):
         dirmap[device_path] = target_files_path
         break
-    if device_path not in dirmap:
-      raise ValueError("Can't determine path for device path " + device_path +
-                       ". Searched the following:" +
-                       ("\n".join(target_files_rel_paths)))
   return dirmap
 
 

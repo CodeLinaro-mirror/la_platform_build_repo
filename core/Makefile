@@ -1841,10 +1841,11 @@ $(if $(PRODUCT_$(_var)_BASE_FS_PATH),$(hide) echo "$(1)_base_fs_file=$(PRODUCT_$
 $(eval _size := $(BOARD_$(_var)IMAGE_PARTITION_SIZE))
 $(eval _reserved := $(BOARD_$(_var)IMAGE_PARTITION_RESERVED_SIZE))
 $(eval _headroom := $(PRODUCT_$(_var)_HEADROOM))
-$(if $(or $(_size), $(_reserved), $(_headroom)),,
-    $(hide) echo "$(1)_disable_sparse=true" >> $(2))
 $(call add-common-flags-to-image-props,$(1),$(2))
 endef
+
+#$(if $(or $(_size), $(_reserved), $(_headroom)),,
+#    $(hide) echo "$(1)_disable_sparse=true" >> $(2))
 
 # $(1): the path of the output dictionary file
 # $(2): a subset of "system vendor cache userdata product system_ext oem odm vendor_dlkm odm_dlkm system_dlkm"
@@ -6114,6 +6115,7 @@ define build-ota-package-target
 PATH=$(INTERNAL_USERIMAGES_BINARY_PATHS):$(dir $(ZIP2ZIP)):$$PATH \
     $(OTA_FROM_TARGET_FILES) \
         --verbose \
+        --skip_compatibility_check \
         --extracted_input_target_files $(patsubst %.zip,%,$(BUILT_TARGET_FILES_PACKAGE)) \
         --path $(HOST_OUT) \
         $(if $(OEM_OTA_CONFIG), --oem_settings $(OEM_OTA_CONFIG)) \
@@ -6954,3 +6956,15 @@ include $(BUILD_SYSTEM)/layoutlib_fonts.mk
 include $(BUILD_SYSTEM)/os_licensing.mk
 
 # When appending new code to this file, please insert above OS Licensing
+ifeq (true,$(PRODUCT_USE_DYNAMIC_PARTITIONS))
+define build-dynamic-partition-metadata
+	$(if $(filter true,$(AB_OTA_UPDATER)), \
+		echo "ab_update=true" >> $(PRODUCT_OUT)/dynamic_partition_metadata.txt)
+	$(call dump-dynamic-partitions-info,$(PRODUCT_OUT)/dynamic_partition_metadata.txt)
+endef
+.PHONY: BUILT_DYNAMIC_INFORMATION
+BUILT_DYNAMIC_INFORMATION:
+	@rm -f $(PRODUCT_OUT)/dynamic_partition_metadata.txt
+	$(call build-dynamic-partition-metadata)
+droidcore: BUILT_DYNAMIC_INFORMATION
+endif
