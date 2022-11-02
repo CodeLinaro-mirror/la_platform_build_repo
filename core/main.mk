@@ -233,6 +233,22 @@ endif
 # mount system_other partition.
 ADDITIONAL_DEFAULT_PROPERTIES += ro.postinstall.fstab.prefix=/system
 
+# Avoid boot image repacking on every incremental build
+# export ALLOW_KERNEL_REBUILD=true triggers incremental build and false avoids unnecessary build.
+ifneq ($(wildcard $(TARGET_OUT_INTERMEDIATES)/kernel/msm-5.4),)
+ifndef ALLOW_KERNEL_REBUILD
+$(shell touch $(TARGET_OUT_INTERMEDIATES)/kernel/msm-5.4)
+else
+ifeq ($(ALLOW_KERNEL_REBUILD),true)
+$(shell touch $(TARGET_OUT_INTERMEDIATES)/kernel/msm-5.4)
+else
+ifneq ($(wildcard $(TARGET_OUT_INTERMEDIATES)/kernel/msm-5.4/arch/arm64/boot/Image),)
+$(shell touch $(TARGET_OUT_INTERMEDIATES)/kernel/msm-5.4 -r $(TARGET_OUT_INTERMEDIATES)/kernel/msm-5.4/arch/arm64/boot/Image)
+endif
+endif
+endif
+endif
+
 # Set ro.product.vndk.version to know the VNDK version required by product
 # modules. It uses the version in PRODUCT_PRODUCT_VNDK_VERSION. If the value
 # is "current", use PLATFORM_VNDK_VERSION.
