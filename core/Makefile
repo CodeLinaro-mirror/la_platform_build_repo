@@ -3024,9 +3024,12 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/vendor/lib64/*_early.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libc2d30_bltlib.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libstreamparser.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libvideoutils.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libxml2.so $(TARGET_VENDOR_RAMDISK_OUT)/early_services/system/lib64/ ;\
   cp -ar $(PRODUCT_OUT)/vendor/firmware $(TARGET_VENDOR_RAMDISK_OUT)/early_services/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/bike_bell.wav $(TARGET_VENDOR_RAMDISK_OUT)/early_services/etc/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/splash_nv12_720p30_3secs.h264 $(TARGET_VENDOR_RAMDISK_OUT)/early_services/etc/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/bin/audio-nxp-auto $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/bin/ ;\
   cp -rf $(PRODUCT_OUT)/dlkm/lib/modules/snd_event_dlkm.ko $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/lib/modules/ ;\
   cp -rf $(PRODUCT_OUT)/dlkm/lib/modules/q6_notifier_dlkm.ko $(TARGET_VENDOR_RAMDISK_OUT)/early_services/vendor/lib/modules/ ;\
