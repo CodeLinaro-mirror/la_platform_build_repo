@@ -306,6 +306,8 @@ endef
 # $(7): module archive
 # $(8): staging dir for stripped modules
 # $(9): module directory name
+# $(10): extra modules that might be dependency of modules in this partition, but should not be copied to output dir
+# $(11): mount point for extra modules
 # Returns a list of src:dest pairs to install the modules using copy-many-files.
 define build-image-kernel-modules
   $(if $(9), \
@@ -317,7 +319,7 @@ define build-image-kernel-modules
       $(eval _src := $(8)/$(notdir $(module))) \
       $(eval $(call copy-and-strip-kernel-module,$(module),$(_src)))) \
     $(_src):$(2)/lib/modules/$(_dir)$(notdir $(module))) \
-  $(eval $(call build-image-kernel-modules-depmod,$(1),$(3),$(4),$(5),$(6),$(7),$(2),$(9))) \
+  $(eval $(call build-image-kernel-modules-depmod,$(1),$(3),$(4),$(5),$(6),$(7),$(2),$(9),$(10),$(11))) \
   $(4)/$(DEPMOD_STAGING_SUBDIR)/modules.dep:$(2)/lib/modules/$(_dir)modules.dep \
   $(4)/$(DEPMOD_STAGING_SUBDIR)/modules.alias:$(2)/lib/modules/$(_dir)modules.alias \
   $(4)/$(DEPMOD_STAGING_SUBDIR)/modules.softdep:$(2)/lib/modules/$(_dir)modules.softdep \
@@ -332,6 +334,8 @@ endef
 # $(6): module archive
 # $(7): output dir
 # $(8): module directory name
+# $(9): extra modules which should not be copied to output dir, but might be dependency of modules in this partition
+# $(10): mount point for extra modules
 # TODO(b/144844424): If a module archive is being used, this step (which
 # generates obj/PACKAGING/.../modules.dep) also unzips the module archive into
 # the output directory. This should be moved to a module with a
@@ -341,8 +345,11 @@ define build-image-kernel-modules-depmod
 $(3)/$(DEPMOD_STAGING_SUBDIR)/modules.dep: .KATI_IMPLICIT_OUTPUTS := $(3)/$(DEPMOD_STAGING_SUBDIR)/modules.alias $(3)/$(DEPMOD_STAGING_SUBDIR)/modules.softdep $(3)/$(DEPMOD_STAGING_SUBDIR)/$(5)
 $(3)/$(DEPMOD_STAGING_SUBDIR)/modules.dep: $(DEPMOD)
 $(3)/$(DEPMOD_STAGING_SUBDIR)/modules.dep: PRIVATE_MODULES := $(strip $(1))
+$(3)/$(DEPMOD_STAGING_SUBDIR)/modules.dep: PRIVATE_EXTRA_MODULES := $(strip $(9))
 $(3)/$(DEPMOD_STAGING_SUBDIR)/modules.dep: PRIVATE_MOUNT_POINT := $(2)
+$(3)/$(DEPMOD_STAGING_SUBDIR)/modules.dep: PRIVATE_EXTRA_MOUNT_POINT := $(10)
 $(3)/$(DEPMOD_STAGING_SUBDIR)/modules.dep: PRIVATE_MODULE_DIR := $(3)/$(DEPMOD_STAGING_SUBDIR)/$(2)/lib/modules/$(8)
+$(3)/$(DEPMOD_STAGING_SUBDIR)/modules.dep: PRIVATE_EXTRA_MODULE_DIR := $(3)/$(DEPMOD_STAGING_SUBDIR)/$(10)/lib/modules/$(8)
 $(3)/$(DEPMOD_STAGING_SUBDIR)/modules.dep: PRIVATE_STAGING_DIR := $(3)
 $(3)/$(DEPMOD_STAGING_SUBDIR)/modules.dep: PRIVATE_LOAD_MODULES := $(strip $(4))
 $(3)/$(DEPMOD_STAGING_SUBDIR)/modules.dep: PRIVATE_LOAD_FILE := $(3)/$(DEPMOD_STAGING_SUBDIR)/$(5)
@@ -363,6 +370,20 @@ $(3)/$(DEPMOD_STAGING_SUBDIR)/modules.dep: $(1) $(6)
 	  for MODULE in $$(PRIVATE_LOAD_MODULES); do \
 	    basename $$$$MODULE >> $$(PRIVATE_LOAD_FILE); \
 	  done; \
+	)
+	# The ln -sf + find -delete sequence is to remove any modules in
+	# PRIVATE_EXTRA_MODULES which have same basename as MODULES in PRIVATE_MODULES
+	# Basically, it computes a set difference. When there is a duplicate module
+	# present in both directories, we want modules in PRIVATE_MODULES to take
+	# precedence. Since depmod does not provide any guarantee about ordering of
+	# dependency resolution, we achieve this by maually removing any duplicate
+	# modules with lower priority.
+	$(if $(9),\
+	  mkdir -p $$(PRIVATE_EXTRA_MODULE_DIR); \
+	  find $$(PRIVATE_EXTRA_MODULE_DIR) -maxdepth 1 -type f -name "*.ko" -delete; \
+	  cp $$(PRIVATE_EXTRA_MODULES) $$(PRIVATE_EXTRA_MODULE_DIR); \
+	  ln -sf $$(PRIVATE_MODULE_DIR)/*.ko $$(PRIVATE_EXTRA_MODULE_DIR); \
+	  find $$(PRIVATE_EXTRA_MODULE_DIR) -type l -delete; \
 	)
 	$(DEPMOD) -b $$(PRIVATE_STAGING_DIR) 0.0
 	# Turn paths in modules.dep into absolute paths
@@ -437,6 +458,9 @@ endef
 # $(4): module load filename
 # $(5): stripped staging directory
 # $(6): kernel module directory name (top is an out of band value for no directory)
+# $(7): list of extra modules that might be dependency of modules in this partition
+# $(8): mount point for extra modules. e.g. system
+
 define build-image-kernel-modules-dir
 $(if $(filter top,$(6)),\
   $(eval _kver :=)$(eval _sep :=),\
@@ -447,7 +471,9 @@ $(if $(5),\
 $(if $(strip $(BOARD_$(1)_KERNEL_MODULES$(_sep)$(_kver))$(BOARD_$(1)_KERNEL_MODULES_ARCHIVE$(_sep)$(_kver))),\
   $(if $(BOARD_$(1)_KERNEL_MODULES_LOAD$(_sep)$(_kver)),,\
     $(eval BOARD_$(1)_KERNEL_MODULES_LOAD$(_sep)$(_kver) := $(BOARD_$(1)_KERNEL_MODULES$(_sep)$(_kver)))) \
-  $(call copy-many-files,$(call build-image-kernel-modules,$(BOARD_$(1)_KERNEL_MODULES$(_sep)$(_kver)),$(2),$(3),$(call intermediates-dir-for,PACKAGING,depmod_$(1)$(_sep)$(_kver)),$(BOARD_$(1)_KERNEL_MODULES_LOAD$(_sep)$(_kver)),$(4),$(BOARD_$(1)_KERNEL_MODULES_ARCHIVE$(_sep)$(_kver)),$(_stripped_staging_dir),$(_kver)))) \
+  $(if $(filter false,$(BOARD_$(1)_KERNEL_MODULES_LOAD$(_sep)$(_kver))),\
+    $(eval BOARD_$(1)_KERNEL_MODULES_LOAD$(_sep)$(_kver) :=),) \
+  $(call copy-many-files,$(call build-image-kernel-modules,$(BOARD_$(1)_KERNEL_MODULES$(_sep)$(_kver)),$(2),$(3),$(call intermediates-dir-for,PACKAGING,depmod_$(1)$(_sep)$(_kver)),$(BOARD_$(1)_KERNEL_MODULES_LOAD$(_sep)$(_kver)),$(4),$(BOARD_$(1)_KERNEL_MODULES_ARCHIVE$(_sep)$(_kver)),$(_stripped_staging_dir),$(_kver),$(7),$(8)))) \
 $(if $(_kver), \
   $(eval _dir := $(_kver)/), \
   $(eval _dir :=)) \
@@ -532,6 +558,14 @@ else
 endif
 
 BOARD_KERNEL_MODULE_DIRS += top
+
+# Default to not generating modules.dep for kernel modules on system
+# side. We should only load these modules if they are depended by vendor
+# side modules.
+ifeq ($(BOARD_SYSTEM_KERNEL_MODULES_LOAD),)
+  BOARD_SYSTEM_KERNEL_MODULES_LOAD := false
+endif
+
 $(foreach kmd,$(BOARD_KERNEL_MODULE_DIRS), \
   $(eval ALL_DEFAULT_INSTALLED_MODULES += $(call build-image-kernel-modules-dir,RECOVERY,$(TARGET_RECOVERY_ROOT_OUT),,modules.load.recovery,$(RECOVERY_STRIPPED_MODULE_STAGING_DIR),$(kmd))) \
   $(eval vendor_ramdisk_fragment := $(KERNEL_MODULE_DIR_VENDOR_RAMDISK_FRAGMENT_$(kmd))) \
@@ -544,9 +578,10 @@ $(foreach kmd,$(BOARD_KERNEL_MODULE_DIRS), \
   $(eval $(result_var) += $(call build-image-kernel-modules-dir,VENDOR_RAMDISK,$(output_dir),,modules.load,$(VENDOR_RAMDISK_STRIPPED_MODULE_STAGING_DIR),$(kmd))) \
   $(eval ALL_DEFAULT_INSTALLED_MODULES += $(call build-image-kernel-modules-dir,VENDOR_KERNEL_RAMDISK,$(TARGET_VENDOR_KERNEL_RAMDISK_OUT),,modules.load,$(VENDOR_KERNEL_RAMDISK_STRIPPED_MODULE_STAGING_DIR),$(kmd))) \
   $(eval ALL_DEFAULT_INSTALLED_MODULES += $(call build-vendor-ramdisk-recovery-load,$(kmd))) \
-  $(eval ALL_DEFAULT_INSTALLED_MODULES += $(call build-image-kernel-modules-dir,VENDOR,$(if $(filter true,$(BOARD_USES_VENDOR_DLKMIMAGE)),$(TARGET_OUT_VENDOR_DLKM),$(TARGET_OUT_VENDOR)),vendor,modules.load,$(VENDOR_STRIPPED_MODULE_STAGING_DIR),$(kmd))) \
+  $(eval ALL_DEFAULT_INSTALLED_MODULES += $(call build-image-kernel-modules-dir,VENDOR,$(if $(filter true,$(BOARD_USES_VENDOR_DLKMIMAGE)),$(TARGET_OUT_VENDOR_DLKM),$(TARGET_OUT_VENDOR)),vendor,modules.load,$(VENDOR_STRIPPED_MODULE_STAGING_DIR),$(kmd),$(BOARD_SYSTEM_KERNEL_MODULES),system)) \
   $(eval ALL_DEFAULT_INSTALLED_MODULES += $(call build-vendor-charger-load,$(kmd))) \
   $(eval ALL_DEFAULT_INSTALLED_MODULES += $(call build-image-kernel-modules-dir,ODM,$(if $(filter true,$(BOARD_USES_ODM_DLKMIMAGE)),$(TARGET_OUT_ODM_DLKM),$(TARGET_OUT_ODM)),odm,modules.load,,$(kmd))) \
+  $(eval ALL_DEFAULT_INSTALLED_MODULES += $(call build-image-kernel-modules-dir,SYSTEM,$(if $(filter true,$(BOARD_USES_SYSTEM_DLKMIMAGE)),$(TARGET_OUT_SYSTEM_DLKM),$(TARGET_OUT_SYSTEM)),system,modules.load,,$(kmd))) \
   $(if $(filter true,$(BOARD_USES_RECOVERY_AS_BOOT)),\
     $(eval ALL_DEFAULT_INSTALLED_MODULES += $(call build-recovery-as-boot-load,$(kmd))),\
     $(eval ALL_DEFAULT_INSTALLED_MODULES += $(call build-image-kernel-modules-dir,GENERIC_RAMDISK,$(TARGET_RAMDISK_OUT),,modules.load,,$(kmd)))))
@@ -2949,6 +2984,8 @@ fsverity-metadata-targets := $(sort $(filter \
   $(ALL_DEFAULT_INSTALLED_MODULES)))
 
 define fsverity-generate-metadata
+$(call declare-0p-target,$(1).fsv_meta)
+
 $(1).fsv_meta: PRIVATE_SRC := $(1)
 $(1).fsv_meta: PRIVATE_FSVERITY := $(HOST_OUT_EXECUTABLES)/fsverity
 $(1).fsv_meta: $(HOST_OUT_EXECUTABLES)/fsverity_metadata_generator $(HOST_OUT_EXECUTABLES)/fsverity $(1)
@@ -3069,12 +3106,15 @@ ifdef BUILDING_SYSTEM_IMAGE
 
 # Install system linker configuration
 # Collect all available stub libraries installed in system and install with predefined linker configuration
+# Also append LLNDK libraries in the APEX as required libs
 SYSTEM_LINKER_CONFIG := $(TARGET_OUT)/etc/linker.config.pb
 SYSTEM_LINKER_CONFIG_SOURCE := $(call intermediates-dir-for,ETC,system_linker_config)/system_linker_config
 $(SYSTEM_LINKER_CONFIG): PRIVATE_SYSTEM_LINKER_CONFIG_SOURCE := $(SYSTEM_LINKER_CONFIG_SOURCE)
 $(SYSTEM_LINKER_CONFIG) : $(INTERNAL_SYSTEMIMAGE_FILES) $(SYSTEM_LINKER_CONFIG_SOURCE) | conv_linker_config
 	$(HOST_OUT_EXECUTABLES)/conv_linker_config systemprovide --source $(PRIVATE_SYSTEM_LINKER_CONFIG_SOURCE) \
 	  --output $@ --value "$(STUB_LIBRARIES)" --system "$(TARGET_OUT)"
+	$(HOST_OUT_EXECUTABLES)/conv_linker_config append --source $@ --output $@ --key requireLibs \
+	 --value "$(foreach lib,$(LLNDK_MOVED_TO_APEX_LIBRARIES), $(lib).so)"
 
 $(call declare-1p-target,$(SYSTEM_LINKER_CONFIG),)
 $(call declare-license-deps,$(SYSTEM_LINKER_CONFIG),$(INTERNAL_SYSTEMIMAGE_FILES) $(SYSTEM_LINKER_CONFIG_SOURCE))
@@ -3848,7 +3888,6 @@ $(INSTALLED_FILES_FILE_SYSTEM_DLKM): .KATI_IMPLICIT_OUTPUTS := $(INSTALLED_FILES
 $(INSTALLED_FILES_FILE_SYSTEM_DLKM): $(INTERNAL_SYSTEM_DLKMIMAGE_FILES) $(FILESLIST) $(FILESLIST_UTIL)
 	@echo Installed file list: $@
 	mkdir -p $(dir $@)
-	if [ -d "$(BOARD_SYSTEM_DLKM_SRC)" ]; then rsync -rupE $(BOARD_SYSTEM_DLKM_SRC)/ $(TARGET_OUT_SYSTEM_DLKM); fi
 	rm -f $@
 	$(FILESLIST) $(TARGET_OUT_SYSTEM_DLKM) > $(@:.txt=.json)
 	$(FILESLIST_UTIL) -c $(@:.txt=.json) > $@
@@ -3930,13 +3969,18 @@ pvmfwimage: $(INSTALLED_PVMFWIMAGE_TARGET)
 
 INSTALLED_PVMFWIMAGE_TARGET := $(PRODUCT_OUT)/pvmfw.img
 INSTALLED_PVMFW_EMBEDDED_AVBKEY_TARGET := $(PRODUCT_OUT)/pvmfw_embedded.avbpubkey
+INSTALLED_PVMFW_BINARY_TARGET := $(call module-installed-files,pvmfw_bin)
 INTERNAL_PVMFWIMAGE_FILES := $(call module-target-built-files,pvmfw_img)
 INTERNAL_PVMFW_EMBEDDED_AVBKEY := $(call module-target-built-files,pvmfw_embedded_key)
+INTERNAL_PVMFW_SYMBOL := $(TARGET_OUT_EXECUTABLES_UNSTRIPPED)/pvmfw
 
 $(call declare-1p-container,$(INSTALLED_PVMFWIMAGE_TARGET),)
 $(call declare-container-license-deps,$(INSTALLED_PVMFWIMAGE_TARGET),$(INTERNAL_PVMFWIMAGE_FILES),$(PRODUCT_OUT)/:/)
 
 UNMOUNTED_NOTICE_VENDOR_DEPS += $(INSTALLED_PVMFWIMAGE_TARGET)
+
+# Place the unstripped pvmfw image to the symbols directory
+$(INTERNAL_PVMFWIMAGE_FILES): |$(INTERNAL_PVMFW_SYMBOL)
 
 $(eval $(call copy-one-file,$(INTERNAL_PVMFWIMAGE_FILES),$(INSTALLED_PVMFWIMAGE_TARGET)))
 
@@ -4540,6 +4584,7 @@ INTERNAL_ALLIMAGES_FILES := \
     $(INTERNAL_VENDOR_DLKMIMAGE_FILES) \
     $(INTERNAL_ODM_DLKMIMAGE_FILES) \
     $(INTERNAL_SYSTEM_DLKMIMAGE_FILES) \
+    $(INTERNAL_PVMFWIMAGE_FILES) \
 
 # -----------------------------------------------------------------
 # Check VINTF of build
@@ -4552,35 +4597,39 @@ check_vintf_all_deps :=
 
 APEX_OUT := $(PRODUCT_OUT)/apex
 # -----------------------------------------------------------------
-# Create apex-info-file.xsd
+# Create apex-info-file.xml
 
-APEX_DIRS := \
+apex_dirs := \
   $(TARGET_OUT)/apex/% \
   $(TARGET_OUT_SYSTEM_EXT)/apex/% \
   $(TARGET_OUT_VENDOR)/apex/% \
   $(TARGET_OUT_ODM)/apex/% \
   $(TARGET_OUT_PRODUCT)/apex/% \
 
-apex_vintf_files := $(sort $(filter $(APEX_DIRS), $(INTERNAL_ALLIMAGES_FILES)))
-APEX_INFO_FILE   := $(APEX_OUT)/apex-info-list.xml
+apex_files := $(sort $(filter $(apex_dirs), $(INTERNAL_ALLIMAGES_FILES)))
+APEX_INFO_FILE := $(APEX_OUT)/apex-info-list.xml
 
-$(APEX_INFO_FILE): $(HOST_OUT_EXECUTABLES)/dump_apex_info $(apex_vintf_files)
+# dump_apex_info scans $(PRODUCT_OUT)/apex and writes apex-info-list.xml there.
+# This relies on the fact that rules for .apex files install the contents in $(PRODUCT_OUT)/apex.
+$(APEX_INFO_FILE): $(HOST_OUT_EXECUTABLES)/dump_apex_info $(apex_files)
 	@echo "Creating apex-info-file in $(PRODUCT_OUT) "
-	$< --root_dir $(PRODUCT_OUT) --out_file $@
+	$< --root_dir $(PRODUCT_OUT)
 
-apex_vintf_files :=
+apex_files :=
+apex_dirs :=
 
 # The build system only writes VINTF metadata to */etc/vintf paths. Legacy paths aren't needed here
 # because they are only used for prebuilt images.
+# APEX files in /vendor/apex can have VINTF fragments as well.
 check_vintf_common_srcs_patterns := \
   $(TARGET_OUT)/etc/vintf/% \
   $(TARGET_OUT_VENDOR)/etc/vintf/% \
   $(TARGET_OUT_ODM)/etc/vintf/% \
   $(TARGET_OUT_PRODUCT)/etc/vintf/% \
   $(TARGET_OUT_SYSTEM_EXT)/etc/vintf/% \
+  $(TARGET_OUT_VENDOR)/apex/% \
 
 check_vintf_common_srcs := $(sort $(filter $(check_vintf_common_srcs_patterns),$(INTERNAL_ALLIMAGES_FILES)))
-check_vintf_common_srcs += $(APEX_INFO_FILE)
 check_vintf_common_srcs_patterns :=
 
 check_vintf_has_system :=
@@ -4621,7 +4670,8 @@ check_vintf_system_deps :=
 
 # -- Check vendor manifest / matrix including fragments (excluding other device manifests / matrices)
 check_vintf_vendor_deps := $(filter $(TARGET_OUT_VENDOR)/etc/vintf/%, $(check_vintf_common_srcs))
-ifneq ($(check_vintf_vendor_deps),)
+check_vintf_vendor_deps += $(filter $(TARGET_OUT_VENDOR)/apex/%, $(check_vintf_common_srcs))
+ifneq ($(strip $(check_vintf_vendor_deps)),)
 check_vintf_has_vendor := true
 check_vintf_vendor_log := $(intermediates)/check_vintf_vendor.log
 check_vintf_all_deps += $(check_vintf_vendor_log)
@@ -4632,9 +4682,9 @@ $(check_vintf_vendor_log): PRIVATE_VENDOR_SKUS := \
   $(if $(DEVICE_MANIFEST_FILE),EMPTY_VENDOR_SKU_PLACEHOLDER,\
     $(if $(DEVICE_MANIFEST_SKUS),,EMPTY_VENDOR_SKU_PLACEHOLDER)) \
   $(DEVICE_MANIFEST_SKUS)
-$(check_vintf_vendor_log): $(HOST_OUT_EXECUTABLES)/checkvintf $(check_vintf_vendor_deps)
+$(check_vintf_vendor_log): $(HOST_OUT_EXECUTABLES)/checkvintf $(check_vintf_vendor_deps) $(APEX_INFO_FILE)
 	$(foreach vendor_sku,$(PRIVATE_VENDOR_SKUS), \
-	  ( $< --check-one --dirmap /vendor:$(TARGET_OUT_VENDOR) \
+	  ( $< --check-one --dirmap /vendor:$(TARGET_OUT_VENDOR) --dirmap /apex:$(APEX_OUT) \
 	       --property ro.boot.product.vendor.sku=$(filter-out EMPTY_VENDOR_SKU_PLACEHOLDER,$(vendor_sku)) \
 	       > $@ 2>&1 ) || ( cat $@ && exit 1 ); )
 $(call declare-0p-target,$(check_vintf_vendor_log))
@@ -4748,7 +4798,7 @@ check_vintf_compatible_log := $(intermediates)/check_vintf_compatible.log
 check_vintf_all_deps += $(check_vintf_compatible_log)
 
 check_vintf_compatible_args :=
-check_vintf_compatible_deps := $(check_vintf_common_srcs)
+check_vintf_compatible_deps := $(check_vintf_common_srcs) $(APEX_INFO_FILE)
 
 ifeq ($(PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS),true)
 ifneq (,$(BUILT_KERNEL_VERSION_FILE)$(BUILT_KERNEL_CONFIGS_FILE))
@@ -4768,7 +4818,6 @@ check_vintf_compatible_args += \
 ifdef PRODUCT_SHIPPING_API_LEVEL
 check_vintf_compatible_args += --property ro.product.first_api_level=$(PRODUCT_SHIPPING_API_LEVEL)
 endif # PRODUCT_SHIPPING_API_LEVEL
-check_vintf_compatible_args += --apex-info-file $(APEX_INFO_FILE)
 
 $(check_vintf_compatible_log): PRIVATE_CHECK_VINTF_ARGS := $(check_vintf_compatible_args)
 $(check_vintf_compatible_log): PRIVATE_CHECK_VINTF_DEPS := $(check_vintf_compatible_deps)
@@ -5011,9 +5060,11 @@ INTERNAL_OTATOOLS_MODULES := \
 INTERNAL_OTATOOLS_MODULES += \
   apexer \
   apex_compression_tool \
+  blkid \
   deapexer \
   debugfs_static \
   dump_apex_info \
+  fsck.erofs \
   merge_zips \
   resize2fs \
   soong_zip \
@@ -5626,6 +5677,7 @@ $(BUILT_TARGET_FILES_PACKAGE): \
 	    $(INSTALLED_CACHEIMAGE_TARGET) \
 	    $(INSTALLED_DTBOIMAGE_TARGET) \
 	    $(INSTALLED_PVMFWIMAGE_TARGET) \
+	    $(INSTALLED_PVMFW_BINARY_TARGET) \
 	    $(INSTALLED_PVMFW_EMBEDDED_AVBKEY_TARGET) \
 	    $(INSTALLED_CUSTOMIMAGES_TARGET) \
 	    $(INSTALLED_ANDROID_INFO_TXT_TARGET) \
@@ -5976,6 +6028,8 @@ ifeq ($(BOARD_USES_PVMFWIMAGE),true)
 	$(hide) mkdir -p $(zip_root)/PREBUILT_IMAGES
 	$(hide) cp $(INSTALLED_PVMFWIMAGE_TARGET) $(zip_root)/PREBUILT_IMAGES/
 	$(hide) cp $(INSTALLED_PVMFW_EMBEDDED_AVBKEY_TARGET) $(zip_root)/PREBUILT_IMAGES/
+	$(hide) mkdir -p $(zip_root)/PVMFW
+	$(hide) cp $(INSTALLED_PVMFW_BINARY_TARGET) $(zip_root)/PVMFW/
 endif
 ifdef BOARD_PREBUILT_BOOTLOADER
 	$(hide) mkdir -p $(zip_root)/IMAGES

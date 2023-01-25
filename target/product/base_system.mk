@@ -58,7 +58,6 @@ PRODUCT_PACKAGES += \
     com.android.cronet \
     com.android.devicelock \
     com.android.extservices \
-    com.android.federatedcompute \
     com.android.healthconnect \
     com.android.i18n \
     com.android.ipsec \
@@ -70,12 +69,14 @@ PRODUCT_PACKAGES += \
     com.android.os.statsd \
     com.android.permission \
     com.android.resolv \
+    com.android.rkpd \
     com.android.neuralnetworks \
     com.android.scheduling \
     com.android.sdkext \
     com.android.tethering \
     com.android.tzdata \
     com.android.uwb \
+    com.android.virt \
     com.android.wifi \
     ContactsProvider \
     content \
@@ -207,7 +208,6 @@ PRODUCT_PACKAGES += \
     libvulkan \
     libwilhelm \
     linker \
-    linkerconfig \
     llkd \
     lmkd \
     LocalTransport \

@@ -595,12 +595,10 @@ endef
 ## license metadata.
 ###########################################################
 define declare-copy-target-license-metadata
-$(strip $(if $(filter $(OUT_DIR)%,$(2)),$(eval _dir:=$(call license-metadata-dir,$(1)))\
+$(strip $(if $(filter $(OUT_DIR)%,$(2)),\
   $(eval _tgt:=$(strip $(1)))\
-  $(eval _meta := $(call append-path,$(_dir),$(patsubst $(OUT_DIR)%,out%,$(_tgt).meta_lic)))\
   $(eval ALL_COPIED_TARGETS.$(_tgt).SOURCES := $(ALL_COPIED_TARGETS.$(_tgt).SOURCES) $(filter $(OUT_DIR)%,$(2)))\
-  $(eval ALL_COPIED_TARGETS += $(_tgt)),\
-  $(eval ALL_TARGETS.$(1).META_LIC:=$(module_license_metadata))))
+  $(eval ALL_COPIED_TARGETS += $(_tgt))))
 endef
 
 ###########################################################
@@ -746,11 +744,10 @@ $(strip $(eval ALL_TARGETS.$(1).META_LIC:=$(_meta)))
 $(strip $(eval _dep:=))
 $(strip $(foreach s,$(ALL_COPIED_TARGETS.$(1).SOURCES),\
   $(eval _dmeta:=$(ALL_TARGETS.$(s).META_LIC))\
-  $(if $(filter 0p,$(_dmeta)),\
-    $(if $(filter-out 0p,$(_dep)),,$(eval ALL_TARGETS.$(1).META_LIC:=0p)),\
-    $(if $(_dep),\
-      $(if $(filter-out $(_dep),$(_dmeta)),$(error cannot copy target from multiple modules: $(1) from $(_dep) and $(_dmeta))),
-      $(eval _dep:=$(_dmeta))))))
+  $(if $(filter-out 0p,$(_dep)),\
+      $(if $(filter-out $(_dep),$(_dmeta)),$(error cannot copy target from multiple modules: $(1) from $(_dep) and $(_dmeta))),\
+      $(eval _dep:=$(_dmeta)))))
+$(if $(filter 0p,$(_dep)),$(eval ALL_TARGETS.$(1).META_LIC:=0p))
 $(strip $(if $(strip $(_dep)),,$(error cannot copy target from unknown module: $(1) from $(ALL_COPIED_TARGETS.$(1).SOURCES))))
 
 ifneq (0p,$(ALL_TARGETS.$(1).META_LIC))
@@ -772,6 +769,11 @@ $(_meta) : $(_dep) $(COPY_LICENSE_METADATA)
 	  -o $$@
 
 endif
+
+$(eval _dep:=)
+$(eval _dmeta:=)
+$(eval _meta:=)
+$(eval _dir:=)
 endef
 
 ###########################################################
@@ -2121,6 +2123,7 @@ $(hide) $(PRIVATE_CXX_LINK) \
      $(PRIVATE_HOST_GLOBAL_LDFLAGS) \
   ) \
   $(PRIVATE_LDFLAGS) \
+  $(PRIVATE_CRTBEGIN) \
   $(PRIVATE_ALL_OBJECTS) \
   -Wl,--whole-archive \
   $(PRIVATE_ALL_WHOLE_STATIC_LIBRARIES) \
@@ -2129,8 +2132,10 @@ $(hide) $(PRIVATE_CXX_LINK) \
   $(PRIVATE_ALL_STATIC_LIBRARIES) \
   $(if $(PRIVATE_GROUP_STATIC_LIBRARIES),-Wl$(comma)--end-group) \
   $(if $(filter true,$(NATIVE_COVERAGE)),$(PRIVATE_HOST_LIBPROFILE_RT)) \
+  $(PRIVATE_LIBCRT_BUILTINS) \
   $(PRIVATE_ALL_SHARED_LIBRARIES) \
   -o $@ \
+  $(PRIVATE_CRTEND) \
   $(PRIVATE_LDLIBS)
 endef
 endif
@@ -2264,6 +2269,7 @@ endef
 ifneq ($(HOST_CUSTOM_LD_COMMAND),true)
 define transform-host-o-to-executable-inner
 $(hide) $(PRIVATE_CXX_LINK) \
+  $(PRIVATE_CRTBEGIN) \
   $(PRIVATE_ALL_OBJECTS) \
   -Wl,--whole-archive \
   $(PRIVATE_ALL_WHOLE_STATIC_LIBRARIES) \
@@ -2272,6 +2278,7 @@ $(hide) $(PRIVATE_CXX_LINK) \
   $(PRIVATE_ALL_STATIC_LIBRARIES) \
   $(if $(PRIVATE_GROUP_STATIC_LIBRARIES),-Wl$(comma)--end-group) \
   $(if $(filter true,$(NATIVE_COVERAGE)),$(PRIVATE_HOST_LIBPROFILE_RT)) \
+  $(PRIVATE_LIBCRT_BUILTINS) \
   $(PRIVATE_ALL_SHARED_LIBRARIES) \
   $(foreach path,$(PRIVATE_RPATHS), \
     -Wl,-rpath,\$$ORIGIN/$(path)) \
@@ -2280,6 +2287,7 @@ $(hide) $(PRIVATE_CXX_LINK) \
   ) \
   $(PRIVATE_LDFLAGS) \
   -o $@ \
+  $(PRIVATE_CRTEND) \
   $(PRIVATE_LDLIBS)
 endef
 endif

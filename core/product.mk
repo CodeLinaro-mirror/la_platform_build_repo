@@ -263,6 +263,9 @@ _product_list_vars += PRODUCT_FORCE_PRODUCT_MODULES_TO_SYSTEM_PARTITION
 # This flag implies PRODUCT_USE_DYNAMIC_PARTITIONS.
 _product_single_value_vars += PRODUCT_RETROFIT_DYNAMIC_PARTITIONS
 
+# List of tags that will be used to gate blueprint modules from the build graph
+_product_list_vars += PRODUCT_INCLUDE_TAGS
+
 # When this is true, various build time as well as runtime debugfs restrictions are enabled.
 _product_single_value_vars += PRODUCT_SET_DEBUGFS_RESTRICTIONS
 
@@ -366,6 +369,21 @@ _product_single_value_vars += PRODUCT_FSVERITY_GENERATE_METADATA
 # If true, sets the default for MODULE_BUILD_FROM_SOURCE. This overrides
 # BRANCH_DEFAULT_MODULE_BUILD_FROM_SOURCE but not an explicitly set value.
 _product_single_value_vars += PRODUCT_MODULE_BUILD_FROM_SOURCE
+
+# If true, installs a full version of com.android.virt APEX.
+_product_single_value_vars += PRODUCT_AVF_ENABLED
+
+# Whether to use userfaultfd GC.
+# Possible values are:
+# - "default" or empty: both the build system and the runtime determine whether to use userfaultfd
+#   GC based on the vendor API level
+# - "true": forces the build system to use userfaultfd GC regardless of the vendor API level; the
+#   runtime determines whether to use userfaultfd GC based on the kernel support. Note that the
+#   device may have to re-compile everything on the first boot if the kernel doesn't support
+#   userfaultfd
+# - "false": disallows the build system and the runtime to use userfaultfd GC even if the device
+#   supports it
+_product_single_value_vars += PRODUCT_ENABLE_UFFD_GC
 
 .KATI_READONLY := _product_single_value_vars _product_list_vars
 _product_var_list :=$= $(_product_single_value_vars) $(_product_list_vars)

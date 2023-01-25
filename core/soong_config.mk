@@ -9,6 +9,7 @@ BINDER32BIT := true
 endif
 endif
 
+include $(BUILD_SYSTEM)/art_config.mk
 include $(BUILD_SYSTEM)/dex_preopt_config.mk
 
 ifeq ($(WRITE_SOONG_VARIABLES),true)
@@ -298,6 +299,8 @@ $(call add_json_list, SepolicyFreezeTestExtraPrebuiltDirs, $(SEPOLICY_FREEZE_TES
 $(call add_json_bool, GenerateAidlNdkPlatformBackend, $(filter true,$(NEED_AIDL_NDK_PLATFORM_BACKEND)))
 
 $(call add_json_bool, IgnorePrefer32OnDevice, $(filter true,$(IGNORE_PREFER32_ON_DEVICE)))
+
+$(call add_json_list, IncludeTags,                $(PRODUCT_INCLUDE_TAGS))
 
 $(call json_end)
 
