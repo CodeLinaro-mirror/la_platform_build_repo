@@ -3402,16 +3402,10 @@ ifdef BUILDING_VENDOR_BOOT_IMAGE
 
 ES_DEFAULT_LKMS := \
     snd_event_dlkm \
-    q6_pdr_dlkm \
     q6_notifier_dlkm \
-    q6_notifier_dlkm_legacy \
-    gpr_dlkm \
-    spf_core_dlkm \
-    adsp_loader_dlkm \
-    audio_prm_dlkm \
     apr_dlkm \
+    adsp_loader_dlkm \
     q6_dlkm \
-    q6_dlkm_legacy \
     platform_dlkm \
     native_dlkm \
     stub_dlkm \
@@ -3438,7 +3432,16 @@ ES_RAMDISK_LKMS := \
     qcom_spss \
     pdr_interface \
     pinctrl-slpi \
+    msm_geni_serial \
     frpc-adsprpc \
+    anx7625 \
+    spi-msm-geni \
+    i2c-msm-geni \
+    i2c-mux \
+    i2c-mux-pca954x \
+    qseecom_proxy \
+    hdcp_qseecom_dlkm \
+    msm_drm \
 
 
 ES_MOD_ORDER := ${ES_RAMDISK_LKMS} ${ES_DEFAULT_LKMS}
