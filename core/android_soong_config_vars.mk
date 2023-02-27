@@ -34,6 +34,7 @@ endif
 $(call add_soong_config_var,ANDROID,BOARD_USES_ODMIMAGE)
 $(call add_soong_config_var,ANDROID,BOARD_USES_RECOVERY_AS_BOOT)
 $(call add_soong_config_var,ANDROID,BOARD_BUILD_SYSTEM_ROOT_IMAGE)
+$(call add_soong_config_var,ANDROID,BOARD_SUPPORTS_RAMDISK_EARLY_INIT)
 $(call add_soong_config_var,ANDROID,PRODUCT_INSTALL_DEBUG_POLICY_TO_SYSTEM_EXT)
 
 # Default behavior for the tree wrt building modules or using prebuilts. This
