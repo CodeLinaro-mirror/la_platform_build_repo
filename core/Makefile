@@ -3439,6 +3439,8 @@ ES_RAMDISK_LKMS := \
     i2c-msm-geni \
     i2c-mux \
     i2c-mux-pca954x \
+    pinctrl-sx150x \
+    dispcc-sm8250 \
     qseecom_proxy \
     hdcp_qseecom_dlkm \
     msm_drm \
