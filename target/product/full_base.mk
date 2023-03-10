@@ -23,10 +23,12 @@ PRODUCT_PACKAGES := \
     libfwdlockengine \
     WAPPushManager
 
+ifneq ($(TARGET_BUILD_2W),true)
 PRODUCT_PACKAGES += \
     LiveWallpapersPicker \
     PhotoTable \
     preinstalled-packages-platform-full-base.xml
+endif
 
 # Net:
 #   Vendors can use the platform-provided network configuration utilities (ip,

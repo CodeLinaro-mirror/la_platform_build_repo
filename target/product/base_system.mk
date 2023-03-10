@@ -326,9 +326,11 @@ ifeq ($(EMMA_INSTRUMENT),true)
   endif # EMMA_INSTRUMENT_STATIC
 endif # EMMA_INSTRUMENT
 
+ifneq ($(TARGET_BUILD_2W), true)
 ifeq (,$(DISABLE_WALLPAPER_BACKUP))
   PRODUCT_PACKAGES += \
     WallpaperBackup
+endif
 endif
 
 # For testing purposes
@@ -422,9 +424,11 @@ PRODUCT_PACKAGES_DEBUG := \
 PRODUCT_SYSTEM_SERVER_APPS += \
     SettingsProvider \
 
+ifneq ($(TARGET_BUILD_2W), true)
 ifeq (,$(DISABLE_WALLPAPER_BACKUP))
   PRODUCT_SYSTEM_SERVER_APPS += \
     WallpaperBackup
+endif
 endif
 
 PRODUCT_PACKAGES_DEBUG_JAVA_COVERAGE := \

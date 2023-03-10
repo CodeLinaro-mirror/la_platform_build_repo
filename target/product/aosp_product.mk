@@ -27,13 +27,15 @@ PRODUCT_PRODUCT_PROPERTIES += \
     ro.config.notification_sound?=pixiedust.ogg \
     ro.com.android.dataroaming?=true \
 
+ifneq ($(TARGET_BUILD_2W),true)
 # More AOSP packages
 PRODUCT_PACKAGES += \
     initial-package-stopped-states-aosp.xml \
     messaging \
     PhotoTable \
     preinstalled-packages-platform-aosp-product.xml \
-    WallpaperPicker \
+    WallpaperPicker
+endif
 
 # Telephony:
 #   Provide a APN configuration to GSI product
