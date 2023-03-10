@@ -273,7 +273,6 @@ PRODUCT_PACKAGES += \
     viewcompiler \
     voip-common \
     vold \
-    WallpaperBackup \
     watchdogd \
     wificond \
     wifi.rc \
@@ -285,6 +284,15 @@ PRODUCT_PACKAGES += \
     llkd \
     SecureElement
 endif
+
+ifneq ($(TARGET_BUILD_2W), true)
+PRODUCT_PACKAGES += \
+    WallpaperBackup \
+
+PRODUCT_SYSTEM_SERVER_APPS += \
+    WallpaperBackup
+endif
+
 
 # VINTF data for system image
 PRODUCT_PACKAGES += \
@@ -416,8 +424,7 @@ PRODUCT_PACKAGES_DEBUG := \
 
 # The set of packages whose code can be loaded by the system server.
 PRODUCT_SYSTEM_SERVER_APPS += \
-    SettingsProvider \
-    WallpaperBackup
+    SettingsProvider
 
 PRODUCT_PACKAGES_DEBUG_JAVA_COVERAGE := \
     libdumpcoverage

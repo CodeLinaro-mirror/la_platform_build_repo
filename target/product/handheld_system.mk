@@ -32,13 +32,8 @@ $(call inherit-product-if-exists, frameworks/base/data/keyboards/keyboards.mk)
 $(call inherit-product-if-exists, frameworks/webview/chromium/chromium.mk)
 
 PRODUCT_PACKAGES += \
-    BasicDreams \
-    BlockedNumberProvider \
     Bluetooth \
     BluetoothMidiService \
-    BookmarkProvider \
-    BuiltInPrintService \
-    CalendarProvider \
     cameraserver \
     CameraExtensionsProxy \
     CaptivePortalLogin \
@@ -46,20 +41,15 @@ PRODUCT_PACKAGES += \
     clatd \
     DocumentsUI \
     DownloadProviderUi \
-    EasterEgg \
     ExternalStorageProvider \
     FusedLocation \
     InputDevices \
     KeyChain \
     librs_jni \
-    ManagedProvisioning \
     MtpService \
     MusicFX \
     PacProcessor \
-    PrintRecommendationService \
-    PrintSpooler \
     ProxyHandler \
-    screenrecord \
     SharedStorageBackup \
     SimAppDialog \
     Telecom \
@@ -67,7 +57,6 @@ PRODUCT_PACKAGES += \
     Traceur \
     UserDictionaryProvider \
     VpnDialogs \
-    vr \
 
 ifneq ($(TARGET_NO_TELEPHONY), true)
 PRODUCT_PACKAGES += \
@@ -75,9 +64,24 @@ PRODUCT_PACKAGES += \
   TeleService
 endif #TARGET_NO_TELEPHONY
 
+ifneq ($(TARGET_BUILD_2W),true)
+PRODUCT_PACKAGES += \
+    BasicDreams \
+    BlockedNumberProvider \
+    BookmarkProvider \
+    BuiltInPrintService \
+    CalendarProvider \
+    ManagedProvisioning \
+    EasterEgg \
+    PrintRecommendationService \
+    PrintSpooler \
+    screenrecord \
+    vr \
+
 ifneq ($(TARGET_HAS_LOW_RAM), true)
 PRODUCT_PACKAGES += \
     SecureElement
+endif
 endif
 
 PRODUCT_SYSTEM_SERVER_APPS += \

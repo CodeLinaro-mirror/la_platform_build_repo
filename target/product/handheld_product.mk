@@ -22,19 +22,23 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/media_product.mk)
 
 # /product packages
 PRODUCT_PACKAGES += \
+    Camera2 \
+    LatinIME \
+    OneTimeInitializer \
+    preinstalled-packages-platform-handheld-product.xml \
+    SettingsIntelligence \
+    frameworks-base-overlays
+
+ifneq ($(TARGET_BUILD_2W),true)
+PRODUCT_PACKAGES += \
     Browser2 \
     Calendar \
-    Camera2 \
     Contacts \
     DeskClock \
     Gallery2 \
-    LatinIME \
     Music \
-    OneTimeInitializer \
-    preinstalled-packages-platform-handheld-product.xml \
-    QuickSearchBox \
-    SettingsIntelligence \
-    frameworks-base-overlays
+    QuickSearchBox
+endif
 
 PRODUCT_PACKAGES_DEBUG += \
     frameworks-base-overlays-debug
