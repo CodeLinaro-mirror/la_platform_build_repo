@@ -205,7 +205,8 @@ A/B OTA specific options
 
   --partial "<PARTITION> [<PARTITION>[...]]"
       Generate partial updates, overriding ab_partitions list with the given
-      list.
+      list. Specify --partial= without partition list to let tooling auto detect
+      partial partition list.
 
   --custom_image <custom_partition=custom_image>
       Use the specified custom_image to update custom_partition when generating
@@ -726,29 +727,33 @@ def GetTargetFilesZipForCustomImagesUpdates(input_file, custom_images):
 
   Returns:
     The filename of a target-files.zip which has renamed the custom images in
-    the IMAGS/ to their partition names.
+    the IMAGES/ to their partition names.
   """
-  # Use zip2zip to avoid extracting the zipfile.
+
+  # First pass: use zip2zip to copy the target files contents, excluding
+  # the "custom" images that will be replaced.
   target_file = common.MakeTempFile(prefix="targetfiles-", suffix=".zip")
   cmd = ['zip2zip', '-i', input_file, '-o', target_file]
 
-  with zipfile.ZipFile(input_file, allowZip64=True) as input_zip:
-    namelist = input_zip.namelist()
-
-  # Write {custom_image}.img as {custom_partition}.img.
+  images = {}
   for custom_partition, custom_image in custom_images.items():
     default_custom_image = '{}.img'.format(custom_partition)
     if default_custom_image != custom_image:
-      logger.info("Update custom partition '%s' with '%s'",
-                  custom_partition, custom_image)
-      # Default custom image need to be deleted first.
-      namelist.remove('IMAGES/{}'.format(default_custom_image))
-      # IMAGES/{custom_image}.img:IMAGES/{custom_partition}.img.
-      cmd.extend(['IMAGES/{}:IMAGES/{}'.format(custom_image,
-                                               default_custom_image)])
+      src = 'IMAGES/' + custom_image
+      dst = 'IMAGES/' + default_custom_image
+      cmd.extend(['-x', dst])
+      images[dst] = src
 
-  cmd.extend(['{}:{}'.format(name, name) for name in namelist])
   common.RunAndCheckOutput(cmd)
+
+  # Second pass: write {custom_image}.img as {custom_partition}.img.
+  with zipfile.ZipFile(input_file, allowZip64=True) as input_zip:
+    with zipfile.ZipFile(target_file, 'a', allowZip64=True) as output_zip:
+      for dst, src in images.items():
+        data = input_zip.read(src)
+        logger.info("Update custom partition '%s'", dst)
+        common.ZipWriteStr(output_zip, dst, data)
+      output_zip.close()
 
   return target_file
 
@@ -856,6 +861,31 @@ def GenerateAbOtaPackage(target_file, output_file, source_file=None):
     target_info = common.BuildInfo(OPTIONS.info_dict, OPTIONS.oem_dicts)
     source_info = None
 
+  if OPTIONS.partial == []:
+    logger.info(
+        "Automatically detecting partial partition list from input target files.")
+    OPTIONS.partial = target_info.get(
+        "partial_ota_update_partitions_list").split()
+    assert OPTIONS.partial, "Input target_file does not have"
+    " partial_ota_update_partitions_list defined, failed to auto detect partial"
+    " partition list. Please specify list of partitions to update manually via"
+    " --partial=a,b,c , or generate a complete OTA by removing the --partial"
+    " option"
+    OPTIONS.partial.sort()
+    if source_info:
+      source_partial_list = source_info.get(
+          "partial_ota_update_partitions_list").split()
+      if source_partial_list:
+        source_partial_list.sort()
+        if source_partial_list != OPTIONS.partial:
+          logger.warning("Source build and target build have different partial partition lists. Source: %s, target: %s, taking the intersection.",
+                         source_partial_list, OPTIONS.partial)
+          OPTIONS.partial = list(
+              set(OPTIONS.partial) and set(source_partial_list))
+          OPTIONS.partial.sort()
+    logger.info("Automatically deduced partial partition list: %s",
+                OPTIONS.partial)
+
   if target_info.vendor_suppressed_vabc:
     logger.info("Vendor suppressed VABC. Disabling")
     OPTIONS.disable_vabc = True
@@ -866,6 +896,10 @@ def GenerateAbOtaPackage(target_file, output_file, source_file=None):
   if not target_info.is_vabc_xor or OPTIONS.disable_vabc or \
           (source_info is not None and not source_info.is_vabc_xor):
     logger.info("VABC XOR Not supported, disabling")
+    OPTIONS.enable_vabc_xor = False
+
+  if OPTIONS.vabc_compression_param == "none":
+    logger.info("VABC Compression algorithm is set to 'none', disabling VABC xor")
     OPTIONS.enable_vabc_xor = False
   additional_args = []
 
@@ -897,7 +931,7 @@ def GenerateAbOtaPackage(target_file, output_file, source_file=None):
   # Metadata to comply with Android OTA package format.
   metadata = GetPackageMetadata(target_info, source_info)
   # Generate payload.
-  payload = PayloadGenerator(OPTIONS.include_secondary, OPTIONS.wipe_user_data)
+  payload = PayloadGenerator(wipe_user_data=OPTIONS.wipe_user_data)
 
   partition_timestamps_flags = []
   # Enforce a max timestamp this payload can be applied on top of.
@@ -1107,9 +1141,12 @@ def main(argv):
     elif o == "--boot_variable_file":
       OPTIONS.boot_variable_file = a
     elif o == "--partial":
-      partitions = a.split()
-      if not partitions:
-        raise ValueError("Cannot parse partitions in {}".format(a))
+      if a:
+        partitions = a.split()
+        if not partitions:
+          raise ValueError("Cannot parse partitions in {}".format(a))
+      else:
+        partitions = []
       OPTIONS.partial = partitions
     elif o == "--custom_image":
       custom_partition, custom_image = a.split("=")
@@ -1190,12 +1227,11 @@ def main(argv):
                                  "vabc_compression_param=",
                                  "security_patch_level=",
                              ], extra_option_handler=option_handler)
+  common.InitLogging()
 
   if len(args) != 2:
     common.Usage(__doc__)
     sys.exit(1)
-
-  common.InitLogging()
 
   # Load the build info dicts from the zip directly or the extracted input
   # directory. We don't need to unzip the entire target-files zips, because they
@@ -1313,6 +1349,14 @@ def main(argv):
     source_spl = source_build_prop.GetProp(SECURITY_PATCH_LEVEL_PROP_NAME)
     target_spl = target_build_prop.GetProp(SECURITY_PATCH_LEVEL_PROP_NAME)
     is_spl_downgrade = target_spl < source_spl
+    if is_spl_downgrade and target_build_prop.GetProp("ro.build.tags") == "release-keys":
+      raise common.ExternalError(
+          "Target security patch level {} is older than source SPL {} "
+          "A locked bootloader will reject SPL downgrade no matter "
+          "what(even if data wipe is done), so SPL downgrade on any "
+          "release-keys build is not allowed.".format(target_spl, source_spl))
+
+    logger.info("SPL downgrade on %s", target_build_prop.GetProp("ro.build.tags"))
     if is_spl_downgrade and not OPTIONS.spl_downgrade and not OPTIONS.downgrade:
       raise common.ExternalError(
           "Target security patch level {} is older than source SPL {} applying "
