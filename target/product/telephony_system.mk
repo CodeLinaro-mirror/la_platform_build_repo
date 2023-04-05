@@ -20,15 +20,14 @@
 # Set flag to enable compilation of vendor value-adds to Android Telephony.
 TARGET_USES_QCOM_BSP_ATEL := true
 
-PRODUCT_PACKAGES := \
-
 ifneq ($(TARGET_NO_TELEPHONY), true)
+ifneq ($(TARGET_BUILD_2W), true)
 PRODUCT_PACKAGES += \
-    ONS \
-    CarrierDefaultApp \
     CallLogBackup \
     com.android.cellbroadcast \
     CellBroadcastLegacyApp
+endif
+PRODUCT_PACKAGES += \
+    ONS \
+    CarrierDefaultApp
 endif #TARGET_NO_TELEPHONY
-
-PRODUCT_COPY_FILES := \
