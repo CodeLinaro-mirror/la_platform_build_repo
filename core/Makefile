@@ -3400,53 +3400,82 @@ ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
 ifeq ($(BOARD_AVB_ENABLE),true)
 ifdef BUILDING_VENDOR_BOOT_IMAGE
 
+ES_VNDR_MOD_PATH := "/vendor_early_services/vendor/lib/modules"
+ES_MOD_PATH := "/lib/modules"
+
+# strip debug info and copied to ES mods
 ES_DEFAULT_LKMS := \
-    snd_event_dlkm \
-    q6_notifier_dlkm \
+    snd_event_dlkm_legacy \
+    q6_notifier_dlkm_legacy \
     apr_dlkm \
-    adsp_loader_dlkm \
-    q6_dlkm \
+    adsp_loader_dlkm_legacy \
+    q6_dlkm_legacy \
     platform_dlkm \
     native_dlkm \
-    stub_dlkm \
+    stub_dlkm_legacy \
     hdmi_dlkm \
-    machine_dlkm \
+    machine_dlkm_legacy \
     ais \
     msm-vidc \
 
+
+# copied to ES mods
 ES_RAMDISK_LKMS := \
-    qmi_helpers \
-    qcom_ipc_logging \
-    qcom_glink \
-    qcom_smd \
-    qcom_glink_smem \
-    qcom_glink_spss \
-    rproc_qcom_common \
-    scc-sm8150 \
-    qcom_sysmon \
-    qcom_q6v5 \
-    qcom_pil_info \
-    mdt_loader \
-    qcom_ramdump \
-    qcom_q6v5_pas \
-    qcom_spss \
-    pdr_interface \
-    pinctrl-slpi \
-    msm_geni_serial \
-    frpc-adsprpc \
-    anx7625 \
-    spi-msm-geni \
-    i2c-msm-geni \
-    i2c-mux \
-    i2c-mux-pca954x \
-    pinctrl-sx150x \
-    dispcc-sm8250 \
-    qseecom_proxy \
-    hdcp_qseecom_dlkm \
-    msm_drm \
+   qcom_q6v5_pas \
+   qcom_spss \
 
 
-ES_MOD_ORDER := ${ES_RAMDISK_LKMS} ${ES_DEFAULT_LKMS}
+ES_MOD_ORDER := \
+${ES_MOD_PATH}/qmi_helpers \
+${ES_MOD_PATH}/qcom_ipc_logging \
+${ES_MOD_PATH}/qcom_glink \
+${ES_MOD_PATH}/qcom_smd \
+${ES_MOD_PATH}/qcom_glink_smem \
+${ES_MOD_PATH}/qcom_glink_spss \
+${ES_MOD_PATH}/rproc_qcom_common \
+${ES_MOD_PATH}/qcom-apcs-ipc-mailbox \
+${ES_MOD_PATH}/smp2p \
+${ES_MOD_PATH}/smp2p_sleepstate \
+${ES_MOD_PATH}/scc-sm8150 \
+${ES_MOD_PATH}/gpucc-sm8150 \
+${ES_MOD_PATH}/videocc-sm8150 \
+${ES_MOD_PATH}/msm_gpi \
+${ES_MOD_PATH}/qcom_sysmon \
+${ES_MOD_PATH}/qcom_q6v5 \
+${ES_MOD_PATH}/qcom_pil_info \
+${ES_MOD_PATH}/mdt_loader \
+${ES_MOD_PATH}/qcom_ramdump \
+${ES_MOD_PATH}/msm_geni_serial \
+${ES_MOD_PATH}/pdr_interface \
+${ES_MOD_PATH}/pinctrl-slpi \
+${ES_MOD_PATH}/frpc-adsprpc \
+${ES_MOD_PATH}/anx7625 \
+${ES_MOD_PATH}/spi-msm-geni \
+${ES_MOD_PATH}/i2c-msm-geni \
+${ES_MOD_PATH}/i2c-mux \
+${ES_MOD_PATH}/i2c-mux-pca954x \
+${ES_MOD_PATH}/pinctrl-sx150x \
+${ES_MOD_PATH}/dispcc-sm8250 \
+${ES_MOD_PATH}/qseecom_proxy \
+${ES_MOD_PATH}/hdcp_qseecom_dlkm \
+${ES_MOD_PATH}/msm_drm \
+
+ES_MM_MOD_ORDER := \
+${ES_VNDR_MOD_PATH}/snd_event_dlkm_legacy \
+${ES_VNDR_MOD_PATH}/q6_notifier_dlkm_legacy \
+${ES_VNDR_MOD_PATH}/apr_dlkm \
+${ES_VNDR_MOD_PATH}/adsp_loader_dlkm_legacy \
+${ES_VNDR_MOD_PATH}/q6_dlkm_legacy \
+${ES_VNDR_MOD_PATH}/qcom_q6v5_pas \
+${ES_VNDR_MOD_PATH}/qcom_spss \
+${ES_VNDR_MOD_PATH}/platform_dlkm \
+${ES_VNDR_MOD_PATH}/native_dlkm \
+${ES_VNDR_MOD_PATH}/stub_dlkm_legacy \
+${ES_VNDR_MOD_PATH}/hdmi_dlkm \
+${ES_VNDR_MOD_PATH}/machine_dlkm_legacy \
+${ES_VNDR_MOD_PATH}/ais \
+${ES_VNDR_MOD_PATH}/msm-vidc \
+
 
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INSTALLED_SYSTEMIMAGE_TARGET) $(INSTALLED_VENDORIMAGE_TARGET)
@@ -3454,12 +3483,17 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH)
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/ ;\
 	cp -rf $(addsuffix .ko,$(addprefix $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/,$(ES_RAMDISK_LKMS))) $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/ ;\
-	cp -rf $(addsuffix .ko,$(addprefix $(PRODUCT_OUT)/dlkm/lib/modules/,$(ES_DEFAULT_LKMS))) $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/ ;\
+	$(foreach mod,$(addsuffix .ko,$(addprefix $(PRODUCT_OUT)/dlkm/lib/modules/,$(ES_DEFAULT_LKMS))), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/$(notdir $(mod)) --strip-debug $(mod) ;) \
 	echo > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.load ;\
 	$(foreach mod,$(addsuffix .ko,${ES_MOD_ORDER}), echo "$(mod)" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.load ;) \
+	echo > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_modules.load ;\
+	$(foreach mod,$(addsuffix .ko,${ES_MM_MOD_ORDER}), echo "$(mod)" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_modules.load ;) \
 	cp -r $(TARGET_RAMDISK_OUT)/vendor_early_services/bin/early_services_init $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/firmware_mnt; \
 	cp -r $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+	cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
+	cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/vendor_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
+	cp -rf $(PRODUCT_OUT)/system/etc/selinux/plat_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.audio.common@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.audio.effect@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.audio@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
@@ -3528,7 +3562,6 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -ar $(PRODUCT_OUT)/vendor/firmware $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/bike_bell.wav $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/etc/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/bin/audio-nxp-auto $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
-  cp -rf $(PRODUCT_OUT)/vendor/etc/splash_nv12_720p30_3secs.h264 $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/etc/ ;\
 	$(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_VENDOR_RAMDISK_OUT) $(PRIVATE_ADDITIONAL_DIR) | $(COMPRESSION_COMMAND) > $(INTERNAL_VENDOR_RAMDISK_TARGET)
 	$(hide) touch $@
 endif
