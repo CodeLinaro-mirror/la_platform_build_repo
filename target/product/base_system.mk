@@ -271,7 +271,6 @@ PRODUCT_PACKAGES += \
     snapuserd \
     SoundPicker \
     storaged \
-    surfaceflinger \
     svc \
     task_profiles.json \
     tc \
@@ -293,6 +292,13 @@ PRODUCT_PACKAGES += \
     wificond \
     wifi.rc \
     wm \
+
+ifneq ($(TARGET_IS_HEADLESS),true)
+PRODUCT_PACKAGES += \
+    surfaceflinger \
+
+endif #TARGET_IS_HEADLESS
+
 
 # VINTF data for system image
 PRODUCT_PACKAGES += \
