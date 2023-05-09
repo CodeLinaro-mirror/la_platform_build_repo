@@ -3477,6 +3477,12 @@ ${ES_VNDR_MOD_PATH}/machine_dlkm_legacy \
 ${ES_VNDR_MOD_PATH}/ais \
 ${ES_VNDR_MOD_PATH}/msm-vidc \
 
+
+ES_MM_R_MOD_LOAD := \
+${ES_VNDR_MOD_PATH}/ais \
+${ES_VNDR_MOD_PATH}/msm-vidc \
+
+
 ES_MOD_ORDER := \
 'qmi_helpers qcom_ipc_logging qcom-apcs-ipc-mailbox smp2p_sleepstate qcom_pil_info qcom_ramdump pinctrl-slpi anx7625 i2c-mux pinctrl-sx150x qseecom_proxy \n'\
 'qcom_glink qcom_smd smp2p scc-sm8150 gpucc-sm8150 videocc-sm8150 msm_gpi mdt_loader msm_geni_serial pdr_interface spi-msm-geni i2c-msm-geni i2c-mux-pca954x dispcc-sm8250 hdcp_qseecom_dlkm \n'\
@@ -3495,6 +3501,10 @@ ES_MM_MOD_ORDER := \
 'native_dlkm machine_dlkm_legacy ais msm-vidc\n'\
 
 
+ES_MM_R_MOD_ORDER := \
+'ais msm-vidc\n'\
+
+
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INSTALLED_SYSTEMIMAGE_TARGET) $(INSTALLED_VENDORIMAGE_TARGET)
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_BOOTCONFIG_TARGET)
@@ -3504,10 +3514,13 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
 	$(foreach mod,$(addsuffix .ko,$(addprefix $(PRODUCT_OUT)/dlkm/lib/modules/,$(ES_DEFAULT_LKMS))), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/$(notdir $(mod)) --strip-debug $(mod) ;) \
 	echo -n -e ${ES_MOD_ORDER} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.order ;\
 	echo -n -e ${ES_MM_MOD_ORDER} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_modules.order ;\
+	echo -n -e ${ES_MM_R_MOD_ORDER} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_r_modules.order ;\
 	echo > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.load ;\
 	$(foreach mod,$(addsuffix .ko,${ES_MOD_LOAD}), echo "$(mod)" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.load ;) \
 	echo > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_modules.load ;\
 	$(foreach mod,$(addsuffix .ko,${ES_MM_MOD_LOAD}), echo "$(mod)" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_modules.load ;) \
+	echo > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_r_modules.load ;\
+	$(foreach mod,$(addsuffix .ko,${ES_MM_R_MOD_LOAD}), echo "$(mod)" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_r_modules.load ;) \
 	cp -r $(TARGET_RAMDISK_OUT)/vendor_early_services/bin/early_services_init $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/firmware_mnt; \
 	cp -r $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
