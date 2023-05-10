@@ -3449,6 +3449,7 @@ ${ES_MOD_PATH}/msm_geni_serial \
 ${ES_MOD_PATH}/pdr_interface \
 ${ES_MOD_PATH}/pinctrl-slpi \
 ${ES_MOD_PATH}/frpc-adsprpc \
+${ES_MOD_PATH}/qcom_va_minidump \
 ${ES_MOD_PATH}/anx7625 \
 ${ES_MOD_PATH}/spi-msm-geni \
 ${ES_MOD_PATH}/i2c-msm-geni \
@@ -3479,10 +3480,11 @@ ${ES_VNDR_MOD_PATH}/msm-vidc \
 ES_MOD_ORDER := \
 'qmi_helpers qcom_ipc_logging qcom-apcs-ipc-mailbox smp2p_sleepstate qcom_pil_info qcom_ramdump pinctrl-slpi anx7625 i2c-mux pinctrl-sx150x qseecom_proxy \n'\
 'qcom_glink qcom_smd smp2p scc-sm8150 gpucc-sm8150 videocc-sm8150 msm_gpi mdt_loader msm_geni_serial pdr_interface spi-msm-geni i2c-msm-geni i2c-mux-pca954x dispcc-sm8250 hdcp_qseecom_dlkm \n'\
-'qcom_glink_smem qcom_glink_spss msm_drm \n'\
+'qcom_glink_smem qcom_glink_spss qcom_va_minidump \n'\
 'rproc_qcom_common \n'\
 'qcom_sysmon frpc-adsprpc \n'\
 'qcom_q6v5 \n'\
+'msm_drm \n'\
 
 
 ES_MM_MOD_ORDER := \
