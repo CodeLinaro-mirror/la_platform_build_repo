@@ -3405,16 +3405,6 @@ ES_MOD_PATH := "/lib/modules"
 
 # strip debug info and copied to ES mods
 ES_DEFAULT_LKMS := \
-    snd_event_dlkm_legacy \
-    q6_notifier_dlkm_legacy \
-    apr_dlkm \
-    adsp_loader_dlkm_legacy \
-    q6_dlkm_legacy \
-    platform_dlkm \
-    native_dlkm \
-    stub_dlkm_legacy \
-    hdmi_dlkm \
-    machine_dlkm_legacy \
     ais \
     msm_kgsl \
     msm-vidc \
@@ -3466,18 +3456,6 @@ ${ES_MOD_PATH}/qcom-dma-heap \
 ${ES_MOD_PATH}/msm_drm \
 
 ES_MM_MOD_LOAD := \
-${ES_VNDR_MOD_PATH}/snd_event_dlkm_legacy \
-${ES_VNDR_MOD_PATH}/q6_notifier_dlkm_legacy \
-${ES_VNDR_MOD_PATH}/apr_dlkm \
-${ES_VNDR_MOD_PATH}/adsp_loader_dlkm_legacy \
-${ES_VNDR_MOD_PATH}/q6_dlkm_legacy \
-${ES_VNDR_MOD_PATH}/qcom_q6v5_pas \
-${ES_VNDR_MOD_PATH}/qcom_spss \
-${ES_VNDR_MOD_PATH}/platform_dlkm \
-${ES_VNDR_MOD_PATH}/native_dlkm \
-${ES_VNDR_MOD_PATH}/stub_dlkm_legacy \
-${ES_VNDR_MOD_PATH}/hdmi_dlkm \
-${ES_VNDR_MOD_PATH}/machine_dlkm_legacy \
 ${ES_VNDR_MOD_PATH}/ais \
 ${ES_VNDR_MOD_PATH}/msm_kgsl \
 ${ES_VNDR_MOD_PATH}/msm-vidc \
@@ -3485,6 +3463,7 @@ ${ES_VNDR_MOD_PATH}/msm-vidc \
 
 ES_MM_R_MOD_LOAD := \
 ${ES_VNDR_MOD_PATH}/ais \
+${ES_VNDR_MOD_PATH}/msm_kgsl \
 ${ES_VNDR_MOD_PATH}/msm-vidc \
 
 
@@ -3499,15 +3478,11 @@ ES_MOD_ORDER := \
 
 
 ES_MM_MOD_ORDER := \
-'snd_event_dlkm_legacy q6_notifier_dlkm_legacy stub_dlkm_legacy hdmi_dlkm  \n'\
-'apr_dlkm \n'\
-'adsp_loader_dlkm_legacy q6_dlkm_legacy qcom_q6v5_pas qcom_spss \n'\
-'platform_dlkm \n'\
-'native_dlkm machine_dlkm_legacy ais msm_kgsl msm-vidc\n'\
+'ais msm_kgsl msm-vidc\n'\
 
 
 ES_MM_R_MOD_ORDER := \
-'ais msm-vidc\n'\
+'ais msm_kgsl msm-vidc\n'\
 
 
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
