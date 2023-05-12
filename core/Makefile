@@ -3425,7 +3425,7 @@ ES_RAMDISK_LKMS := \
    qcom_spss \
 
 
-ES_MOD_ORDER := \
+ES_MOD_LOAD := \
 ${ES_MOD_PATH}/qmi_helpers \
 ${ES_MOD_PATH}/qcom_ipc_logging \
 ${ES_MOD_PATH}/qcom_glink \
@@ -3449,6 +3449,7 @@ ${ES_MOD_PATH}/msm_geni_serial \
 ${ES_MOD_PATH}/pdr_interface \
 ${ES_MOD_PATH}/pinctrl-slpi \
 ${ES_MOD_PATH}/frpc-adsprpc \
+${ES_MOD_PATH}/qcom_va_minidump \
 ${ES_MOD_PATH}/anx7625 \
 ${ES_MOD_PATH}/spi-msm-geni \
 ${ES_MOD_PATH}/i2c-msm-geni \
@@ -3460,7 +3461,7 @@ ${ES_MOD_PATH}/qseecom_proxy \
 ${ES_MOD_PATH}/hdcp_qseecom_dlkm \
 ${ES_MOD_PATH}/msm_drm \
 
-ES_MM_MOD_ORDER := \
+ES_MM_MOD_LOAD := \
 ${ES_VNDR_MOD_PATH}/snd_event_dlkm_legacy \
 ${ES_VNDR_MOD_PATH}/q6_notifier_dlkm_legacy \
 ${ES_VNDR_MOD_PATH}/apr_dlkm \
@@ -3477,6 +3478,33 @@ ${ES_VNDR_MOD_PATH}/ais \
 ${ES_VNDR_MOD_PATH}/msm-vidc \
 
 
+ES_MM_R_MOD_LOAD := \
+${ES_VNDR_MOD_PATH}/ais \
+${ES_VNDR_MOD_PATH}/msm-vidc \
+
+
+ES_MOD_ORDER := \
+'qmi_helpers qcom_ipc_logging qcom-apcs-ipc-mailbox smp2p_sleepstate qcom_pil_info qcom_ramdump pinctrl-slpi anx7625 i2c-mux pinctrl-sx150x qseecom_proxy \n'\
+'qcom_glink qcom_smd smp2p scc-sm8150 gpucc-sm8150 videocc-sm8150 msm_gpi mdt_loader msm_geni_serial pdr_interface spi-msm-geni i2c-msm-geni i2c-mux-pca954x dispcc-sm8250 hdcp_qseecom_dlkm \n'\
+'qcom_glink_smem qcom_glink_spss qcom_va_minidump \n'\
+'rproc_qcom_common \n'\
+'qcom_sysmon frpc-adsprpc \n'\
+'qcom_q6v5 \n'\
+'msm_drm \n'\
+
+
+ES_MM_MOD_ORDER := \
+'snd_event_dlkm_legacy q6_notifier_dlkm_legacy stub_dlkm_legacy hdmi_dlkm  \n'\
+'apr_dlkm \n'\
+'adsp_loader_dlkm_legacy q6_dlkm_legacy qcom_q6v5_pas qcom_spss \n'\
+'platform_dlkm \n'\
+'native_dlkm machine_dlkm_legacy ais msm-vidc\n'\
+
+
+ES_MM_R_MOD_ORDER := \
+'ais msm-vidc\n'\
+
+
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INSTALLED_SYSTEMIMAGE_TARGET) $(INSTALLED_VENDORIMAGE_TARGET)
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_BOOTCONFIG_TARGET)
@@ -3484,10 +3512,15 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/ ;\
 	cp -rf $(addsuffix .ko,$(addprefix $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/,$(ES_RAMDISK_LKMS))) $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/ ;\
 	$(foreach mod,$(addsuffix .ko,$(addprefix $(PRODUCT_OUT)/dlkm/lib/modules/,$(ES_DEFAULT_LKMS))), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/$(notdir $(mod)) --strip-debug $(mod) ;) \
+	echo -n -e ${ES_MOD_ORDER} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.order ;\
+	echo -n -e ${ES_MM_MOD_ORDER} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_modules.order ;\
+	echo -n -e ${ES_MM_R_MOD_ORDER} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_r_modules.order ;\
 	echo > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.load ;\
-	$(foreach mod,$(addsuffix .ko,${ES_MOD_ORDER}), echo "$(mod)" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.load ;) \
+	$(foreach mod,$(addsuffix .ko,${ES_MOD_LOAD}), echo "$(mod)" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.load ;) \
 	echo > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_modules.load ;\
-	$(foreach mod,$(addsuffix .ko,${ES_MM_MOD_ORDER}), echo "$(mod)" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_modules.load ;) \
+	$(foreach mod,$(addsuffix .ko,${ES_MM_MOD_LOAD}), echo "$(mod)" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_modules.load ;) \
+	echo > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_r_modules.load ;\
+	$(foreach mod,$(addsuffix .ko,${ES_MM_R_MOD_LOAD}), echo "$(mod)" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_r_modules.load ;) \
 	cp -r $(TARGET_RAMDISK_OUT)/vendor_early_services/bin/early_services_init $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/firmware_mnt; \
 	cp -r $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
@@ -3548,9 +3581,13 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/system/lib64/libnetd_client.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libmmosal.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libC2D2.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libgsl.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libdmabufheap.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libadreno_utils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libEGL_adreno.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/egl/libEGL_adreno.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libGLESv2_adreno.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/egl/libGLESv2_adreno.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libllvm-glnext.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libandroidicu.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libicuuc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
@@ -3562,6 +3599,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -ar $(PRODUCT_OUT)/vendor/firmware $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/bike_bell.wav $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/etc/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/bin/audio-nxp-auto $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/splash_nv12_720p30_3secs.h264 $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/etc/ ;\
 	$(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_VENDOR_RAMDISK_OUT) $(PRIVATE_ADDITIONAL_DIR) | $(COMPRESSION_COMMAND) > $(INTERNAL_VENDOR_RAMDISK_TARGET)
 	$(hide) touch $@
 endif
