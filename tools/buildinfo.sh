@@ -46,6 +46,8 @@ if [ -n "$PRODUCT_DEFAULT_LOCALE" ] ; then
   echo "ro.product.locale=$PRODUCT_DEFAULT_LOCALE"
 fi
 echo "ro.wifi.channels=$PRODUCT_DEFAULT_WIFI_CHANNELS"
+# ro.product.1G.enable for 1g ddr project.
+echo "ro.product.1G.enable=1"
 
 echo "# Do not try to parse thumbprint"
 if [ -n "$BUILD_THUMBPRINT" ] ; then
