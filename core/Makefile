@@ -2933,9 +2933,7 @@ endif
 # On devices with a system_dlkm partition,
 # - /system/lib/modules is a symlink to a directory that stores system DLKMs.
 # - The system_dlkm partition is mounted at /system_dlkm at runtime.
-ifdef BOARD_USES_SYSTEM_DLKMIMAGE
-  INTERNAL_SYSTEMIMAGE_FILES += $(call create-partition-compat-symlink,$(TARGET_OUT)/lib/modules,/system_dlkm/lib/modules,system_dlkm.img)
-endif
+INTERNAL_SYSTEMIMAGE_FILES += $(call create-partition-compat-symlink,$(TARGET_OUT)/lib/modules,/system_dlkm/lib/modules,system_dlkm.img)
 
 FULL_SYSTEMIMAGE_DEPS := $(INTERNAL_SYSTEMIMAGE_FILES) $(INTERNAL_USERIMAGES_DEPS)
 
