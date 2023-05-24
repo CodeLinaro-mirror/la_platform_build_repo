@@ -3416,6 +3416,7 @@ ES_DEFAULT_LKMS := \
     hdmi_dlkm \
     machine_dlkm_legacy \
     ais \
+    msm_kgsl \
     msm-vidc \
 
 
@@ -3459,6 +3460,9 @@ ${ES_MOD_PATH}/pinctrl-sx150x \
 ${ES_MOD_PATH}/dispcc-sm8250 \
 ${ES_MOD_PATH}/qseecom_proxy \
 ${ES_MOD_PATH}/hdcp_qseecom_dlkm \
+${ES_MOD_PATH}/dcvs_fp \
+${ES_MOD_PATH}/qcom-dcvs \
+${ES_MOD_PATH}/qcom-dma-heap \
 ${ES_MOD_PATH}/msm_drm \
 
 ES_MM_MOD_LOAD := \
@@ -3475,6 +3479,7 @@ ${ES_VNDR_MOD_PATH}/stub_dlkm_legacy \
 ${ES_VNDR_MOD_PATH}/hdmi_dlkm \
 ${ES_VNDR_MOD_PATH}/machine_dlkm_legacy \
 ${ES_VNDR_MOD_PATH}/ais \
+${ES_VNDR_MOD_PATH}/msm_kgsl \
 ${ES_VNDR_MOD_PATH}/msm-vidc \
 
 
@@ -3486,10 +3491,10 @@ ${ES_VNDR_MOD_PATH}/msm-vidc \
 ES_MOD_ORDER := \
 'qmi_helpers qcom_ipc_logging qcom-apcs-ipc-mailbox smp2p_sleepstate qcom_pil_info qcom_ramdump pinctrl-slpi anx7625 i2c-mux pinctrl-sx150x qseecom_proxy \n'\
 'qcom_glink qcom_smd smp2p scc-sm8150 gpucc-sm8150 videocc-sm8150 msm_gpi mdt_loader msm_geni_serial pdr_interface spi-msm-geni i2c-msm-geni i2c-mux-pca954x dispcc-sm8250 hdcp_qseecom_dlkm \n'\
-'qcom_glink_smem qcom_glink_spss qcom_va_minidump \n'\
-'rproc_qcom_common \n'\
+'qcom_glink_smem qcom_glink_spss qcom_va_minidump qcom-dma-heap \n'\
+'rproc_qcom_common dcvs_fp \n'\
 'qcom_sysmon frpc-adsprpc \n'\
-'qcom_q6v5 \n'\
+'qcom_q6v5 qcom-dcvs \n'\
 'msm_drm \n'\
 
 
@@ -3498,7 +3503,7 @@ ES_MM_MOD_ORDER := \
 'apr_dlkm \n'\
 'adsp_loader_dlkm_legacy q6_dlkm_legacy qcom_q6v5_pas qcom_spss \n'\
 'platform_dlkm \n'\
-'native_dlkm machine_dlkm_legacy ais msm-vidc\n'\
+'native_dlkm machine_dlkm_legacy ais msm_kgsl msm-vidc\n'\
 
 
 ES_MM_R_MOD_ORDER := \
