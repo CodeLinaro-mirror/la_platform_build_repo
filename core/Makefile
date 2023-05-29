@@ -3403,9 +3403,22 @@ ES_MOD_PATH := "/lib/modules"
 
 # strip debug info and copied to ES mods
 ES_DEFAULT_LKMS := \
-    ais \
-    msm_kgsl \
-    msm-vidc \
+   ais \
+   msm_kgsl \
+   msm-vidc \
+   snd_event_dlkm \
+   q6_pdr_dlkm \
+   stub_dlkm \
+   q6_notifier_dlkm \
+   gpr_dlkm \
+   spf_core_dlkm \
+   audpkt_ion_dlkm \
+   audio_pkt_dlkm \
+   adsp_loader_dlkm \
+   q6_dlkm \
+   audio_prm_dlkm \
+   machine_dlkm \
+   coupled_ssr_dlkm \
 
 
 # copied to ES mods
@@ -3415,6 +3428,24 @@ ES_RAMDISK_LKMS := \
    scc-sm8150 \
    gpucc-sm8150 \
    videocc-sm8150 \
+   qmi_helpers \
+   smp2p_sleepstate \
+   qcom_pil_info \
+   qcom_ramdump \
+   qcom_glink \
+   qcom_smd \
+   smp2p \
+   msm_gpi \
+   pdr_interface \
+   qcom_glink_smem \
+   qcom_glink_spss \
+   rproc_qcom_common \
+   qcom_sysmon \
+   frpc-adsprpc \
+   qcom_q6v5 \
+   qrtr-smd \
+   qcom_q6v5_pas \
+   qcom_spss \
 
 
 ES_MOD_ORDER := \
@@ -3443,6 +3474,28 @@ ES_MOD_ORDER_VI:= \
 'videocc-sm8150 msm-vidc \n'\
 
 
+MM_R_MOD_ORDER_AU:= \
+'qmi_helpers\n'\
+'smp2p_sleepstate\n'\
+'qcom_pil_info\n'\
+'qcom_ramdump\n'\
+'qcom_glink qcom_smd smp2p msm_gpi pdr_interface\n'\
+'qcom_glink_smem qcom_glink_spss\n'\
+'rproc_qcom_common\n'\
+'qcom_sysmon frpc-adsprpc\n'\
+'qcom_q6v5\n'\
+'qrtr-smd qcom_q6v5_pas qcom_spss\n'\
+'snd_event_dlkm q6_pdr_dlkm stub_dlkm\n'\
+'q6_notifier_dlkm\n'\
+'gpr_dlkm\n'\
+'spf_core_dlkm\n'\
+'audpkt_ion_dlkm\n'\
+'audio_pkt_dlkm\n'\
+'adsp_loader_dlkm\n'\
+'q6_dlkm audio_prm_dlkm\n'\
+'machine_dlkm coupled_ssr_dlkm\n'\
+
+
 ES_MOD_ORDER_END := \
 'qcom_soc_wdt reboot-mode pcs_xpcs \n'\
 'stmmac qcom-pon \n'\
@@ -3461,6 +3514,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
 	echo -n -e ${ES_MOD_ORDER_DI} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_di.order ;\
 	echo -n -e ${ES_MOD_ORDER_VI} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_vi.order ;\
 	echo -n -e ${ES_MOD_ORDER_RV} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_rv.order ;\
+	echo -n -e ${MM_R_MOD_ORDER_AU} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_r_au.order ;\
 	echo -n -e ${ES_MOD_ORDER_END} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_end.order ;\
 	echo > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.load ;\
 	$(foreach mod,$(addsuffix .ko,${ES_MOD_LOAD}), echo "$(mod)" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.load ;) \
@@ -3539,6 +3593,12 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libandroidicu.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libicuuc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libicui18n.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libjson.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_cci.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_common_so.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_csi.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_encdec.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.runtime/lib64/bionic/libdl_android.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libais* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libc2d30_bltlib.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
