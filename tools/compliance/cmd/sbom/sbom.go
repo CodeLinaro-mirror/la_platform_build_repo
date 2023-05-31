@@ -16,6 +16,8 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha1"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"io"
@@ -36,6 +38,7 @@ import (
 	"github.com/spdx/tools-golang/json"
 	"github.com/spdx/tools-golang/spdx/common"
 	spdx "github.com/spdx/tools-golang/spdx/v2_2"
+	"github.com/spdx/tools-golang/spdxlib"
 )
 
 var (
@@ -171,6 +174,7 @@ Options:
 		os.Exit(1)
 	}
 
+	// writing the spdx Doc created
 	if err := spdx_json.Save2_2(spdxDoc, ofile); err != nil {
 		fmt.Fprintf(os.Stderr, "failed to write document to %v: %v", *outputFile, err)
 		os.Exit(1)
@@ -194,16 +198,34 @@ Options:
 	os.Exit(0)
 }
 
-type creationTimeGetter func() time.Time
+type creationTimeGetter func() string
 
 // actualTime returns current time in UTC
-func actualTime() time.Time {
-	return time.Now().UTC()
+func actualTime() string {
+	t := time.Now().UTC()
+	return t.UTC().Format("2006-01-02T15:04:05Z")
 }
 
 // replaceSlashes replaces "/" by "-" for the library path to be used for packages & files SPDXID
 func replaceSlashes(x string) string {
 	return strings.ReplaceAll(x, "/", "-")
+}
+
+// stripDocName removes the outdir prefix and meta_lic suffix from a target Name
+func stripDocName(name string) string {
+	// remove outdir prefix
+	if strings.HasPrefix(name, "out/") {
+		name = name[4:]
+	}
+
+	// remove suffix
+	if strings.HasSuffix(name, ".meta_lic") {
+		name = name[:len(name)-9]
+	} else if strings.HasSuffix(name, "/meta_lic") {
+		name = name[:len(name)-9] + "/"
+	}
+
+	return name
 }
 
 // getPackageName returns a package name of a target Node
@@ -223,8 +245,7 @@ func getDocumentName(ctx *context, tn *compliance.TargetNode, pm *projectmetadat
 		return replaceSlashes(tn.ModuleName())
 	}
 
-	// TO DO: Replace tn.Name() with pm.Name() + parts of the target name
-	return replaceSlashes(tn.Name())
+	return stripDocName(replaceSlashes(tn.Name()))
 }
 
 // getDownloadUrl returns the download URL if available (GIT, SVN, etc..),
@@ -295,6 +316,19 @@ func inputFiles(lg *compliance.LicenseGraph, pmix *projectmetadata.Index, licens
 	return files
 }
 
+// generateSPDXNamespace generates a unique SPDX Document Namespace using a SHA1 checksum
+// and the CreationInfo.Created field as the date.
+func generateSPDXNamespace(created string) string {
+	// Compute a SHA1 checksum of the CreationInfo.Created field.
+	hash := sha1.Sum([]byte(created))
+	checksum := hex.EncodeToString(hash[:])
+
+	// Combine the checksum and timestamp to generate the SPDX Namespace.
+	namespace := fmt.Sprintf("SPDXRef-DOCUMENT-%s-%s", created, checksum)
+
+	return namespace
+}
+
 // sbomGenerator implements the spdx bom utility
 
 // SBOM is part of the new government regulation issued to improve national cyber security
@@ -325,8 +359,11 @@ func sbomGenerator(ctx *context, files ...string) (*spdx.Document, []string, err
 	// creating the license section
 	otherLicenses := []*spdx.OtherLicense{}
 
-        // main package name
-        var mainPkgName string
+	// spdx document name
+	var docName string
+
+	// main package name
+	var mainPkgName string
 
 	// implementing the licenses references for the packages
 	licenses := make(map[string]string)
@@ -365,6 +402,7 @@ func sbomGenerator(ctx *context, files ...string) (*spdx.Document, []string, err
 			}
 
 			if isMainPackage {
+				docName = getDocumentName(ctx, tn, pm)
 				mainPkgName = replaceSlashes(getPackageName(ctx, tn))
 				isMainPackage = false
 			}
@@ -478,11 +516,23 @@ func sbomGenerator(ctx *context, files ...string) (*spdx.Document, []string, err
 		return nil, nil, fmt.Errorf("Unable to build creation info section for SPDX doc: %v\n", err)
 	}
 
-	return &spdx.Document{
-		SPDXIdentifier: "DOCUMENT",
-		CreationInfo:   ci,
-		Packages:       pkgs,
-		Relationships:  relationships,
-		OtherLicenses:  otherLicenses,
-	}, deps, nil
+	ci.Created = ctx.creationTime()
+
+	doc := &spdx.Document{
+		SPDXVersion:       "SPDX-2.2",
+		DataLicense:       "CC0-1.0",
+		SPDXIdentifier:    "DOCUMENT",
+		DocumentName:      docName,
+		DocumentNamespace: generateSPDXNamespace(ci.Created),
+		CreationInfo:      ci,
+		Packages:          pkgs,
+		Relationships:     relationships,
+		OtherLicenses:     otherLicenses,
+	}
+
+	if err := spdxlib.ValidateDocument2_2(doc); err != nil {
+		return nil, nil, fmt.Errorf("Unable to validate the SPDX doc: %v\n", err)
+	}
+
+	return doc, deps, nil
 }
