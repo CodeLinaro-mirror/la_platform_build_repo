@@ -32,7 +32,6 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     LiveWallpapersPicker \
     PartnerBookmarksProvider \
-    Tag \
 
 ifneq ($(TARGET_NO_TELEPHONY), true)
 PRODUCT_PACKAGES += \
@@ -61,13 +60,18 @@ PRODUCT_PACKAGES += \
     audio.a2dp.default \
     audio.hearing_aid.default \
 
+ifneq ($(TARGET_1G_DDR_RAM), true)
+PRODUCT_PACKAGES += \
+    Tag \
+    android.hardware.biometrics.fingerprint@2.1 \
+endif
+
 # For ringtones that rely on forward lock encryption
 PRODUCT_PACKAGES += libfwdlockengine
 
 # System libraries commonly depended on by things on the system_ext or product partitions.
 # These lists will be pruned periodically.
 PRODUCT_PACKAGES += \
-    android.hardware.biometrics.fingerprint@2.1 \
     android.hardware.radio@1.0 \
     android.hardware.radio@1.1 \
     android.hardware.radio@1.2 \
