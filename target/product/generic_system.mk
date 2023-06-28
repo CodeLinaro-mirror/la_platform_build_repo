@@ -30,7 +30,6 @@ PRODUCT_PACKAGES += \
 
 # Applications
 PRODUCT_PACKAGES += \
-    LiveWallpapersPicker \
     PartnerBookmarksProvider \
 
 ifneq ($(TARGET_NO_TELEPHONY), true)
