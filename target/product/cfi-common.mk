@@ -29,6 +29,7 @@ PRODUCT_CFI_INCLUDE_PATHS :=  \
     hardware/synaptics/wlan/synadhd/wpa_supplicant_8_lib \
     hardware/interfaces/nfc \
     hardware/qcom/wlan/qcwcn/wpa_supplicant_8_lib \
+    hardware/qcom/wlan/legacy/qcwcn/wpa_supplicant_8_lib \
     hardware/qcom/wlan/wcn6740/qcwcn/wpa_supplicant_8_lib \
     hardware/interfaces/keymaster \
     hardware/interfaces/security \
