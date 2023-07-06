@@ -465,6 +465,25 @@ BUILD_WITHOUT_PV := true
 
 ADDITIONAL_SYSTEM_PROPERTIES += net.bt.name=Android
 
+# QCV: initialize property - used to detect framework type
+ifeq ($(TARGET_FWK_SUPPORTS_FULL_VALUEADDS), true)
+  ADDITIONAL_SYSTEM_PROPERTIES += \
+        ro.vendor.qti.va_aosp.support=1
+
+  ADDITIONAL_ODM_PROPERTIES += \
+        ro.vendor.qti.va_odm.support=1
+
+  $(warning "Compile using modified AOSP tree supporting full vendor value-adds")
+else
+  ADDITIONAL_SYSTEM_PROPERTIES += \
+        ro.vendor.qti.va_aosp.support=0
+
+  ADDITIONAL_ODM_PROPERTIES += \
+        ro.vendor.qti.va_odm.support=0
+
+  $(warning "Compile using pure AOSP tree")
+endif
+
 # This property is set by flashing debug boot image, so default to false.
 ADDITIONAL_SYSTEM_PROPERTIES += ro.force.debuggable=0
 
