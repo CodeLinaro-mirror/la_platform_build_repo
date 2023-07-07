@@ -239,26 +239,28 @@ my_common := COMMON
 include $(BUILD_SYSTEM)/link_type.mk
 endif # !LOCAL_IS_HOST_MODULE
 
-ifdef LOCAL_SOONG_DEVICE_RRO_DIRS
-  $(call append_enforce_rro_sources, \
-      $(my_register_name), \
-      false, \
-      $(LOCAL_FULL_MANIFEST_FILE), \
-      $(if $(LOCAL_EXPORT_PACKAGE_RESOURCES),true,false), \
-      $(LOCAL_SOONG_DEVICE_RRO_DIRS), \
-      vendor \
-  )
-endif
+ifeq (,$(filter tests,$(LOCAL_MODULE_TAGS)))
+  ifdef LOCAL_SOONG_DEVICE_RRO_DIRS
+    $(call append_enforce_rro_sources, \
+        $(my_register_name), \
+        false, \
+        $(LOCAL_FULL_MANIFEST_FILE), \
+        $(if $(LOCAL_EXPORT_PACKAGE_RESOURCES),true,false), \
+        $(LOCAL_SOONG_DEVICE_RRO_DIRS), \
+        vendor \
+    )
+  endif
 
-ifdef LOCAL_SOONG_PRODUCT_RRO_DIRS
-  $(call append_enforce_rro_sources, \
-      $(my_register_name), \
-      false, \
-      $(LOCAL_FULL_MANIFEST_FILE), \
-      $(if $(LOCAL_EXPORT_PACKAGE_RESOURCES),true,false), \
-      $(LOCAL_SOONG_PRODUCT_RRO_DIRS), \
-      product \
-  )
+  ifdef LOCAL_SOONG_PRODUCT_RRO_DIRS
+    $(call append_enforce_rro_sources, \
+        $(my_register_name), \
+        false, \
+        $(LOCAL_FULL_MANIFEST_FILE), \
+        $(if $(LOCAL_EXPORT_PACKAGE_RESOURCES),true,false), \
+        $(LOCAL_SOONG_PRODUCT_RRO_DIRS), \
+        product \
+    )
+  endif
 endif
 
 ifdef LOCAL_PREBUILT_COVERAGE_ARCHIVE
@@ -269,3 +271,8 @@ ifdef LOCAL_PREBUILT_COVERAGE_ARCHIVE
 endif
 
 SOONG_ALREADY_CONV += $(LOCAL_MODULE)
+
+###########################################################
+## SBOM generation
+###########################################################
+include $(BUILD_SBOM_GEN)
