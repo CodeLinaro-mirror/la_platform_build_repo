@@ -3501,6 +3501,10 @@ ES_MOD_ORDER_END := \
 'stmmac qcom-pon \n'\
 'stmmac-platform \n'\
 'dwmac-qcom-eth \n'\
+'gcc-sc8180x \n'\
+'camcc-sc8180x \n'\
+'qnoc-sc8180x \n'\
+'micrel \n'\
 
 
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
