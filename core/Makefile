@@ -3464,10 +3464,14 @@ ES_MOD_ORDER_DI := \
 'i2c-msm-geni msm_drm \n'\
 
 
+ES_MOD_ORDER_AIS := \
+'ais \n'\
+
+
 ES_MOD_ORDER_RV:= \
 'dcvs_fp scc-sm8150 \n'\
 'qcom-dcvs gpucc-sm8150 \n'\
-'msm_kgsl ais \n'\
+'msm_kgsl \n'\
 
 
 ES_MOD_ORDER_VI:= \
@@ -3517,6 +3521,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
 	echo -n -e ${ES_MOD_ORDER} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.order ;\
 	echo -n -e ${ES_MOD_ORDER_DI} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_di.order ;\
 	echo -n -e ${ES_MOD_ORDER_VI} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_vi.order ;\
+        echo -n -e ${ES_MOD_ORDER_AIS} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_ais.order ;\
 	echo -n -e ${ES_MOD_ORDER_RV} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_rv.order ;\
 	echo -n -e ${MM_R_MOD_ORDER_AU} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_r_au.order ;\
 	echo -n -e ${ES_MOD_ORDER_END} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_end.order ;\
