@@ -23,6 +23,7 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/media_product.mk)
 # /product packages
 PRODUCT_PACKAGES += \
     Camera2 \
+    Gallery2 \
     LatinIME \
     OneTimeInitializer \
     preinstalled-packages-platform-handheld-product.xml \
@@ -35,7 +36,6 @@ PRODUCT_PACKAGES += \
     Calendar \
     Contacts \
     DeskClock \
-    Gallery2 \
     Music \
     QuickSearchBox
 endif
