@@ -3501,14 +3501,17 @@ MM_R_MOD_ORDER_AU:= \
 
 
 ES_MOD_ORDER_END := \
-'qcom_soc_wdt reboot-mode pcs_xpcs \n'\
-'stmmac qcom-pon \n'\
-'stmmac-platform \n'\
-'dwmac-qcom-eth \n'\
+'qcom_soc_wdt \n'\
+'reboot-mode \n'\
+'qcom-pon \n'\
 'gcc-sc8180x \n'\
 'camcc-sc8180x \n'\
 'qnoc-sc8180x \n'\
+'pcs_xpcs \n'\
 'micrel \n'\
+'stmmac \n'\
+'stmmac-platform \n'\
+'dwmac-qcom-eth \n'\
 
 
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
