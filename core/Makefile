@@ -3425,6 +3425,7 @@ ES_DEFAULT_LKMS := \
 ES_RAMDISK_LKMS := \
    qcom-dcvs \
    dcvs_fp \
+   nvmem_qfprom \
    scc-sm8150 \
    gpucc-sm8150 \
    videocc-sm8150 \
@@ -3471,6 +3472,7 @@ ES_MOD_ORDER_AIS := \
 ES_MOD_ORDER_RV:= \
 'dcvs_fp scc-sm8150 \n'\
 'qcom-dcvs gpucc-sm8150 \n'\
+'nvmem_qfprom \n'\
 'msm_kgsl \n'\
 
 
