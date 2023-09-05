@@ -3470,84 +3470,115 @@ ES_MOD_PATH := "/lib/modules"
 
 # strip debug info and copied to ES mods
 ES_DEFAULT_LKMS := \
-    ais \
-    msm_kgsl \
-    msm-vidc \
+   ais \
+   msm_kgsl \
+   msm-vidc \
+   snd_event_dlkm \
+   q6_pdr_dlkm \
+   stub_dlkm \
+   q6_notifier_dlkm \
+   gpr_dlkm \
+   spf_core_dlkm \
+   audpkt_ion_dlkm \
+   audio_pkt_dlkm \
+   adsp_loader_dlkm \
+   q6_dlkm \
+   audio_prm_dlkm \
+   machine_dlkm \
+   coupled_ssr_dlkm \
 
 
 # copied to ES mods
 ES_RAMDISK_LKMS := \
+   qcom-dcvs \
+   dcvs_fp \
+   nvmem_qfprom \
+   scc-sm8150 \
+   gpucc-sm8150 \
+   videocc-sm8150 \
+   qmi_helpers \
+   smp2p_sleepstate \
+   qcom_pil_info \
+   qcom_ramdump \
+   qcom_glink \
+   qcom_smd \
+   smp2p \
+   msm_gpi \
+   pdr_interface \
+   qcom_glink_smem \
+   qcom_glink_spss \
+   rproc_qcom_common \
+   qcom_sysmon \
+   frpc-adsprpc \
+   qcom_q6v5 \
+   qrtr-smd \
    qcom_q6v5_pas \
    qcom_spss \
 
 
-ES_MOD_LOAD := \
-${ES_MOD_PATH}/qmi_helpers \
-${ES_MOD_PATH}/qcom_ipc_logging \
-${ES_MOD_PATH}/qcom_glink \
-${ES_MOD_PATH}/qcom_smd \
-${ES_MOD_PATH}/qcom_glink_smem \
-${ES_MOD_PATH}/qcom_glink_spss \
-${ES_MOD_PATH}/rproc_qcom_common \
-${ES_MOD_PATH}/qcom-apcs-ipc-mailbox \
-${ES_MOD_PATH}/smp2p \
-${ES_MOD_PATH}/smp2p_sleepstate \
-${ES_MOD_PATH}/scc-sm8150 \
-${ES_MOD_PATH}/gpucc-sm8150 \
-${ES_MOD_PATH}/videocc-sm8150 \
-${ES_MOD_PATH}/msm_gpi \
-${ES_MOD_PATH}/qcom_sysmon \
-${ES_MOD_PATH}/qcom_q6v5 \
-${ES_MOD_PATH}/qcom_pil_info \
-${ES_MOD_PATH}/mdt_loader \
-${ES_MOD_PATH}/qcom_ramdump \
-${ES_MOD_PATH}/msm_geni_serial \
-${ES_MOD_PATH}/pdr_interface \
-${ES_MOD_PATH}/pinctrl-slpi \
-${ES_MOD_PATH}/frpc-adsprpc \
-${ES_MOD_PATH}/qcom_va_minidump \
-${ES_MOD_PATH}/anx7625 \
-${ES_MOD_PATH}/spi-msm-geni \
-${ES_MOD_PATH}/i2c-msm-geni \
-${ES_MOD_PATH}/i2c-mux \
-${ES_MOD_PATH}/i2c-mux-pca954x \
-${ES_MOD_PATH}/pinctrl-sx150x \
-${ES_MOD_PATH}/dispcc-sm8250 \
-${ES_MOD_PATH}/qseecom_proxy \
-${ES_MOD_PATH}/hdcp_qseecom_dlkm \
-${ES_MOD_PATH}/dcvs_fp \
-${ES_MOD_PATH}/qcom-dcvs \
-${ES_MOD_PATH}/qcom-dma-heap \
-${ES_MOD_PATH}/msm_drm \
-
-ES_MM_MOD_LOAD := \
-${ES_VNDR_MOD_PATH}/ais \
-${ES_VNDR_MOD_PATH}/msm_kgsl \
-${ES_VNDR_MOD_PATH}/msm-vidc \
-
-
-ES_MM_R_MOD_LOAD := \
-${ES_VNDR_MOD_PATH}/ais \
-${ES_VNDR_MOD_PATH}/msm_kgsl \
-${ES_VNDR_MOD_PATH}/msm-vidc \
-
-
 ES_MOD_ORDER := \
-'qmi_helpers qcom_ipc_logging qcom-apcs-ipc-mailbox smp2p_sleepstate qcom_pil_info qcom_ramdump pinctrl-slpi anx7625 i2c-mux pinctrl-sx150x qseecom_proxy \n'\
-'qcom_glink qcom_smd smp2p scc-sm8150 gpucc-sm8150 videocc-sm8150 msm_gpi mdt_loader msm_geni_serial pdr_interface spi-msm-geni i2c-msm-geni i2c-mux-pca954x dispcc-sm8250 hdcp_qseecom_dlkm \n'\
-'qcom_glink_smem qcom_glink_spss qcom_va_minidump qcom-dma-heap \n'\
-'rproc_qcom_common dcvs_fp \n'\
-'qcom_sysmon frpc-adsprpc \n'\
-'qcom_q6v5 qcom-dcvs \n'\
+'spmi-pmic-arb qnoc-qos qcom-scm gh_rm_drv qcom_hwspinlock qcom_cpu_vendor_hooks qcom-cpufreq-hw rtc-pm8xxx pinctrl-slpi proxy-consumer nvmem_qcom-spmi-sdam msm_dma_iommu_mapping iommu-logger icc-debug gh_msgq debug-regulator cmd-db \n'\
+'qcom_ipc_logging minidump debug_symbol smem secure_buffer qti-fixed-regulator qcom-spmi-pmic llcc-qcom gdsc-regulator \n'\
+'socinfo pinctrl-msm qcom-dload-mode qnoc-sm8150 rpmh-regulator qcom_iommu_util msm_qmp qcom_aoss qcom-pdc mem_buf_dev qrtr clk-rpmh icc-rpmh icc-bcm-voter qcom-rpmh-regulator qcom_rpmh clk-qcom socinfo \n'\
+'clk-dummy pinctrl-sm8150 arm_smmu boot_stats qcom_wdt_core qcom_dma_heaps phy-qcom-ufs mem_buf_msgq gcc-sm8150 pinctrl-sdmshrike \n'\
+'dispcc-sm8250 camcc-sm8150 \n'\
+'ufs_qcom ufshcd-crypto-qti crypto-qti phy-qcom-ufs-qmp-v4 mem_buf \n'\
+'qcom-apcs-ipc-mailbox mdt_loader \n'\
+
+
+ES_MOD_ORDER_DI := \
+'anx7625 drm_display_helper drm_dp_aux_bus i2c-mux pinctrl-sx150x \n'\
+'qseecom_proxy spi-msm-geni i2c-msm-geni \n'\
+'i2c-mux-pca954x msm_geni_serial refgen smcinvoke_dlkm qseecom_dlkm \n'\
+'hdcp_qseecom_dlkm \n'\
 'msm_drm \n'\
 
 
-ES_MM_MOD_ORDER := \
-'ais msm_kgsl msm-vidc\n'\
+ES_MOD_ORDER_AIS := \
+'ais \n'\
 
 
-ES_MM_R_MOD_ORDER := \
-'ais msm_kgsl msm-vidc\n'\
+ES_MOD_ORDER_RV:= \
+'dcvs_fp scc-sm8150 \n'\
+'qcom-dcvs gpucc-sm8150 \n'\
+'nvmem_qfprom \n'\
+'msm_kgsl \n'\
+
+
+ES_MOD_ORDER_VI:= \
+'videocc-sm8150 msm-vidc \n'\
+
+
+MM_R_MOD_ORDER_AU:= \
+'qmi_helpers\n'\
+'smp2p_sleepstate\n'\
+'qcom_pil_info\n'\
+'qcom_ramdump\n'\
+'qcom_glink qcom_smd smp2p msm_gpi pdr_interface\n'\
+'qcom_glink_smem qcom_glink_spss\n'\
+'rproc_qcom_common\n'\
+'qcom_sysmon frpc-adsprpc\n'\
+'qcom_q6v5\n'\
+'qrtr-smd qcom_q6v5_pas qcom_spss\n'\
+'snd_event_dlkm q6_pdr_dlkm stub_dlkm\n'\
+'q6_notifier_dlkm\n'\
+'gpr_dlkm\n'\
+'spf_core_dlkm\n'\
+'audpkt_ion_dlkm\n'\
+'audio_pkt_dlkm\n'\
+'adsp_loader_dlkm\n'\
+'q6_dlkm audio_prm_dlkm\n'\
+'machine_dlkm coupled_ssr_dlkm\n'\
+
+
+ES_MOD_ORDER_END := \
+'qcom_wdt_pet \n'\
+'qcom_soc_wdt \n'\
+'reboot-mode \n'\
+'qcom-pon \n'\
+'gcc-sc8180x \n'\
+'camcc-sc8180x \n'\
+'micrel \n'\
 
 
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
@@ -3558,8 +3589,12 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
 	cp -rf $(addsuffix .ko,$(addprefix $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/,$(ES_RAMDISK_LKMS))) $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/ ;\
 	$(foreach mod,$(addsuffix .ko,$(addprefix $(PRODUCT_OUT)/dlkm/lib/modules/,$(ES_DEFAULT_LKMS))), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/$(notdir $(mod)) --strip-debug $(mod) ;) \
 	echo -n -e ${ES_MOD_ORDER} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.order ;\
-	echo -n -e ${ES_MM_MOD_ORDER} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_modules.order ;\
-	echo -n -e ${ES_MM_R_MOD_ORDER} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_r_modules.order ;\
+	echo -n -e ${ES_MOD_ORDER_DI} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_di.order ;\
+	echo -n -e ${ES_MOD_ORDER_VI} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_vi.order ;\
+        echo -n -e ${ES_MOD_ORDER_AIS} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_ais.order ;\
+	echo -n -e ${ES_MOD_ORDER_RV} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_rv.order ;\
+	echo -n -e ${MM_R_MOD_ORDER_AU} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_r_au.order ;\
+	echo -n -e ${ES_MOD_ORDER_END} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_end.order ;\
 	echo > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.load ;\
 	$(foreach mod,$(addsuffix .ko,${ES_MOD_LOAD}), echo "$(mod)" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.load ;) \
 	echo > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_modules.load ;\
@@ -3638,6 +3673,12 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libandroidicu.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libicuuc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libicui18n.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libjson.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_cci.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_common_so.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_csi.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_encdec.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.runtime/lib64/bionic/libdl_android.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libais* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libc2d30_bltlib.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
