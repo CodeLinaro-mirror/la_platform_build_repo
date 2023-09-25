@@ -19,7 +19,9 @@
 
 # /product packages
 ifneq ($(TARGET_NO_TELEPHONY), true)
+ifneq ($(TARGET_1G_DDR_RAM), true)
 PRODUCT_PACKAGES += \
     Dialer \
     ImsServiceEntitlement
+endif #TARGET_1G_DDR_RAM
 endif #TARGET_NO_TELEPHONY

@@ -61,8 +61,11 @@ PRODUCT_PACKAGES += \
     VpnDialogs \
 
 ifneq ($(TARGET_NO_TELEPHONY), true)
+ifneq ($(TARGET_1G_DDR_RAM), true)
 PRODUCT_PACKAGES += \
-  MmsService \
+  MmsService
+endif #TARGET_1G_DDR_RAM
+PRODUCT_PACKAGES += \
   TeleService
 endif #TARGET_NO_TELEPHONY
 
