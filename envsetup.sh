@@ -2008,8 +2008,7 @@ function make()
 
     if [ -f $QTI_BUILDTOOLS_DIR/build/update-vendor-hal-makefiles.sh ]; then
         vendor_hal_script=$QTI_BUILDTOOLS_DIR/build/update-vendor-hal-makefiles.sh
-        source $vendor_hal_script --check
-        regen_needed=$?
+        source $vendor_hal_script --check && regen_needed=$? || regen_needed=$?
     else
         vendor_hal_script=$ANDROID_BUILD_TOP/device/qcom/common/vendor_hal_makefile_generator.sh
         regen_needed=1
@@ -2023,8 +2022,7 @@ function make()
             echo " ####${color_reset}"
             return $RET
         fi
-        source $vendor_hal_script
-        RET=$?
+        source $vendor_hal_script && RET=$? || RET=$?
         if [ $RET -ne 0 ]; then
             echo -n "${color_failed}#### HAL file .bp generation failed dure to incpomaptible HAL files , please check above error log"
             echo " ####${color_reset}"
