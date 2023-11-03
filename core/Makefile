@@ -3470,6 +3470,16 @@ ES_MOD_PATH := "/lib/modules"
 
 # strip debug info and copied to ES mods
 ES_DEFAULT_LKMS := \
+   snd_event_dlkm_legacy \
+   q6_notifier_dlkm_legacy \
+   apr_dlkm \
+   adsp_loader_dlkm_legacy \
+   q6_dlkm_legacy \
+   platform_dlkm \
+   native_dlkm \
+   stub_dlkm_legacy \
+   hdmi_dlkm \
+   machine_dlkm_legacy \
    ais \
    msm_kgsl \
    msm-vidc \
@@ -3486,6 +3496,7 @@ ES_DEFAULT_LKMS := \
    audio_prm_dlkm \
    machine_dlkm \
    coupled_ssr_dlkm \
+   pdr_interface \
 
 
 # copied to ES mods
@@ -3493,6 +3504,19 @@ ES_RAMDISK_LKMS := \
    qcom_llcc_pmu \
    qcom-pmu-lib \
    msm_performance \
+   q6_pdr_dlkm \
+   spidev \
+   i2c-dev \
+   snd_event_dlkm_legacy \
+   q6_notifier_dlkm_legacy \
+   apr_dlkm \
+   adsp_loader_dlkm_legacy \
+   q6_dlkm_legacy \
+   platform_dlkm \
+   native_dlkm \
+   stub_dlkm_legacy \
+   hdmi_dlkm \
+   machine_dlkm_legacy \
    qcom-dcvs \
    dcvs_fp \
    nvmem_qfprom \
@@ -3554,6 +3578,23 @@ ES_MOD_ORDER_RV:= \
 ES_MOD_ORDER_VI:= \
 'videocc-sm8150 msm-vidc \n'\
 
+MM_MOD_ORDER_AU:= \
+'qmi_helpers\n'\
+'smp2p_sleepstate\n'\
+'qcom_pil_info\n'\
+'qcom_ramdump\n'\
+'qcom_glink qcom_smd smp2p pdr_interface\n'\
+'qcom_glink_smem qcom_glink_spss\n'\
+'rproc_qcom_common\n'\
+'q6_pdr_dlkm\n'\
+'qcom_sysmon frpc-adsprpc\n'\
+'qcom_q6v5\n'\
+'qrtr-smd qcom_q6v5_pas qcom_spss\n'\
+'snd_event_dlkm_legacy q6_notifier_dlkm_legacy stub_dlkm_legacy hdmi_dlkm  \n'\
+'apr_dlkm \n'\
+'adsp_loader_dlkm_legacy q6_dlkm_legacy qcom_q6v5_pas qcom_spss \n'\
+'platform_dlkm \n'\
+'native_dlkm machine_dlkm_legacy\n'\
 
 MM_R_MOD_ORDER_AU:= \
 'qmi_helpers\n'\
@@ -3599,6 +3640,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
 	echo -n -e ${ES_MOD_ORDER_VI} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_vi.order ;\
         echo -n -e ${ES_MOD_ORDER_AIS} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_ais.order ;\
 	echo -n -e ${ES_MOD_ORDER_RV} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_rv.order ;\
+	echo -n -e ${MM_MOD_ORDER_AU} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_au.order ;\
 	echo -n -e ${MM_R_MOD_ORDER_AU} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_r_au.order ;\
 	echo -n -e ${ES_MOD_ORDER_END} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_end.order ;\
 	echo > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.load ;\
@@ -3692,6 +3734,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -ar $(PRODUCT_OUT)/vendor/firmware $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/bike_bell.wav $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/etc/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/bin/audio-nxp-auto $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/early_chime $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/splash_nv12_720p30_3secs.h264 $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/etc/ ;\
 	$(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_VENDOR_RAMDISK_OUT) $(PRIVATE_ADDITIONAL_DIR) | $(COMPRESSION_COMMAND) > $(INTERNAL_VENDOR_RAMDISK_TARGET)
 	$(hide) touch $@
