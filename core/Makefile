@@ -3490,6 +3490,9 @@ ES_DEFAULT_LKMS := \
 
 # copied to ES mods
 ES_RAMDISK_LKMS := \
+   qcom_llcc_pmu \
+   qcom-pmu-lib \
+   msm_performance \
    qcom-dcvs \
    dcvs_fp \
    nvmem_qfprom \
@@ -3527,6 +3530,7 @@ ES_MOD_ORDER := \
 
 
 ES_MOD_ORDER_DI := \
+'qcom-apcs-ipc-mailbox mdt_loader \n'\
 'anx7625 drm_display_helper drm_dp_aux_bus i2c-mux pinctrl-sx150x \n'\
 'qseecom_proxy spi-msm-geni i2c-msm-geni \n'\
 'i2c-mux-pca954x msm_geni_serial refgen smcinvoke_dlkm qseecom_dlkm \n'\
@@ -3539,8 +3543,10 @@ ES_MOD_ORDER_AIS := \
 
 
 ES_MOD_ORDER_RV:= \
-'dcvs_fp scc-sm8150 \n'\
+'dcvs_fp scc-sm8150 qcom_llcc_pmu \n'\
+'qcom-pmu-lib \n'\
 'qcom-dcvs gpucc-sm8150 \n'\
+'msm_performance \n'\
 'nvmem_qfprom \n'\
 'msm_kgsl \n'\
 
