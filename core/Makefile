@@ -3431,9 +3431,9 @@ endef
 
 # Default modules - second set
 define ES_MOD_ORDER_2
-reboot-mode qcom_cpu_vendor_hooks llcc-qcom mem_buf_dev mem-hooks qcom_logbuf_vh qcom-apcs-ipc-mailbox mdt_loader qcom_va_minidump qcom_wdt_core
-qcom-pon qcom_dma_heaps qcom-spmi-pmic qcom-pdc msm_gpi mem_buf_msgq qrtr msm_qmp
-clk-dummy qcom-dload-mode pinctrl-sdmshrike mem_buf qcom_soc_wdt
+reboot-mode qcom_cpu_vendor_hooks llcc-qcom mem_buf_dev mem-hooks qcom_logbuf_vh qcom-apcs-ipc-mailbox mdt_loader qcom_va_minidump qcom_wdt_core qcom_llcc_pmu
+qcom-pon qcom_dma_heaps qcom-spmi-pmic qcom-pdc msm_gpi mem_buf_msgq qrtr msm_qmp sched-walt qcom-pmu-lib
+clk-dummy qcom-dload-mode pinctrl-sdmshrike mem_buf qcom_soc_wdt msm_performance
 
 endef
 
