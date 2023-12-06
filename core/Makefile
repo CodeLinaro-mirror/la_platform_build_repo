@@ -3530,10 +3530,10 @@ ES_MOD_ORDER := \
 
 
 ES_MOD_ORDER_DI := \
-'qcom-apcs-ipc-mailbox mdt_loader \n'\
+'scc-sm8150 qcom-apcs-ipc-mailbox mdt_loader \n'\
 'anx7625 drm_display_helper drm_dp_aux_bus i2c-mux pinctrl-sx150x \n'\
 'qseecom_proxy spi-msm-geni i2c-msm-geni \n'\
-'i2c-mux-pca954x msm_geni_serial refgen smcinvoke_dlkm qseecom_dlkm \n'\
+'i2c-mux-pca954x spidev msm_geni_serial refgen smcinvoke_dlkm qseecom_dlkm \n'\
 'hdcp_qseecom_dlkm \n'\
 'msm_drm \n'\
 
