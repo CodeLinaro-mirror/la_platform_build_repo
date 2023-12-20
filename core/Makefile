@@ -3483,6 +3483,8 @@ endef
 
 # MM QCXServer modules
 define ES_MOD_ORDER_QCX
+pinctrl-spmi-gpio
+gpio-pca953x
 qmi_helpers
 smp2p_sleepstate
 qcom_pil_info
@@ -3570,6 +3572,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_DI})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order ;\
   cp -r $(TARGET_RAMDISK_OUT)/vendor_early_services/bin/early_services_init $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
   mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/firmware_mnt; \
+  cp -r $(PRODUCT_OUT)/vendor_dlkm/lib/modules/pinctrl-spmi-gpio.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/ ;\
   cp -r $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/vendor_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
@@ -3606,6 +3609,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/system/lib64/libnativebridge_lazy.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libnativeloader_lazy.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libSurfaceFlingerProp.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator-V1-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@2.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@3.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
@@ -3654,6 +3658,46 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/vendor/bin/audio-nxp-auto $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/bin/pd-mapper $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/splash_nv12_720p30_3secs.h264 $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/etc/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcam* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libcamera_metadata.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libbitmlenginev2.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcom.qti.chinodeutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libchilog.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/hw/camera.qcom.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/hw/com.qti.chi.override.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.chiusecaseselector.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.settings.sa8650.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/libcamxtintlessalgo.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqcx* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.sensor* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.tuned.* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/libcom.qti.node.dummydepth.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/com.qti.camx.chiiqutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/libopencv3a.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/com.qti.stats* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/qcxserver $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libaosal.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libadsprpc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcdsprpc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.dsp@1.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqdMetaData.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libhardware.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libgralloc* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.display.allocator* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.display.mapper* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/vendor.qti.hardware.display.config-V2-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libunwindstack* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libprotobuf-cpp-full-3.9.1.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libdisplayconfig.qti.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libvmmem.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.display.config@2.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/camera/camxoverridesettings.txt $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libllvm-qcom.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libCB.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libOpenCL.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libpowerpolicyclient.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.frameworks.automotive.powerpolicy-V1-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+
 	$(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_VENDOR_RAMDISK_OUT) $(PRIVATE_ADDITIONAL_DIR) | $(COMPRESSION_COMMAND) > $(INTERNAL_VENDOR_RAMDISK_TARGET)
 	$(hide) touch $@
 endif
