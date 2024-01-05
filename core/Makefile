@@ -3439,9 +3439,12 @@ endef
 
 # MM Display modules
 define ES_MOD_ORDER_DI
-pinctrl-sx150x msm_geni_serial i2c-mux qseecom_proxy
-qcom_va_minidump llcc-qcom i2c-mux-pca954x hdcp_qseecom_dlkm
-anx7625 spi-msm-geni i2c-msm-geni
+refgen
+pinctrl-sx150x msm_geni_serial i2c-mux qseecom_dlkm qseecom_proxy
+qcom_va_minidump llcc-qcom i2c-mux-pca954x smcinvoke_dlkm
+spi-msm-geni i2c-msm-geni gpio-pca953x
+hdcp_qseecom_dlkm
+anx7625
 msm_drm
 
 endef
