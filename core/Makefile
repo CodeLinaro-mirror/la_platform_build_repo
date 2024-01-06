@@ -3418,6 +3418,7 @@ ES_DEFAULT_LKMS := \
    audio_prm_dlkm \
    machine_dlkm \
    coupled_ssr_dlkm \
+   camera \
 
 # Default modules - first set; Last set auto-generated modules_end.order
 define ES_MOD_ORDER
@@ -3458,6 +3459,22 @@ dcvs_fp scc-sm8150
 qcom-dcvs gpucc-sm8150
 nvmem_qfprom
 msm_kgsl
+
+endef
+
+
+# MM QCXServer modules
+define ES_MOD_ORDER_QCX
+qmi_helpers
+smp2p_sleepstate
+qcom_pil_info
+qcom_ramdump
+qcom_glink qcom_smd smp2p msm_gpi pdr_interface
+qcom_glink_smem qcom_glink_spss
+rproc_qcom_common
+qcom_sysmon frpc-adsprpc
+mdt_loader
+camcc-lemans camera
 
 endef
 
@@ -3530,6 +3547,8 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_RV})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_rv.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_au.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_R_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_r_au.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_QCX})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_qcx.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_DI})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order ;\
   cp -r $(TARGET_RAMDISK_OUT)/vendor_early_services/bin/early_services_init $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
   mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/firmware_mnt; \
   cp -r $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
