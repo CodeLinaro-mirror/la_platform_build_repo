@@ -3454,6 +3454,22 @@ camcc-sm8150 ais
 endef
 
 # MM RVC modules
+define ES_MOD_ORDER_RV_GEN4
+dcvs_fp gcc-lemans clk-qcom qcom_llcc_pmu
+qcom-pmu-lib
+qcom-dcvs gpucc-lemans qcom_ipcc
+qcom-scm
+qcom_iommu_util cmd-db llcc-qcom
+msm_qmp
+qcom-apcs-ipc-mailbox
+mdt_loader
+msm_performance
+arm_smmu
+nvmem_qfprom
+msm_kgsl
+endef
+
+# MM RVC modules
 define ES_MOD_ORDER_RV
 dcvs_fp scc-sm8150
 qcom-dcvs gpucc-sm8150
@@ -3461,7 +3477,6 @@ nvmem_qfprom
 msm_kgsl
 
 endef
-
 
 # MM QCXServer modules
 define ES_MOD_ORDER_QCX
@@ -3545,6 +3560,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_VI})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_vi.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_AIS})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_ais.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_RV})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_rv.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_RV_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_rv_gen4.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_au.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_R_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_r_au.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_QCX})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_qcx.order ;\
