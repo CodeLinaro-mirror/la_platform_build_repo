@@ -3554,6 +3554,7 @@ ES_MOD_ORDER := \
 
 
 ES_MOD_ORDER_DI := \
+'silent-mode-hw-monitoring silent_boot \n'\
 'scc-sm8150 qcom-apcs-ipc-mailbox mdt_loader \n'\
 'anx7625 drm_display_helper drm_dp_aux_bus i2c-mux pinctrl-sx150x \n'\
 'qseecom_proxy spi-msm-geni i2c-msm-geni \n'\
