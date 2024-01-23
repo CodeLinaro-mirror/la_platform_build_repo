@@ -3485,16 +3485,7 @@ endef
 define ES_MOD_ORDER_QCX
 pinctrl-spmi-gpio
 gpio-pca953x
-qmi_helpers
-smp2p_sleepstate
-qcom_pil_info
-qcom_ramdump
-qcom_glink qcom_smd smp2p msm_gpi pdr_interface
-qcom_glink_smem qcom_glink_spss
-rproc_qcom_common
-qcom_sysmon frpc-adsprpc
-mdt_loader
-camcc-lemans camera
+camera
 
 endef
 
