@@ -3456,14 +3456,29 @@ clk-dummy qcom-dload-mode pinctrl-sdmshrike mem_buf qcom_soc_wdt msm_performance
 
 endef
 
+# Default modules - first set; Last set auto-generated modules_end.order
+define ES_MOD_ORDER_GEN4
+icc-debug qnoc-qos nvmem_qcom-spmi-sdam qcom_hwspinlock qcom-scm qcom-cpufreq-hw reboot-mode rtc-pm8xxx spmi-pmic-arb msm_dma_iommu_mapping debug-regulator proxy-consumer qcom_cpu_vendor_hooks smem cmd-db qcom_ipc_logging qti-regmap-debugfs regmap-spmi qcom-reboot-reason pcs_xpcs
+qcom_rpmh qrtr minidump llcc-qcom socinfo secure_buffer qcom_aoss qcom-pon qcom-spmi-pmic gdsc-regulator pinctrl-msm qcom-pdc crypto-qti-tz soc_sleep_stats
+icc-bcm-voter msm_qmp clk-rpmh clk-qcom   mem_buf pinctrl-lemans qcom_iommu_util mem_buf_dev qcom_wdt_core qcom-dload-mode crypto-qti-common phy-qcom-ufs boot_stats
+ufshcd-crypto-qti rpmh-regulator icc-rpmh qcom_dma_heaps phy-qcom-ufs dispcc1-lemans dispcc0-lemans camcc-lemans gcc-lemans    qcom_soc_wdt arm_smmu clk-dummy phy-qcom-ufs-qmp-v4-waipio
+ufs_qcom qnoc-lemans
+
+endef
+
 # MM Display modules
 define ES_MOD_ORDER_DI
-refgen
-pinctrl-sx150x msm_geni_serial i2c-mux qseecom_dlkm qseecom_proxy
-qcom_va_minidump llcc-qcom i2c-mux-pca954x smcinvoke_dlkm
-spi-msm-geni i2c-msm-geni gpio-pca953x
-hdcp_qseecom_dlkm
-anx7625
+pinctrl-sx150x msm_geni_serial i2c-mux qseecom_proxy
+qcom_va_minidump llcc-qcom i2c-mux-pca954x hdcp_qseecom_dlkm
+anx7625 spi-msm-geni i2c-msm-geni
+msm_drm
+
+endef
+
+# MM Display modules
+define ES_MOD_ORDER_DI_GEN4
+msm_geni_serial i2c-mux qseecom_dlkm refgen gpio-pca953x i2c-msm-geni spi-msm-geni qcom_ipcc anx7625
+qcom_va_minidump i2c-mux-pca954x smcinvoke_dlkm hdcp_qseecom_dlkm
 msm_drm
 
 endef
@@ -3476,18 +3491,11 @@ endef
 
 # MM RVC modules
 define ES_MOD_ORDER_RV_GEN4
-dcvs_fp gcc-lemans clk-qcom qcom_llcc_pmu
-qcom-pmu-lib
-qcom-dcvs gpucc-lemans qcom_ipcc
-qcom-scm
-qcom_iommu_util cmd-db llcc-qcom
-msm_qmp
-qcom-apcs-ipc-mailbox
-mdt_loader
+gpucc-lemans dcvs_fp qcom_llcc_pmu mdt_loader nvmem_qfprom qcom_ipcc
+qcom-dcvs qcom-pmu-lib
 msm_performance
-arm_smmu
-nvmem_qfprom
 msm_kgsl
+
 endef
 
 # MM RVC modules
@@ -3571,6 +3579,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   sed -e '$(call es_mod_list,${ES_MOD_ORDER}${ES_MOD_ORDER_2})' "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" | sed 's/.ko//' > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end.order" ;\
   echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ;\
   $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_DI}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
+  sed -e '$(call es_mod_list,${ES_MOD_ORDER_GEN4})' "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" | sed 's/.ko//' > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end_gen4.order" ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_VI})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_vi.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_AIS})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_ais.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_RV})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_rv.order ;\
@@ -3578,7 +3587,8 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_au.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_R_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_r_au.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_QCX})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_qcx.order ;\
-  echo -e '$(call es_update_nl,${ES_MOD_ORDER_DI})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_DI_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di_gen4.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_gen4.order ;\
   cp -r $(TARGET_RAMDISK_OUT)/vendor_early_services/bin/early_services_init $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
   mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/firmware_mnt; \
   cp -r $(PRODUCT_OUT)/vendor_dlkm/lib/modules/pinctrl-spmi-gpio.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/ ;\
