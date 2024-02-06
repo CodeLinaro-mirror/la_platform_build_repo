@@ -3622,7 +3622,6 @@ define build-userdataimage-target
   $(call generate-image-prop-dictionary, $(userdataimage_intermediates)/userdata_image_info.txt,userdata,skip_fsck=true)
   PATH=$(INTERNAL_USERIMAGES_BINARY_PATHS):$$PATH \
       $(BUILD_IMAGE) \
-          $(if $(BUILD_BROKEN_INCORRECT_PARTITION_IMAGES),,--input-directory-filter-file $(userdataimage_intermediates)/file_list.txt) \
           $(TARGET_OUT_DATA) $(userdataimage_intermediates)/userdata_image_info.txt \
           $(INSTALLED_USERDATAIMAGE_TARGET) $(TARGET_OUT)
   $(call assert-max-image-size,$(INSTALLED_USERDATAIMAGE_TARGET),$(BOARD_USERDATAIMAGE_PARTITION_SIZE))
@@ -3636,7 +3635,7 @@ INSTALLED_USERDATAIMAGE_TARGET_DEPS := \
 
 $(eval $(call write-file-lines,$(userdataimage_intermediates)/file_list.txt,$(subst $(TARGET_OUT_DATA)/,,$(filter $(TARGET_OUT_DATA)/%,$(INSTALLED_USERDATAIMAGE_TARGET_DEPS)))))
 
-$(INSTALLED_USERDATAIMAGE_TARGET): $(INSTALLED_USERDATAIMAGE_TARGET_DEPS) $(userdataimage_intermediates)/file_list.txt
+$(INSTALLED_USERDATAIMAGE_TARGET): $(INSTALLED_USERDATAIMAGE_TARGET_DEPS)
 	$(build-userdataimage-target)
 
 $(call declare-1p-container,$(INSTALLED_USERDATAIMAGE_TARGET),)
@@ -3868,7 +3867,6 @@ define build-vendorimage-target
   $(call generate-image-prop-dictionary, $(vendorimage_intermediates)/vendor_image_info.txt,vendor,skip_fsck=true)
   PATH=$(INTERNAL_USERIMAGES_BINARY_PATHS):$$PATH \
       $(BUILD_IMAGE) \
-          $(if $(BUILD_BROKEN_INCORRECT_PARTITION_IMAGES),,--input-directory-filter-file $(vendorimage_intermediates)/file_list.txt) \
           $(TARGET_OUT_VENDOR) $(vendorimage_intermediates)/vendor_image_info.txt \
           $(INSTALLED_VENDORIMAGE_TARGET) $(TARGET_OUT)
   $(call assert-max-image-size,$(INSTALLED_VENDORIMAGE_TARGET) $(RECOVERY_FROM_BOOT_PATCH),$(BOARD_VENDORIMAGE_PARTITION_SIZE))
@@ -3882,8 +3880,7 @@ $(INSTALLED_VENDORIMAGE_TARGET): \
     $(INTERNAL_USERIMAGES_DEPS) \
     $(INTERNAL_VENDORIMAGE_FILES) \
     $(INSTALLED_FILES_FILE_VENDOR) \
-    $(RECOVERY_FROM_BOOT_PATCH) \
-    $(vendorimage_intermediates)/file_list.txt
+    $(RECOVERY_FROM_BOOT_PATCH)
 	$(build-vendorimage-target)
 
 VENDOR_NOTICE_DEPS += $(INSTALLED_VENDORIMAGE_TARGET)
@@ -4157,7 +4154,6 @@ define build-vendor_dlkmimage-target
 	  vendor_dlkm, skip_fsck=true)
   PATH=$(INTERNAL_USERIMAGES_BINARY_PATHS):$$PATH \
       $(BUILD_IMAGE) \
-          $(if $(BUILD_BROKEN_INCORRECT_PARTITION_IMAGES),,--input-directory-filter-file $(vendor_dlkmimage_intermediates)/file_list.txt) \
           $(TARGET_OUT_VENDOR_DLKM) $(vendor_dlkmimage_intermediates)/vendor_dlkm_image_info.txt \
           $(INSTALLED_VENDOR_DLKMIMAGE_TARGET) $(TARGET_OUT)
   $(call assert-max-image-size,$(INSTALLED_VENDOR_DLKMIMAGE_TARGET),$(BOARD_VENDOR_DLKMIMAGE_PARTITION_SIZE))
@@ -4170,8 +4166,7 @@ INSTALLED_VENDOR_DLKMIMAGE_TARGET := $(BUILT_VENDOR_DLKMIMAGE_TARGET)
 $(INSTALLED_VENDOR_DLKMIMAGE_TARGET): \
     $(INTERNAL_USERIMAGES_DEPS) \
     $(INTERNAL_VENDOR_DLKMIMAGE_FILES) \
-    $(INSTALLED_FILES_FILE_VENDOR_DLKM) \
-    $(vendor_dlkmimage_intermediates)/file_list.txt
+    $(INSTALLED_FILES_FILE_VENDOR_DLKM)
 	$(build-vendor_dlkmimage-target)
 
 VENDOR_DLKM_NOTICE_DEPS += $(INSTALLED_VENDOR_DLKMIMAGE_TARGET)
@@ -4223,7 +4218,6 @@ define build-odm_dlkmimage-target
 	  odm_dlkm, skip_fsck=true)
   PATH=$(INTERNAL_USERIMAGES_BINARY_PATHS):$$PATH \
       $(BUILD_IMAGE) \
-          $(if $(BUILD_BROKEN_INCORRECT_PARTITION_IMAGES),,--input-directory-filter-file $(odm_dlkmimage_intermediates)/file_list.txt) \
           $(TARGET_OUT_ODM_DLKM) $(odm_dlkmimage_intermediates)/odm_dlkm_image_info.txt \
           $(INSTALLED_ODM_DLKMIMAGE_TARGET) $(TARGET_OUT)
   $(call assert-max-image-size,$(INSTALLED_ODM_DLKMIMAGE_TARGET),$(BOARD_ODM_DLKMIMAGE_PARTITION_SIZE))
@@ -4236,8 +4230,7 @@ INSTALLED_ODM_DLKMIMAGE_TARGET := $(BUILT_ODM_DLKMIMAGE_TARGET)
 $(INSTALLED_ODM_DLKMIMAGE_TARGET): \
     $(INTERNAL_USERIMAGES_DEPS) \
     $(INTERNAL_ODM_DLKMIMAGE_FILES) \
-    $(INSTALLED_FILES_FILE_ODM_DLKM) \
-    $(odm_dlkmimage_intermediates)/file_list.txt
+    $(INSTALLED_FILES_FILE_ODM_DLKM)
 	$(build-odm_dlkmimage-target)
 
 ODM_DLKM_NOTICE_DEPS += $(INSTALLED_ODM_DLKMIMAGE_TARGET)
@@ -4291,7 +4284,6 @@ define build-system_dlkmimage-target
 	  system_dlkm, skip_fsck=true)
   PATH=$(INTERNAL_USERIMAGES_BINARY_PATHS):$$PATH \
       $(BUILD_IMAGE) \
-          $(if $(BUILD_BROKEN_INCORRECT_PARTITION_IMAGES),,--input-directory-filter-file $(system_dlkmimage_intermediates)/file_list.txt) \
           $(TARGET_OUT_SYSTEM_DLKM) $(system_dlkmimage_intermediates)/system_dlkm_image_info.txt \
           $(INSTALLED_SYSTEM_DLKMIMAGE_TARGET) $(TARGET_OUT)
   $(call assert-max-image-size,$(INSTALLED_SYSTEM_DLKMIMAGE_TARGET),$(BOARD_SYSTEM_DLKMIMAGE_PARTITION_SIZE))
@@ -4304,8 +4296,7 @@ INSTALLED_SYSTEM_DLKMIMAGE_TARGET := $(BUILT_SYSTEM_DLKMIMAGE_TARGET)
 $(INSTALLED_SYSTEM_DLKMIMAGE_TARGET): \
     $(INTERNAL_USERIMAGES_DEPS) \
     $(INTERNAL_SYSTEM_DLKMIMAGE_FILES) \
-    $(INSTALLED_FILES_FILE_SYSTEM_DLKM) \
-    $(system_dlkmimage_intermediates)/file_list.txt
+    $(INSTALLED_FILES_FILE_SYSTEM_DLKM)
 	$(build-system_dlkmimage-target)
 
 SYSTEM_DLKM_NOTICE_DEPS += $(INSTALLED_SYSTEM_DLKMIMAGE_TARGET)
