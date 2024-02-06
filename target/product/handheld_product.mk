@@ -25,7 +25,6 @@ PRODUCT_PACKAGES += \
     OneTimeInitializer \
     preinstalled-packages-platform-handheld-product.xml \
     SettingsIntelligence \
-    frameworks-base-overlays
 
 ifneq ($(TARGET_1G_DDR_RAM), true)
 PRODUCT_PACKAGES += \
