@@ -22,6 +22,13 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/media_product.mk)
 
 # /product packages
 PRODUCT_PACKAGES += \
+    OneTimeInitializer \
+    preinstalled-packages-platform-handheld-product.xml \
+    SettingsIntelligence \
+    frameworks-base-overlays
+
+ifneq ($(TARGET_1G_DDR_RAM), true)
+PRODUCT_PACKAGES += \
     Browser2 \
     Calendar \
     Camera2 \
@@ -29,12 +36,9 @@ PRODUCT_PACKAGES += \
     DeskClock \
     Gallery2 \
     LatinIME \
-    Music \
-    OneTimeInitializer \
-    preinstalled-packages-platform-handheld-product.xml \
     QuickSearchBox \
-    SettingsIntelligence \
-    frameworks-base-overlays
+    Music
+endif
 
 PRODUCT_PACKAGES_DEBUG += \
     frameworks-base-overlays-debug

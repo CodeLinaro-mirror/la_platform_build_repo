@@ -64,7 +64,6 @@ PRODUCT_PACKAGES += \
     com.android.os.statsd \
     com.android.permission \
     com.android.resolv \
-    com.android.neuralnetworks \
     com.android.scheduling \
     com.android.sdkext \
     com.android.tethering \
@@ -73,8 +72,6 @@ PRODUCT_PACKAGES += \
     com.android.wifi \
     ContactsProvider \
     content \
-    CtsShimPrebuilt \
-    CtsShimPrivPrebuilt \
     debuggerd\
     device_config \
     dmctl \
@@ -287,6 +284,13 @@ PRODUCT_PACKAGES += \
     wificond \
     wifi.rc \
     wm \
+
+ifneq ($(TARGET_1G_DDR_RAM), true)
+PRODUCT_PACKAGES += \
+    com.android.neuralnetworks \
+    CtsShimPrebuilt \
+    CtsShimPrivPrebuilt
+endif
 
 ifneq ($(TARGET_HAS_LOW_RAM), true)
 PRODUCT_PACKAGES += \

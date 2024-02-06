@@ -37,15 +37,12 @@ PRODUCT_PACKAGES += \
     Bluetooth \
     BluetoothMidiService \
     BookmarkProvider \
-    BuiltInPrintService \
     CalendarProvider \
     cameraserver \
     CameraExtensionsProxy \
     CaptivePortalLogin \
     CertInstaller \
-    DocumentsUI \
     DownloadProviderUi \
-    EasterEgg \
     ExternalStorageProvider \
     FusedLocation \
     InputDevices \
@@ -53,19 +50,14 @@ PRODUCT_PACKAGES += \
     librs_jni \
     ManagedProvisioning \
     MtpService \
-    MusicFX \
     PacProcessor \
-    PrintRecommendationService \
-    ProxyHandler \
     screenrecord \
     SharedStorageBackup \
-    SimAppDialog \
     Telecom \
     TelephonyProvider \
     Traceur \
     UserDictionaryProvider \
     VpnDialogs \
-    vr \
 
 ifneq ($(TARGET_NO_TELEPHONY), true)
 PRODUCT_PACKAGES += \
@@ -76,6 +68,18 @@ endif #TARGET_NO_TELEPHONY
 ifneq ($(TARGET_USES_QSPA), true)
 PRODUCT_PACKAGES += \
     PrintSpooler
+endif
+
+ifneq ($(TARGET_1G_DDR_RAM), true)
+PRODUCT_PACKAGES += \
+    BuiltInPrintService \
+    DocumentsUI \
+    EasterEgg \
+    MusicFX \
+    PrintRecommendationService \
+    PrintSpooler \
+    SimAppDialog \
+    vr
 endif
 
 ifneq ($(TARGET_HAS_LOW_RAM), true)
