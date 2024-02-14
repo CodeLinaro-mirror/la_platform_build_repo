@@ -2975,6 +2975,27 @@ ifdef BOARD_USES_SYSTEM_DLKMIMAGE
   ALL_DEFAULT_INSTALLED_MODULES += $(_system_dlkm_lib_modules_symlink)
 endif
 
+# Earlyinit still depends on some system modules. Keep building system when BOARD_SUPPORTS_RAMDISK_EARLY_INIT is true
+# TODO: Remove once early_init has no dependency on systemimage
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+  ifndef BUILDING_SYSTEM_IMAGE
+    FULL_SYSTEMIMAGE_DEPS := $(INTERNAL_SYSTEMIMAGE_FILES) $(INTERNAL_USERIMAGES_DEPS)
+
+    # ASAN libraries in the system image - add dependency.
+    ASAN_IN_SYSTEM_INSTALLED := $(TARGET_OUT)/asan.tar.bz2
+    ifneq (,$(filter address, $(SANITIZE_TARGET)))
+      ifeq (true,$(SANITIZE_TARGET_SYSTEM))
+        FULL_SYSTEMIMAGE_DEPS += $(ASAN_IN_SYSTEM_INSTALLED)
+      endif
+    endif
+
+    FULL_SYSTEMIMAGE_DEPS += $(INTERNAL_ROOT_FILES) $(INSTALLED_FILES_FILE_ROOT)
+  endif
+endif
+
+# -----------------------------------------------------------------
+ifdef BUILDING_SYSTEM_IMAGE
+
 FULL_SYSTEMIMAGE_DEPS := $(INTERNAL_SYSTEMIMAGE_FILES) $(INTERNAL_USERIMAGES_DEPS)
 
 # ASAN libraries in the system image - add dependency.
@@ -2986,9 +3007,6 @@ ifneq (,$(filter address, $(SANITIZE_TARGET)))
 endif
 
 FULL_SYSTEMIMAGE_DEPS += $(INTERNAL_ROOT_FILES) $(INSTALLED_FILES_FILE_ROOT)
-
-# -----------------------------------------------------------------
-ifdef BUILDING_SYSTEM_IMAGE
 
 # Install system linker configuration
 # Collect all available stub libraries installed in system and install with predefined linker configuration
