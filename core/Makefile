@@ -3219,6 +3219,9 @@ ifdef BOARD_USES_SYSTEM_DLKMIMAGE
   ALL_DEFAULT_INSTALLED_MODULES += $(_system_dlkm_lib_modules_symlink)
 endif
 
+# -----------------------------------------------------------------
+ifdef BUILDING_SYSTEM_IMAGE
+
 FULL_SYSTEMIMAGE_DEPS := $(INTERNAL_SYSTEMIMAGE_FILES) $(INTERNAL_USERIMAGES_DEPS)
 
 # ASAN libraries in the system image - add dependency.
@@ -3238,9 +3241,6 @@ $(1):
 	echo -n > $$@
 	$$(foreach f,$(2),echo "$$(f)" >> $$@$$(newline))
 endef
-
-# -----------------------------------------------------------------
-ifdef BUILDING_SYSTEM_IMAGE
 
 # Install system linker configuration
 # Collect all available stub libraries installed in system and install with predefined linker configuration
