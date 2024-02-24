@@ -3560,12 +3560,12 @@ qcom_ramdump
 qcom_glink qcom_smd smp2p pdr_interface
 qcom_glink_smem qcom_glink_spss
 rproc_qcom_common
-qcom_sysmon frpc-adsprpc
+qcom_sysmon
 qcom_q6v5
 qrtr-smd qcom_q6v5_pas qcom_spss
 snd_event_dlkm_legacy q6_notifier_dlkm_legacy stub_dlkm_legacy
 apr_dlkm
-adsp_loader_dlkm_legacy q6_dlkm_legacy qcom_q6v5_pas qcom_spss
+adsp_loader_dlkm_legacy q6_dlkm_legacy
 platform_dlkm
 native_dlkm machine_dlkm_legacy
 
