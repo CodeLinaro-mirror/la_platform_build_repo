@@ -28,13 +28,16 @@ PRODUCT_PACKAGES += \
 
 ifneq ($(TARGET_USES_QSPA),true)
   PRODUCT_PACKAGES += \
-      Launcher3QuickStep \
       SystemUI
+
+  ifneq ($(TARGET_BUILD_2W),true)
+    PRODUCT_PACKAGES += \
+        Launcher3QuickStep
+  endif
 endif
 
 ifneq ($(TARGET_BUILD_2W),true)
   PRODUCT_PACKAGES += \
-      Launcher3QuickStep \
       Provision \
       WallpaperCropper
 endif
