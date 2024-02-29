@@ -3678,7 +3678,18 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/vendor/bin/pd-mapper $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/bin/ais_server $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/splash_nv12_720p30_3secs.h264 $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/etc/ ;\
-  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcam* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamera_config.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxcommonutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxcustomization.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxhalbuffermanager.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxhwnodecontext.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxifestriping.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamximageformatutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxsettingsmanager.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxstatscore.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxswispiqmodule.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamera_metadata.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxtintlessalgo.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libcamera_metadata.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libbitmlenginev2.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libcom.qti.chinodeutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
@@ -3693,8 +3704,6 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.tuned.* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/libcom.qti.node.dummydepth.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/com.qti.camx.chiiqutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
-  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/libopencv3a.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
-  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/com.qti.stats* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/bin/qcxserver $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libaosal.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libadsprpc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
@@ -3712,9 +3721,6 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libvmmem.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.display.config@2.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/camera/camxoverridesettings.txt $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/ ;\
-  cp -rf $(PRODUCT_OUT)/vendor/lib64/libllvm-qcom.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
-  cp -rf $(PRODUCT_OUT)/vendor/lib64/libCB.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
-  cp -rf $(PRODUCT_OUT)/vendor/lib64/libOpenCL.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libpowerpolicyclient.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/android.frameworks.automotive.powerpolicy-V1-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
 
