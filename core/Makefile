@@ -3467,6 +3467,7 @@ ifdef BUILDING_VENDOR_BOOT_IMAGE
 
 ES_VNDR_MOD_PATH := "/vendor_early_services/vendor/lib/modules"
 ES_MOD_PATH := "/lib/modules"
+ES_MOD_FILE := "/lib/modules/modules.load"
 
 # strip debug info and copied to ES mods
 ES_DEFAULT_LKMS := \
@@ -3507,40 +3508,45 @@ gh_rm_drv minidump qti-fixed-regulator gdsc-regulator
 qcom-scm qcom_ipc_logging clk-qcom
 pinctrl-msm secure_buffer qcom_aoss qcom_rpmh qcom-pdc clk-dummy
 pinctrl-sm8150 pinctrl-sm6150 qcom_iommu_util socinfo icc-bcm-voter crypto-qti rpmh-regulator clk-rpmh dispcc-sm6150 debugcc-sm6150
-ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs gcc-sm8150 dispcc-sm8250 gcc-sc8180x gcc-sm6150 gpucc-sm6150
+ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs gcc-sm8150 dispcc-sm8250 gcc-sc8180x gcc-sm6150
 ufs_qcom qnoc-sm8150 qnoc-sc8180x-auto qnoc-sm6150 phy-qcom-ufs-qmp-v4 phy-qcom-ufs-qmp-v3-660
 
 endef
 
 # Default modules - second set
 define ES_MOD_ORDER_2
-reboot-mode qcom_cpu_vendor_hooks llcc-qcom mem_buf_dev qcom-apcs-ipc-mailbox mdt_loader qcom_wdt_core qcom_llcc_pmu phy-generic phy-msm-ssusb-qmp usb_f_diag sdhci-msm-scaling
-usb_f_cdev usb_f_qdss qcom-pon qcom_dma_heaps qcom-spmi-pmic msm_gpi mem_buf_msgq qrtr msm_qmp qcom-pmu-lib qcom-rpmh-regulator cqhci
-sdhci-msm qcom-dload-mode pinctrl-sdmshrike mem_buf qcom_soc_wdt msm_performance nvmem_qfprom
+reboot-mode qcom_cpu_vendor_hooks llcc-qcom mem_buf_dev qcom_wdt_core phy-generic phy-msm-ssusb-qmp usb_f_diag sdhci-msm-scaling
+usb_f_cdev usb_f_qdss qcom-pon qcom_dma_heaps qcom-spmi-pmic msm_gpi mem_buf_msgq qrtr msm_qmp qcom-rpmh-regulator cqhci
+sdhci-msm qcom-dload-mode pinctrl-sdmshrike mem_buf qcom_soc_wdt
 
 endef
 
 # MM Display modules
 define ES_MOD_ORDER_DI
-silent-mode-hw-monitoring silent_boot scc-sm8150 scc-sm6150 qcom-apcs-ipc-mailbox mdt_loader drm_display_helper drm_dp_aux_bus
-anx7625 i2c-mux pinctrl-sx150x qseecom_proxy
-spi-msm-geni i2c-msm-geni qseecom_dlkm
-i2c-mux-pca954x spidev msm_geni_serial refgen smcinvoke_dlkm
+mdt_loader qcom-apcs-ipc-mailbox silent_boot refgen qseecom_proxy drm_display_helper drm_dp_aux_bus i2c-mux pinctrl-sx150x msm_geni_serial scc-sm8150 scc-sm6150 llcc-qcom mem_buf_dev
+silent-mode-hw-monitoring qseecom_dlkm
+i2c-mux-pca954x spidev smcinvoke_dlkm
 hdcp_qseecom_dlkm
+spi-msm-geni i2c-msm-geni
+anx7625
 msm_drm
 
 endef
 
 # MM AIS modules
 define ES_MOD_ORDER_AIS
-camcc-sm8150 camcc-sc8180x camcc-sm6150 ais
+camcc-sm8150 camcc-sc8180x camcc-sm6150
+gpucc-sm8150 gpucc-sm6150
+ais
 
 endef
 
 # MM RVC modules
 define ES_MOD_ORDER_RV
-dcvs_fp
-qcom-dcvs gpucc-sm8150 gpucc-sm6150
+qcom_llcc_pmu
+qcom-pmu-lib
+dcvs_fp msm_performance nvmem_qfprom
+qcom-dcvs
 msm_kgsl
 
 endef
@@ -3610,9 +3616,9 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/ ;\
   $(foreach mod,$(addsuffix .ko,$(addprefix $(PRODUCT_OUT)/dlkm/lib/modules/,$(ES_DEFAULT_LKMS))), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(notdir $(mod)) --strip-debug $(mod) ;) \
   echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ;\
-  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
+  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order", grep "$(fl).ko" "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_FILE)" 2>&1 >/dev/null && if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
   echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ;\
-  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_2}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
+  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_2}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order", grep "$(fl).ko" "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_FILE)" 2>&1 >/dev/null && if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
   sed -e '$(call es_mod_list,${ES_MOD_ORDER}${ES_MOD_ORDER_2})' "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" | sed 's/.ko//' > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end.order" ;\
   echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ;\
   $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_DI}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
