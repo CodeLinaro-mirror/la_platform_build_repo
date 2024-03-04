@@ -1883,11 +1883,10 @@ $(if $(PRODUCT_$(_var)_BASE_FS_PATH),$(hide) echo "$(1)_base_fs_file=$(PRODUCT_$
 $(eval _size := $(BOARD_$(_var)IMAGE_PARTITION_SIZE))
 $(eval _reserved := $(BOARD_$(_var)IMAGE_PARTITION_RESERVED_SIZE))
 $(eval _headroom := $(PRODUCT_$(_var)_HEADROOM))
+$(if $(or $(_size), $(_reserved), $(_headroom)),,
+    $(hide) echo "$(1)_disable_sparse=true" >> $(2))
 $(call add-common-flags-to-image-props,$(1),$(2))
 endef
-
-#$(if $(or $(_size), $(_reserved), $(_headroom)),,
-#    $(hide) echo "$(1)_disable_sparse=true" >> $(2))
 
 # $(1): the path of the output dictionary file
 # $(2): a subset of "system vendor cache userdata product system_ext oem odm vendor_dlkm odm_dlkm system_dlkm"
@@ -2935,6 +2934,27 @@ endif
 # - The system_dlkm partition is mounted at /system_dlkm at runtime.
 INTERNAL_SYSTEMIMAGE_FILES += $(call create-partition-compat-symlink,$(TARGET_OUT)/lib/modules,/system_dlkm/lib/modules,system_dlkm.img)
 
+# Earlyinit still depends on some system modules. Keep building system when BOARD_SUPPORTS_RAMDISK_EARLY_INIT is true
+# TODO: Remove once early_init has no dependency on systemimage
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+  ifndef BUILDING_SYSTEM_IMAGE
+    FULL_SYSTEMIMAGE_DEPS := $(INTERNAL_SYSTEMIMAGE_FILES) $(INTERNAL_USERIMAGES_DEPS)
+
+    # ASAN libraries in the system image - add dependency.
+    ASAN_IN_SYSTEM_INSTALLED := $(TARGET_OUT)/asan.tar.bz2
+    ifneq (,$(filter address, $(SANITIZE_TARGET)))
+      ifeq (true,$(SANITIZE_TARGET_SYSTEM))
+        FULL_SYSTEMIMAGE_DEPS += $(ASAN_IN_SYSTEM_INSTALLED)
+      endif
+    endif
+
+    FULL_SYSTEMIMAGE_DEPS += $(INTERNAL_ROOT_FILES) $(INSTALLED_FILES_FILE_ROOT)
+  endif
+endif
+
+# -----------------------------------------------------------------
+ifdef BUILDING_SYSTEM_IMAGE
+
 FULL_SYSTEMIMAGE_DEPS := $(INTERNAL_SYSTEMIMAGE_FILES) $(INTERNAL_USERIMAGES_DEPS)
 
 # ASAN libraries in the system image - add dependency.
@@ -2946,9 +2966,6 @@ ifneq (,$(filter address, $(SANITIZE_TARGET)))
 endif
 
 FULL_SYSTEMIMAGE_DEPS += $(INTERNAL_ROOT_FILES) $(INSTALLED_FILES_FILE_ROOT)
-
-# -----------------------------------------------------------------
-ifdef BUILDING_SYSTEM_IMAGE
 
 # Install system linker configuration
 # Collect all available stub libraries installed in system and install with predefined linker configuration
@@ -3419,129 +3436,166 @@ ES_DEFAULT_LKMS := \
    audio_prm_dlkm \
    machine_dlkm \
    coupled_ssr_dlkm \
+   camera \
 
+# Default modules - first set; Last set auto-generated modules_end.order
+define ES_MOD_ORDER
+spmi-pmic-arb qcom_hwspinlock qcom-cpufreq-hw rtc-pm8xxx regmap-spmi qnoc-qos qcom_ipc_logging qcom-scm pinctrl-slpi proxy-consumer nvmem_qcom-spmi-sdam msm_dma_iommu_mapping iommu-logger icc-debug gh_msgq debug-regulator cmd-db
+pinctrl-msm smem gh_rm_drv secure_buffer qcom_rpmh qcom_aoss ns qti-fixed-regulator gdsc-regulator qcom-pdc proxy-consumer crypto-qti-tz
+pinctrl-sm8150 qcom_iommu_util soc_sleep_stats socinfo icc-bcm-voter minidump crypto-qti-common rpmh-regulator clk-qcom clk-rpmh
+ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs gcc-sm8150 scc-sm8150 dispcc-sm8250
+ufs_qcom qnoc-sm8150 phy-qcom-ufs-qmp-v4
 
-# copied to ES mods
-ES_RAMDISK_LKMS := \
-   qcom-dcvs \
-   dcvs_fp \
-   nvmem_qfprom \
-   scc-sm8150 \
-   gpucc-sm8150 \
-   videocc-sm8150 \
-   qmi_helpers \
-   smp2p_sleepstate \
-   qcom_pil_info \
-   qcom_ramdump \
-   qcom_glink \
-   qcom_smd \
-   smp2p \
-   msm_gpi \
-   pdr_interface \
-   qcom_glink_smem \
-   qcom_glink_spss \
-   rproc_qcom_common \
-   qcom_sysmon \
-   frpc-adsprpc \
-   qcom_q6v5 \
-   qrtr-smd \
-   qcom_q6v5_pas \
-   qcom_spss \
+endef
 
+# Default modules - second set
+define ES_MOD_ORDER_2
+reboot-mode qcom_cpu_vendor_hooks llcc-qcom mem_buf_dev mem-hooks qcom_logbuf_vh qcom-apcs-ipc-mailbox mdt_loader qcom_va_minidump qcom_wdt_core qcom_llcc_pmu
+qcom-pon qcom_dma_heaps qcom-spmi-pmic qcom-pdc msm_gpi mem_buf_msgq qrtr msm_qmp sched-walt qcom-pmu-lib
+clk-dummy qcom-dload-mode pinctrl-sdmshrike mem_buf qcom_soc_wdt msm_performance
 
-ES_MOD_ORDER := \
-'spmi-pmic-arb regmap-spmi qnoc-qos qcom_ipc_logging qcom-scm qcom_hwspinlock qcom_cpu_vendor_hooks qcom-cpufreq-hw rtc-pm8xxx pinctrl-slpi proxy-consumer nvmem_qcom-spmi-sdam msm_dma_iommu_mapping mem-hooks iommu-logger icc-debug gh_msgq debug-regulator cmd-db \n'\
-'smem secure_buffer qti-fixed-regulator qcom-spmi-pmic qcom_rpmh qcom-pdc qcom_aoss ns llcc-qcom gh_rm_drv gdsc-regulator crypto-qti-tz \n'\
-'socinfo pinctrl-msm rpmh-regulator qrtr qcom_iommu_util msm_qmp minidump mem_buf_dev icc-bcm-voter crypto-qti-common clk-rpmh clk-qcom soc_sleep_stats \n'\
-'clk-dummy pinctrl-sm8150 arm_smmu boot_stats ufshcd-crypto-qti qcom_wdt_core qcom_logbuf_vh qcom_dma_heaps qcom-dload-mode phy-qcom-ufs mem_buf_msgq gcc-sm8150 pinctrl-sdmshrike \n'\
-'icc-rpmh dispcc-sm8250 camcc-sm8150 \n'\
-'ufs_qcom qnoc-sm8150 phy-qcom-ufs-qmp-v4 mem_buf qcom_va_minidump \n'\
-'qcom-apcs-ipc-mailbox mdt_loader \n'\
+endef
 
-ES_MOD_ORDER_DI := \
-'pinctrl-sx150x i2c-mux qseecom_proxy  \n'\
-'i2c-mux-pca954x hdcp_qseecom_dlkm anx7625 \n'\
-'msm_geni_serial spi-msm-geni  \n'\
-'i2c-msm-geni msm_drm \n'\
+# Default modules - first set; Last set auto-generated modules_end.order
+define ES_MOD_ORDER_GEN4
+icc-debug qnoc-qos nvmem_qcom-spmi-sdam qcom_hwspinlock qcom-scm qcom-cpufreq-hw reboot-mode rtc-pm8xxx spmi-pmic-arb msm_dma_iommu_mapping debug-regulator proxy-consumer qcom_cpu_vendor_hooks smem cmd-db qcom_ipc_logging qti-regmap-debugfs regmap-spmi qcom-reboot-reason pcs_xpcs
+qcom_rpmh qrtr minidump llcc-qcom socinfo secure_buffer qcom_aoss qcom-pon qcom-spmi-pmic gdsc-regulator pinctrl-msm qcom-pdc crypto-qti-tz soc_sleep_stats
+icc-bcm-voter msm_qmp clk-rpmh clk-qcom   mem_buf pinctrl-lemans qcom_iommu_util mem_buf_dev qcom_wdt_core qcom-dload-mode crypto-qti-common phy-qcom-ufs boot_stats
+ufshcd-crypto-qti rpmh-regulator icc-rpmh qcom_dma_heaps phy-qcom-ufs dispcc1-lemans dispcc0-lemans camcc-lemans gcc-lemans    qcom_soc_wdt arm_smmu clk-dummy phy-qcom-ufs-qmp-v4-waipio
+ufs_qcom qnoc-lemans
 
+endef
 
-ES_MOD_ORDER_AIS := \
-'ais \n'\
+# MM Display modules
+define ES_MOD_ORDER_DI
+pinctrl-sx150x msm_geni_serial i2c-mux qseecom_proxy
+qcom_va_minidump llcc-qcom i2c-mux-pca954x hdcp_qseecom_dlkm
+anx7625 spi-msm-geni i2c-msm-geni
+msm_drm
 
+endef
 
-ES_MOD_ORDER_RV:= \
-'dcvs_fp scc-sm8150 \n'\
-'qcom-dcvs gpucc-sm8150 \n'\
-'nvmem_qfprom \n'\
-'msm_kgsl \n'\
+# MM Display modules
+define ES_MOD_ORDER_DI_GEN4
+msm_geni_serial i2c-mux qseecom_dlkm refgen gpio-pca953x i2c-msm-geni spi-msm-geni qcom_ipcc anx7625
+qcom_va_minidump i2c-mux-pca954x smcinvoke_dlkm hdcp_qseecom_dlkm
+msm_drm
 
+endef
 
-ES_MOD_ORDER_VI:= \
-'videocc-sm8150 msm-vidc \n'\
+# MM AIS modules
+define ES_MOD_ORDER_AIS
+camcc-sm8150 ais
 
+endef
 
-MM_R_MOD_ORDER_AU:= \
-'qmi_helpers\n'\
-'smp2p_sleepstate\n'\
-'qcom_pil_info\n'\
-'qcom_ramdump\n'\
-'qcom_glink qcom_smd smp2p msm_gpi pdr_interface\n'\
-'qcom_glink_smem qcom_glink_spss\n'\
-'rproc_qcom_common\n'\
-'qcom_sysmon frpc-adsprpc\n'\
-'qcom_q6v5\n'\
-'qrtr-smd qcom_q6v5_pas qcom_spss\n'\
-'snd_event_dlkm q6_pdr_dlkm stub_dlkm\n'\
-'q6_notifier_dlkm\n'\
-'gpr_dlkm\n'\
-'spf_core_dlkm\n'\
-'audpkt_ion_dlkm\n'\
-'audio_pkt_dlkm\n'\
-'adsp_loader_dlkm\n'\
-'q6_dlkm audio_prm_dlkm\n'\
-'machine_dlkm coupled_ssr_dlkm\n'\
+# MM RVC modules
+define ES_MOD_ORDER_RV_GEN4
+gpucc-lemans dcvs_fp qcom_llcc_pmu mdt_loader nvmem_qfprom qcom_ipcc
+qcom-dcvs qcom-pmu-lib
+msm_performance
+msm_kgsl
 
+endef
 
-ES_MOD_ORDER_END := \
-'qcom_soc_wdt \n'\
-'reboot-mode \n'\
-'qcom-pon \n'\
-'gcc-sc8180x \n'\
-'camcc-sc8180x \n'\
-'qnoc-sc8180x \n'\
-'pcs_xpcs \n'\
-'micrel \n'\
-'stmmac \n'\
-'stmmac-platform \n'\
-'dwmac-qcom-eth \n'\
+# MM RVC modules
+define ES_MOD_ORDER_RV
+dcvs_fp scc-sm8150
+qcom-dcvs gpucc-sm8150
+nvmem_qfprom
+msm_kgsl
 
+endef
 
+# MM QCXServer modules
+define ES_MOD_ORDER_QCX
+pinctrl-spmi-gpio
+gpio-pca953x
+camera
+
+endef
+
+# MM Video modules
+define ES_MOD_ORDER_VI
+videocc-sm8150 msm-vidc
+
+endef
+
+# MM Audio reach modules
+define ES_MOD_ORDER_R_AU
+qmi_helpers
+smp2p_sleepstate
+qcom_pil_info
+qcom_ramdump
+qcom_glink qcom_smd smp2p msm_gpi pdr_interface
+qcom_glink_smem qcom_glink_spss
+rproc_qcom_common
+qcom_sysmon frpc-adsprpc
+qcom_q6v5
+qrtr-smd qcom_q6v5_pas qcom_spss
+snd_event_dlkm q6_pdr_dlkm stub_dlkm
+q6_notifier_dlkm
+gpr_dlkm
+spf_core_dlkm
+audpkt_ion_dlkm
+audio_pkt_dlkm
+adsp_loader_dlkm
+q6_dlkm audio_prm_dlkm
+machine_dlkm coupled_ssr_dlkm
+
+endef
+
+# MM Audio modules (Elite)
+define ES_MOD_ORDER_AU
+qmi_helpers smp2p_sleepstate qcom_pil_info qcom_glink qcom_smd msm_gpi qcom_ramdump
+smp2p pdr_interface qcom_glink_smem qcom_glink_spss qrtr-smd snd_event_dlkm_legacy
+rproc_qcom_common stub_dlkm_legacy
+qcom_sysmon frpc-adsprpc q6_notifier_dlkm_legacy
+qcom_q6v5 apr_dlkm
+qcom_q6v5_pas adsp_loader_dlkm_legacy q6_dlkm_legacy
+platform_dlkm
+native_dlkm machine_dlkm_legacy
+
+endef
+
+# list of mods to search via sed
+es_get_mods = $(subst $(space),,$(foreach mod,$(1),$(if $(filter NEWLINE, $(mod)),,$(mod)\|)))
+es_mod_list=/\($(call es_get_mods,$(subst ${newline}, NEWLINE ,$(1)))dummy\).ko/d
+
+# Add newline chars
+es_update_nl = $(subst $(newline),\n,$(1))
+
+# if module file doesn't exist, error is logged and not added to *.order files
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INSTALLED_SYSTEMIMAGE_TARGET) $(INSTALLED_VENDORIMAGE_TARGET)
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_BOOTCONFIG_TARGET)
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH)
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/ ;\
-	cp -rf $(addsuffix .ko,$(addprefix $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/,$(ES_RAMDISK_LKMS))) $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/ ;\
-	$(foreach mod,$(addsuffix .ko,$(addprefix $(PRODUCT_OUT)/dlkm/lib/modules/,$(ES_DEFAULT_LKMS))), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/$(notdir $(mod)) --strip-debug $(mod) ;) \
-	echo -n -e ${ES_MOD_ORDER} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.order ;\
-	echo -n -e ${ES_MOD_ORDER_DI} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_di.order ;\
-	echo -n -e ${ES_MOD_ORDER_VI} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_vi.order ;\
-        echo -n -e ${ES_MOD_ORDER_AIS} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_ais.order ;\
-	echo -n -e ${ES_MOD_ORDER_RV} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_rv.order ;\
-	echo -n -e ${MM_R_MOD_ORDER_AU} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_r_au.order ;\
-	echo -n -e ${ES_MOD_ORDER_END} > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules_end.order ;\
-	echo > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.load ;\
-	$(foreach mod,$(addsuffix .ko,${ES_MOD_LOAD}), echo "$(mod)" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.load ;) \
-	echo > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_modules.load ;\
-	$(foreach mod,$(addsuffix .ko,${ES_MM_MOD_LOAD}), echo "$(mod)" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_modules.load ;) \
-	echo > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_r_modules.load ;\
-	$(foreach mod,$(addsuffix .ko,${ES_MM_R_MOD_LOAD}), echo "$(mod)" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/mm_r_modules.load ;) \
-	cp -r $(TARGET_RAMDISK_OUT)/vendor_early_services/bin/early_services_init $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
-	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/firmware_mnt; \
-	cp -r $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
-	cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
-	cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/vendor_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
-	cp -rf $(PRODUCT_OUT)/system/etc/selinux/plat_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
+  $(foreach mod,$(addsuffix .ko,$(addprefix $(PRODUCT_OUT)/dlkm/lib/modules/,$(ES_DEFAULT_LKMS))), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(notdir $(mod)) --strip-debug $(mod) ;) \
+  echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ;\
+  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
+  echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ;\
+  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_2}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
+  sed -e '$(call es_mod_list,${ES_MOD_ORDER}${ES_MOD_ORDER_2})' "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" | sed 's/.ko//' > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end.order" ;\
+  echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ;\
+  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_DI}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
+  sed -e '$(call es_mod_list,${ES_MOD_ORDER_GEN4})' "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" | sed 's/.ko//' > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end_gen4.order" ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_VI})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_vi.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_AIS})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_ais.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_RV})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_rv.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_RV_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_rv_gen4.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_au.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_R_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_r_au.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_QCX})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_qcx.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_DI_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di_gen4.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_gen4.order ;\
+  cp -r $(TARGET_RAMDISK_OUT)/vendor_early_services/bin/early_services_init $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
+  mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/firmware_mnt; \
+  cp -r $(PRODUCT_OUT)/vendor_dlkm/lib/modules/pinctrl-spmi-gpio.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/ ;\
+  cp -r $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/vendor_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
+  cp -rf $(PRODUCT_OUT)/system/etc/selinux/plat_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.audio.common@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.audio.effect@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.audio@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
@@ -3574,6 +3628,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/system/lib64/libnativebridge_lazy.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libnativeloader_lazy.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libSurfaceFlingerProp.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator-V1-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@2.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@3.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
@@ -3621,7 +3676,48 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/vendor/etc/bike_bell.wav $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/etc/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/bin/audio-nxp-auto $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/bin/pd-mapper $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/ais_server $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/splash_nv12_720p30_3secs.h264 $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/etc/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcam* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libcamera_metadata.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libbitmlenginev2.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcom.qti.chinodeutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libchilog.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/hw/camera.qcom.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/hw/com.qti.chi.override.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.chiusecaseselector.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.settings.sa8650.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/libcamxtintlessalgo.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqcx* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.sensor* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.tuned.* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/libcom.qti.node.dummydepth.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/com.qti.camx.chiiqutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/libopencv3a.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/com.qti.stats* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/qcxserver $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libaosal.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libadsprpc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcdsprpc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.dsp@1.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqdMetaData.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libhardware.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libgralloc* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.display.allocator* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.display.mapper* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/vendor.qti.hardware.display.config-V2-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libunwindstack* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libprotobuf-cpp-full-3.9.1.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libdisplayconfig.qti.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libvmmem.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.display.config@2.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/camera/camxoverridesettings.txt $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libllvm-qcom.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libCB.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libOpenCL.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libpowerpolicyclient.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.frameworks.automotive.powerpolicy-V1-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+
 	$(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_VENDOR_RAMDISK_OUT) $(PRIVATE_ADDITIONAL_DIR) | $(COMPRESSION_COMMAND) > $(INTERNAL_VENDOR_RAMDISK_TARGET)
 	$(hide) touch $@
 endif
