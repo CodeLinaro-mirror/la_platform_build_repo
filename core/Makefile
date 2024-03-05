@@ -3523,7 +3523,11 @@ endef
 
 # MM Display modules
 define ES_MOD_ORDER_DI
-qcom-apcs-ipc-mailbox silent_boot refgen qseecom_proxy drm_display_helper drm_dp_aux_bus i2c-mux pinctrl-sx150x msm_geni_serial scc-sm8150 scc-sm6150 llcc-qcom mem_buf_dev
+qcom_glink qcom_smd
+qcom_glink_smem scc-sm8150 scc-sm6150
+rproc_qcom_common
+qcom-geni-se-ssc
+qcom-apcs-ipc-mailbox silent_boot refgen qseecom_proxy drm_display_helper drm_dp_aux_bus i2c-mux pinctrl-sx150x msm_geni_serial llcc-qcom mem_buf_dev
 silent-mode-hw-monitoring qseecom_dlkm
 i2c-mux-pca954x spidev smcinvoke_dlkm
 hdcp_qseecom_dlkm
