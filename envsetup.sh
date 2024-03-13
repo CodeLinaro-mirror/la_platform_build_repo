@@ -462,6 +462,24 @@ function _lunch_meat()
     export PLATFORM_VERSION=$(_get_build_var_cached PLATFORM_VERSION)
     export TARGET_RELEASE=$release
     # Note this is the string "release", not the value of the variable.
+
+    export CUSTOM_PATCHES_MODE=$(get_build_var CUSTOM_PATCHES_MODE)
+    export TARGET_BOARD_SUFFIX=$(get_build_var TARGET_BOARD_SUFFIX)
+    export TARGET_BOARD_DERIVATIVE_SUFFIX=$(get_build_var TARGET_BOARD_DERIVATIVE_SUFFIX)
+
+
+    if [ -e device/qcom/$TARGET_BOARD_PLATFORM$TARGET_BOARD_SUFFIX$TARGET_BOARD_DERIVATIVE_SUFFIX/patch_apply.sh ]; then
+            if [ "$CUSTOM_PATCHES_MODE" == "apply" ]; then
+                    $(gettop)/device/qcom/$TARGET_BOARD_PLATFORM$TARGET_BOARD_SUFFIX$TARGET_BOARD_DERIVATIVE_SUFFIX/patch_apply.sh apply
+                    export RECOMPILE_KERNEL=1
+            fi
+    fi
+
+    if [ -n "$version" ]; then
+      export TARGET_PLATFORM_VERSION=$(get_build_var TARGET_PLATFORM_VERSION)
+    else
+      unset TARGET_PLATFORM_VERSION
+    fi
     export TARGET_BUILD_TYPE=release
 
     [[ -n "${ANDROID_QUIET_BUILD:-}" ]] || echo
