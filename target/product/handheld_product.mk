@@ -24,7 +24,7 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/media_product.mk)
 PRODUCT_PACKAGES += \
     OneTimeInitializer \
     preinstalled-packages-platform-handheld-product.xml \
-    SettingsIntelligence \
+    SettingsIntelligence
 
 ifneq ($(TARGET_1G_DDR_RAM), true)
 PRODUCT_PACKAGES += \
