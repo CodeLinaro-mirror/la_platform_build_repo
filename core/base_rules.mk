@@ -670,8 +670,14 @@ $(foreach td,$(LOCAL_TEST_DATA),$(eval $(copy_test_data_pairs)))
 
 copy_test_data_pairs :=
 
-my_installed_test_data := $(call copy-many-files,$(my_test_data_pairs))
-$(LOCAL_INSTALLED_MODULE): $(my_installed_test_data)
+ifneq ($(LOCAL_MODULE_MAKEFILE),$(SOONG_ANDROID_MK))
+  my_installed_test_data := $(call copy-many-files,$(my_test_data_pairs))
+  $(LOCAL_INSTALLED_MODULE): $(my_installed_test_data)
+else
+  # Skip installing test data for Soong modules, it's already been handled.
+  # Just compute my_installed_test_data.
+  my_installed_test_data := $(foreach f, $(my_test_data_pairs), $(call word-colon,2,$(f)))
+endif
 
 endif
 endif
@@ -1017,15 +1023,14 @@ ALL_MODULES.$(my_register_name).LOCAL_RUNTIME_LIBRARIES := \
 ALL_MODULES.$(my_register_name).LOCAL_STATIC_LIBRARIES := \
     $(ALL_MODULES.$(my_register_name).LOCAL_STATIC_LIBRARIES) $(LOCAL_STATIC_JAVA_LIBRARIES)
 
-ifdef LOCAL_TEST_DATA
+ifneq ($(my_test_data_file_pairs),)
   # Export the list of targets that are handled as data inputs and required
-  # by tests at runtime. The LOCAL_TEST_DATA format is generated from below
-  # https://cs.android.com/android/platform/superproject/+/master:build/soong/android/androidmk.go;l=925-944;drc=master
-  # which format is like $(path):$(relative_file) but for module-info, only
-  # the string after ":" is needed.
+  # by tests at runtime. The format of my_test_data_file_pairs is
+  # is $(path):$(relative_file) but for module-info, only the string after
+  # ":" is needed.
   ALL_MODULES.$(my_register_name).TEST_DATA := \
     $(strip $(ALL_MODULES.$(my_register_name).TEST_DATA) \
-      $(foreach f, $(LOCAL_TEST_DATA),\
+      $(foreach f, $(my_test_data_file_pairs),\
         $(call word-colon,2,$(f))))
 endif
 
@@ -1156,11 +1161,9 @@ INSTALLABLE_FILES.$(LOCAL_INSTALLED_MODULE).MODULE := $(my_register_name)
 
 ##########################################################
 # Track module-level dependencies.
-# Use $(LOCAL_MODULE) instead of $(my_register_name) to ignore module's bitness.
 # (b/204397180) Unlock RECORD_ALL_DEPS was acknowledged reasonable for better Atest performance.
-ALL_DEPS.MODULES += $(LOCAL_MODULE)
-ALL_DEPS.$(LOCAL_MODULE).ALL_DEPS := $(sort \
-  $(ALL_DEPS.$(LOCAL_MODULE).ALL_DEPS) \
+ALL_MODULES.$(my_register_name).ALL_DEPS := \
+  $(ALL_MODULES.$(my_register_name).ALL_DEPS) \
   $(LOCAL_STATIC_LIBRARIES) \
   $(LOCAL_WHOLE_STATIC_LIBRARIES) \
   $(LOCAL_SHARED_LIBRARIES) \
@@ -1170,7 +1173,7 @@ ALL_DEPS.$(LOCAL_MODULE).ALL_DEPS := $(sort \
   $(LOCAL_HEADER_LIBRARIES) \
   $(LOCAL_STATIC_JAVA_LIBRARIES) \
   $(LOCAL_JAVA_LIBRARIES) \
-  $(LOCAL_JNI_SHARED_LIBRARIES))
+  $(LOCAL_JNI_SHARED_LIBRARIES)
 
 ###########################################################
 ## umbrella targets used to verify builds

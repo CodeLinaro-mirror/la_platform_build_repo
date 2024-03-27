@@ -32,17 +32,22 @@ where
 {
     let template_flags: Vec<TemplateParsedFlag> =
         parsed_flags_iter.map(|pf| TemplateParsedFlag::new(package, pf)).collect();
+    let has_readwrite = template_flags.iter().any(|item| item.readwrite);
     let context = TemplateContext {
         package: package.to_string(),
         template_flags,
         modules: package.split('.').map(|s| s.to_string()).collect::<Vec<_>>(),
+        has_readwrite,
     };
     let mut template = TinyTemplate::new();
     template.add_template(
         "rust_code_gen",
         match codegen_mode {
-            CodegenMode::Production => include_str!("../templates/rust_prod.template"),
-            CodegenMode::Test => include_str!("../templates/rust_test.template"),
+            CodegenMode::Production => include_str!("../../templates/rust_prod.template"),
+            CodegenMode::Test => include_str!("../../templates/rust_test.template"),
+            CodegenMode::Exported => {
+                todo!("exported mode not yet supported for rust, see b/313894653.")
+            }
         },
     )?;
     let contents = template.render("rust_code_gen", &context)?;
@@ -55,6 +60,7 @@ struct TemplateContext {
     pub package: String,
     pub template_flags: Vec<TemplateParsedFlag>,
     pub modules: Vec<String>,
+    pub has_readwrite: bool,
 }
 
 #[derive(Serialize)]
@@ -94,6 +100,33 @@ mod tests {
 /// flag provider
 pub struct FlagProvider;
 
+lazy_static::lazy_static! {
+    /// flag value cache for disabled_rw
+    static ref CACHED_disabled_rw: bool = flags_rust::GetServerConfigurableFlag(
+        "aconfig_flags.aconfig_test",
+        "com.android.aconfig.test.disabled_rw",
+        "false") == "true";
+
+    /// flag value cache for disabled_rw_exported
+    static ref CACHED_disabled_rw_exported: bool = flags_rust::GetServerConfigurableFlag(
+        "aconfig_flags.aconfig_test",
+        "com.android.aconfig.test.disabled_rw_exported",
+        "false") == "true";
+
+    /// flag value cache for disabled_rw_in_other_namespace
+    static ref CACHED_disabled_rw_in_other_namespace: bool = flags_rust::GetServerConfigurableFlag(
+        "aconfig_flags.other_namespace",
+        "com.android.aconfig.test.disabled_rw_in_other_namespace",
+        "false") == "true";
+
+    /// flag value cache for enabled_rw
+    static ref CACHED_enabled_rw: bool = flags_rust::GetServerConfigurableFlag(
+        "aconfig_flags.aconfig_test",
+        "com.android.aconfig.test.enabled_rw",
+        "true") == "true";
+
+}
+
 impl FlagProvider {
     /// query flag disabled_ro
     pub fn disabled_ro(&self) -> bool {
@@ -102,10 +135,17 @@ impl FlagProvider {
 
     /// query flag disabled_rw
     pub fn disabled_rw(&self) -> bool {
-        flags_rust::GetServerConfigurableFlag(
-            "aconfig_flags.aconfig_test",
-            "com.android.aconfig.test.disabled_rw",
-            "false") == "true"
+        *CACHED_disabled_rw
+    }
+
+    /// query flag disabled_rw_exported
+    pub fn disabled_rw_exported(&self) -> bool {
+        *CACHED_disabled_rw_exported
+    }
+
+    /// query flag disabled_rw_in_other_namespace
+    pub fn disabled_rw_in_other_namespace(&self) -> bool {
+        *CACHED_disabled_rw_in_other_namespace
     }
 
     /// query flag enabled_fixed_ro
@@ -118,12 +158,14 @@ impl FlagProvider {
         true
     }
 
+    /// query flag enabled_ro_exported
+    pub fn enabled_ro_exported(&self) -> bool {
+        true
+    }
+
     /// query flag enabled_rw
     pub fn enabled_rw(&self) -> bool {
-        flags_rust::GetServerConfigurableFlag(
-            "aconfig_flags.aconfig_test",
-            "com.android.aconfig.test.enabled_rw",
-            "true") == "true"
+        *CACHED_enabled_rw
     }
 }
 
@@ -142,6 +184,18 @@ pub fn disabled_rw() -> bool {
     PROVIDER.disabled_rw()
 }
 
+/// query flag disabled_rw_exported
+#[inline(always)]
+pub fn disabled_rw_exported() -> bool {
+    PROVIDER.disabled_rw_exported()
+}
+
+/// query flag disabled_rw_in_other_namespace
+#[inline(always)]
+pub fn disabled_rw_in_other_namespace() -> bool {
+    PROVIDER.disabled_rw_in_other_namespace()
+}
+
 /// query flag enabled_fixed_ro
 #[inline(always)]
 pub fn enabled_fixed_ro() -> bool {
@@ -151,6 +205,12 @@ pub fn enabled_fixed_ro() -> bool {
 /// query flag enabled_ro
 #[inline(always)]
 pub fn enabled_ro() -> bool {
+    true
+}
+
+/// query flag enabled_ro_exported
+#[inline(always)]
+pub fn enabled_ro_exported() -> bool {
     true
 }
 
@@ -200,6 +260,36 @@ impl FlagProvider {
         self.overrides.insert("disabled_rw", val);
     }
 
+    /// query flag disabled_rw_exported
+    pub fn disabled_rw_exported(&self) -> bool {
+        self.overrides.get("disabled_rw_exported").copied().unwrap_or(
+            flags_rust::GetServerConfigurableFlag(
+                "aconfig_flags.aconfig_test",
+                "com.android.aconfig.test.disabled_rw_exported",
+                "false") == "true"
+        )
+    }
+
+    /// set flag disabled_rw_exported
+    pub fn set_disabled_rw_exported(&mut self, val: bool) {
+        self.overrides.insert("disabled_rw_exported", val);
+    }
+
+    /// query flag disabled_rw_in_other_namespace
+    pub fn disabled_rw_in_other_namespace(&self) -> bool {
+        self.overrides.get("disabled_rw_in_other_namespace").copied().unwrap_or(
+            flags_rust::GetServerConfigurableFlag(
+                "aconfig_flags.other_namespace",
+                "com.android.aconfig.test.disabled_rw_in_other_namespace",
+                "false") == "true"
+        )
+    }
+
+    /// set flag disabled_rw_in_other_namespace
+    pub fn set_disabled_rw_in_other_namespace(&mut self, val: bool) {
+        self.overrides.insert("disabled_rw_in_other_namespace", val);
+    }
+
     /// query flag enabled_fixed_ro
     pub fn enabled_fixed_ro(&self) -> bool {
         self.overrides.get("enabled_fixed_ro").copied().unwrap_or(
@@ -222,6 +312,18 @@ impl FlagProvider {
     /// set flag enabled_ro
     pub fn set_enabled_ro(&mut self, val: bool) {
         self.overrides.insert("enabled_ro", val);
+    }
+
+    /// query flag enabled_ro_exported
+    pub fn enabled_ro_exported(&self) -> bool {
+        self.overrides.get("enabled_ro_exported").copied().unwrap_or(
+            true
+        )
+    }
+
+    /// set flag enabled_ro_exported
+    pub fn set_enabled_ro_exported(&mut self, val: bool) {
+        self.overrides.insert("enabled_ro_exported", val);
     }
 
     /// query flag enabled_rw
@@ -274,6 +376,30 @@ pub fn set_disabled_rw(val: bool) {
     PROVIDER.lock().unwrap().set_disabled_rw(val);
 }
 
+/// query flag disabled_rw_exported
+#[inline(always)]
+pub fn disabled_rw_exported() -> bool {
+    PROVIDER.lock().unwrap().disabled_rw_exported()
+}
+
+/// set flag disabled_rw_exported
+#[inline(always)]
+pub fn set_disabled_rw_exported(val: bool) {
+    PROVIDER.lock().unwrap().set_disabled_rw_exported(val);
+}
+
+/// query flag disabled_rw_in_other_namespace
+#[inline(always)]
+pub fn disabled_rw_in_other_namespace() -> bool {
+    PROVIDER.lock().unwrap().disabled_rw_in_other_namespace()
+}
+
+/// set flag disabled_rw_in_other_namespace
+#[inline(always)]
+pub fn set_disabled_rw_in_other_namespace(val: bool) {
+    PROVIDER.lock().unwrap().set_disabled_rw_in_other_namespace(val);
+}
+
 /// query flag enabled_fixed_ro
 #[inline(always)]
 pub fn enabled_fixed_ro() -> bool {
@@ -296,6 +422,18 @@ pub fn enabled_ro() -> bool {
 #[inline(always)]
 pub fn set_enabled_ro(val: bool) {
     PROVIDER.lock().unwrap().set_enabled_ro(val);
+}
+
+/// query flag enabled_ro_exported
+#[inline(always)]
+pub fn enabled_ro_exported() -> bool {
+    PROVIDER.lock().unwrap().enabled_ro_exported()
+}
+
+/// set flag enabled_ro_exported
+#[inline(always)]
+pub fn set_enabled_ro_exported(val: bool) {
+    PROVIDER.lock().unwrap().set_enabled_ro_exported(val);
 }
 
 /// query flag enabled_rw
@@ -328,6 +466,8 @@ pub fn reset_flags() {
                 match mode {
                     CodegenMode::Production => PROD_EXPECTED,
                     CodegenMode::Test => TEST_EXPECTED,
+                    CodegenMode::Exported =>
+                        todo!("exported mode not yet supported for rust, see b/313894653."),
                 },
                 &String::from_utf8(generated.contents).unwrap()
             )

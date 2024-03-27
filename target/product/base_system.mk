@@ -21,7 +21,6 @@ PRODUCT_PACKAGES += \
     am \
     android.hidl.base-V1.0-java \
     android.hidl.manager-V1.0-java \
-    android.hidl.memory@1.0-impl \
     android.system.suspend-service \
     android.test.base \
     android.test.mock \
@@ -96,13 +95,14 @@ PRODUCT_PACKAGES += \
     framework-location \
     framework-minus-apex \
     framework-minus-apex-install-dependencies \
-    framework-res \
+    framework-nfc \
     framework-sysconfig.xml \
     fsck.erofs \
     fsck_msdos \
     fsverity-release-cert-der \
     fs_config_files_system \
     fs_config_dirs_system \
+    gpu_counter_producer \
     group_system \
     gsid \
     gsi_tool \
@@ -127,7 +127,6 @@ PRODUCT_PACKAGES += \
     IntentResolver \
     ip \
     iptables \
-    ip-up-vpn \
     javax.obex \
     keystore2 \
     credstore \
@@ -225,7 +224,6 @@ PRODUCT_PACKAGES += \
     mkfs.erofs \
     monkey \
     mtectrl \
-    mtpd \
     ndc \
     netd \
     NetworkStack \
@@ -240,14 +238,12 @@ PRODUCT_PACKAGES += \
     pintool \
     platform.xml \
     pm \
-    pppd \
     preinstalled-packages-asl-files.xml \
     preinstalled-packages-platform.xml \
     preinstalled-packages-strict-signature.xml \
     printflags \
     privapp-permissions-platform.xml \
     prng_seeder \
-    racoon \
     recovery-persist \
     resize2fs \
     rss_hwm_reset \
@@ -295,8 +291,6 @@ PRODUCT_PACKAGES += \
     wifi.rc \
     wm \
 
-PRODUCT_PACKAGES += $(RELEASE_PACKAGE_VIRTUAL_CAMERA)
-
 # These packages are not used on Android TV
 ifneq ($(PRODUCT_IS_ATV),true)
   PRODUCT_PACKAGES += \
@@ -316,13 +310,17 @@ PRODUCT_PACKAGES += \
     system_manifest.xml \
     system_compatibility_matrix.xml \
 
-HIDL_SUPPORT_SERVICES := \
-    hwservicemanager \
-    android.hidl.allocator@1.0-service \
-
 # Base modules when shipping api level is less than or equal to 34
 PRODUCT_PACKAGES_SHIPPING_API_LEVEL_34 += \
-    $(HIDL_SUPPORT_SERVICES) \
+    android.hidl.memory@1.0-impl \
+
+# hwservicemanager is now installed on system_ext, but apexes might be using
+# old libraries that are expecting it to be installed on system. This allows
+# those apexes to continue working. The symlink can be removed once we are sure
+# there are no devices using hwservicemanager (when Android V launching devices
+# are no longer supported for dessert upgrades).
+PRODUCT_PACKAGES += \
+    hwservicemanager_compat_symlink_module \
 
 PRODUCT_PACKAGES_ARM64 := libclang_rt.hwasan \
  libclang_rt.hwasan.bootstrap \
@@ -418,6 +416,7 @@ PRODUCT_PACKAGES_DEBUG := \
     adevice_fingerprint \
     arping \
     dmuserd \
+    evemu-record \
     idlcli \
     init-debug.rc \
     iotop \
