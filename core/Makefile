@@ -3506,7 +3506,7 @@ define ES_MOD_ORDER
 spmi-pmic-arb qcom_hwspinlock qcom-cpufreq-hw rtc-pm8xxx qnoc-qos gh_msgq debug_symbol smem pinctrl-slpi proxy-consumer nvmem_qcom-spmi-sdam msm_dma_iommu_mapping iommu-logger icc-debug debug-regulator cmd-db
 gh_rm_drv minidump qti-fixed-regulator gdsc-regulator
 qcom-scm qcom_ipc_logging clk-qcom
-pinctrl-msm secure_buffer qcom_aoss qcom_rpmh qcom-pdc clk-dummy
+pinctrl-msm secure_buffer qcom_aoss qcom_rpmh qcom-pdc clk-dummy nvmem_qfprom dwc3-msm
 pinctrl-sm8150 pinctrl-sm6150 qcom_iommu_util socinfo icc-bcm-voter crypto-qti rpmh-regulator clk-rpmh dispcc-sm6150 debugcc-sm6150
 ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs gcc-sm8150 dispcc-sm8250 gcc-sc8180x gcc-sm6150
 ufs_qcom qnoc-sm8150 qnoc-sc8180x-auto qnoc-sm6150 phy-qcom-ufs-qmp-v4 phy-qcom-ufs-qmp-v3-660
