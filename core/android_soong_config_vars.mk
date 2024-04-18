@@ -32,6 +32,7 @@ $(call add_soong_config_var,ANDROID,TARGET_ENABLE_MEDIADRM_64)
 $(call add_soong_config_var,ANDROID,BOARD_USES_ODMIMAGE)
 $(call add_soong_config_var,ANDROID,BOARD_USES_RECOVERY_AS_BOOT)
 $(call add_soong_config_var,ANDROID,CHECK_DEV_TYPE_VIOLATIONS)
+$(call add_soong_config_var,ANDROID,BOARD_SUPPORTS_RAMDISK_EARLY_INIT)
 $(call add_soong_config_var,ANDROID,PRODUCT_INSTALL_DEBUG_POLICY_TO_SYSTEM_EXT)
 $(call add_soong_config_var,ANDROID,TARGET_ANDROID_BELOW_V15)
 
