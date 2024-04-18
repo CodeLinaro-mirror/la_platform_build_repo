@@ -1272,7 +1272,11 @@ endif
 
 # We just build this directly to the install location.
 INSTALLED_RAMDISK_TARGET := $(BUILT_RAMDISK_TARGET)
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+$(INSTALLED_RAMDISK_TARGET): PRIVATE_DIRS := debug_ramdisk dev metadata mnt proc second_stage_resources sys vendor_early_services
+else
 $(INSTALLED_RAMDISK_TARGET): PRIVATE_DIRS := debug_ramdisk dev metadata mnt proc second_stage_resources sys
+endif
 $(INSTALLED_RAMDISK_TARGET): $(MKBOOTFS) $(RAMDISK_NODE_LIST) $(INTERNAL_RAMDISK_FILES) $(INSTALLED_FILES_FILE_RAMDISK) | $(COMPRESSION_COMMAND_DEPS)
 	$(call pretty,"Target ramdisk: $@")
 	$(hide) mkdir -p $(addprefix $(TARGET_RAMDISK_OUT)/,$(PRIVATE_DIRS))
@@ -1617,7 +1621,12 @@ endif # BUILDING_INIT_BOOT_IMAGE is not true
 # vendor boot image
 INSTALLED_FILES_OUTSIDE_IMAGES := $(filter-out $(TARGET_VENDOR_RAMDISK_OUT)/%, $(INSTALLED_FILES_OUTSIDE_IMAGES))
 ifeq ($(BUILDING_VENDOR_BOOT_IMAGE),true)
-
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+BOARD_COPY_VENDOR_BOOT_IMAGE_TO_TARGET_FILES := true
+ifeq ($(BOARD_AVB_ENABLE),true)
+INTERNAL_VENDOR_RAMDISK_UPDATE := $(PRODUCT_OUT)/vendor_ramdisk_update.txt
+endif
+endif
 INTERNAL_VENDOR_RAMDISK_FILES := $(filter $(TARGET_VENDOR_RAMDISK_OUT)/%, \
     $(ALL_DEFAULT_INSTALLED_MODULES))
 
@@ -3081,6 +3090,13 @@ $(call declare-0p-target,$(INSTALLED_FILES_JSON_VENDOR_DEBUG_RAMDISK))
 
 INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET := $(call intermediates-dir-for,PACKAGING,vendor_boot-debug)/vendor_ramdisk-debug.cpio$(RAMDISK_EXT)
 
+# The vendor debug ramdisk combines vendor ramdisk and debug ramdisk.
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+ifeq ($(BOARD_AVB_ENABLE),true)
+$(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET): $(INTERNAL_VENDOR_RAMDISK_UPDATE)
+endif
+endif
+
 $(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET): $(INSTALLED_FILES_FILE_VENDOR_DEBUG_RAMDISK)
 $(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET): $(MKBOOTFS) | $(COMPRESSION_COMMAND_DEPS)
 	$(hide) rm -f $@
@@ -3460,6 +3476,27 @@ ifdef BOARD_USES_SYSTEM_DLKMIMAGE
   ALL_DEFAULT_INSTALLED_MODULES += $(_system_dlkm_lib_modules_symlink)
 endif
 
+# Earlyinit still depends on some system modules. Keep building system when BOARD_SUPPORTS_RAMDISK_EARLY_INIT is true
+# TODO: Remove once early_init has no dependency on systemimage
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+  ifndef BUILDING_SYSTEM_IMAGE
+    FULL_SYSTEMIMAGE_DEPS := $(INTERNAL_SYSTEMIMAGE_FILES) $(INTERNAL_USERIMAGES_DEPS)
+
+    # ASAN libraries in the system image - add dependency.
+    ASAN_IN_SYSTEM_INSTALLED := $(TARGET_OUT)/asan.tar.bz2
+    ifneq (,$(filter address, $(SANITIZE_TARGET)))
+      ifeq (true,$(SANITIZE_TARGET_SYSTEM))
+        FULL_SYSTEMIMAGE_DEPS += $(ASAN_IN_SYSTEM_INSTALLED)
+      endif
+    endif
+
+    FULL_SYSTEMIMAGE_DEPS += $(INTERNAL_ROOT_FILES) $(INSTALLED_FILES_FILE_ROOT)
+  endif
+endif
+
+# -----------------------------------------------------------------
+ifdef BUILDING_SYSTEM_IMAGE
+
 FULL_SYSTEMIMAGE_DEPS := $(INTERNAL_SYSTEMIMAGE_FILES) $(INTERNAL_USERIMAGES_DEPS)
 
 # ASAN libraries in the system image - add dependency.
@@ -3498,6 +3535,7 @@ $(1): $$(HOST_OUT_EXECUTABLES)/extra_install_zips_file_list $(foreach p,$(call r
 	$$(foreach f,$$(PRIVATE_FILES),echo "$$(f)" >> $$@$$(newline))
 	$$(HOST_OUT_EXECUTABLES)/extra_install_zips_file_list $(2) $$(PRIVATE_EXTRA_INSTALL_ZIPS) >> $$@
 endef
+endif
 
 # -----------------------------------------------------------------
 ifdef BUILDING_SYSTEM_IMAGE
@@ -4003,6 +4041,271 @@ $(if $(strip $(ALL_TARGETS.$(INSTALLED_VENDORIMAGE_TARGET).META_LIC)),,\
     $(if $(strip $(ALL_TARGETS.$(BOARD_PREBUILT_VENDORIMAGE).META_LIC)),\
         $(call declare-copy-target-license-metadata,$(INSTALLED_VENDORIMAGE_TARGET),$(BOARD_PREBUILT_VENDORIMAGE)),\
         $(call declare-license-metadata,$(INSTALLED_VENDORIMAGE_TARGET),legacy_proprietary,proprietary,,"Vendor Image",vendor)))
+endif
+
+#-----------------------------------------------------------------
+# vendor ramdisk update
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+ifeq ($(BOARD_AVB_ENABLE),true)
+ifdef BUILDING_VENDOR_BOOT_IMAGE
+
+ES_VNDR_MOD_PATH := "/vendor_early_services/vendor/lib/modules"
+ES_MOD_PATH := "/lib/modules"
+ES_MOD_FILE := "/lib/modules/modules.load"
+
+# strip debug info and copied to ES mods
+ES_DEFAULT_LKMS := \
+   snd_event_dlkm_legacy \
+   q6_notifier_dlkm_legacy \
+   apr_dlkm \
+   adsp_loader_dlkm_legacy \
+   q6_dlkm_legacy \
+   platform_dlkm \
+   native_dlkm \
+   stub_dlkm_legacy \
+   hdmi_dlkm \
+   frpc-adsprpc \
+   machine_dlkm_legacy \
+   ais \
+   msm_kgsl \
+   msm-vidc \
+   snd_event_dlkm \
+   q6_pdr_dlkm \
+   stub_dlkm \
+   q6_notifier_dlkm \
+   gpr_dlkm \
+   spf_core_dlkm \
+   audpkt_ion_dlkm \
+   audio_pkt_dlkm \
+   adsp_loader_dlkm \
+   q6_dlkm \
+   audio_prm_dlkm \
+   machine_dlkm \
+   coupled_ssr_dlkm \
+   pdr_interface \
+
+
+# Default modules - first set; Last set auto-generated modules_end.order
+define ES_MOD_ORDER
+spmi-pmic-arb qcom_hwspinlock qcom-cpufreq-hw rtc-pm8xxx qnoc-qos gh_msgq debug_symbol smem pinctrl-slpi proxy-consumer nvmem_qcom-spmi-sdam msm_dma_iommu_mapping iommu-logger icc-debug debug-regulator cmd-db
+gh_rm_drv minidump qti-fixed-regulator gdsc-regulator
+qcom-scm qcom_ipc_logging clk-qcom
+pinctrl-msm secure_buffer qcom_aoss qcom_rpmh qcom-pdc clk-dummy nvmem_qfprom dwc3-msm
+pinctrl-sm8150 pinctrl-sm6150 qcom_iommu_util socinfo icc-bcm-voter crypto-qti rpmh-regulator clk-rpmh dispcc-sm6150 debugcc-sm6150
+ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs gcc-sm8150 dispcc-sm8250 gcc-sc8180x gcc-sm6150
+ufs_qcom qnoc-sm8150 qnoc-sc8180x-auto qnoc-sm6150 phy-qcom-ufs-qmp-v4 phy-qcom-ufs-qmp-v3-660
+
+endef
+
+# Default modules - second set
+define ES_MOD_ORDER_2
+reboot-mode qcom_cpu_vendor_hooks llcc-qcom mem_buf_dev qcom_wdt_core phy-generic phy-msm-ssusb-qmp usb_f_diag sdhci-msm-scaling
+usb_f_cdev usb_f_qdss qcom-pon qcom_dma_heaps qcom-spmi-pmic msm_gpi mem_buf_msgq qrtr msm_qmp qcom-rpmh-regulator cqhci
+sdhci-msm qcom-dload-mode pinctrl-sdmshrike mem_buf qcom_soc_wdt
+
+endef
+
+# MM Display modules
+define ES_MOD_ORDER_DI
+mdt_loader qcom-apcs-ipc-mailbox silent_boot refgen qseecom_proxy drm_display_helper drm_dp_aux_bus i2c-mux pinctrl-sx150x msm_geni_serial scc-sm8150 scc-sm6150 llcc-qcom mem_buf_dev
+silent-mode-hw-monitoring qseecom_dlkm
+i2c-mux-pca954x spidev smcinvoke_dlkm
+hdcp_qseecom_dlkm
+spi-msm-geni i2c-msm-geni
+anx7625
+msm_drm
+
+endef
+
+# MM AIS modules
+define ES_MOD_ORDER_AIS
+camcc-sm8150 camcc-sc8180x camcc-sm6150
+gpucc-sm8150 gpucc-sm6150
+ais
+
+endef
+
+# MM RVC modules
+define ES_MOD_ORDER_RV
+qcom_llcc_pmu
+qcom-pmu-lib
+dcvs_fp msm_performance nvmem_qfprom
+qcom-dcvs
+msm_kgsl
+
+endef
+
+# MM Video modules
+define ES_MOD_ORDER_VI
+videocc-sm8150 videocc-sm6150 msm-vidc
+
+endef
+
+# MM Audio modules
+define ES_MOD_ORDER_AU
+qmi_helpers
+smp2p_sleepstate
+qcom_pil_info
+qcom_ramdump
+qcom_glink qcom_smd smp2p pdr_interface
+qcom_glink_smem qcom_glink_spss
+rproc_qcom_common
+qcom_sysmon
+qcom_q6v5
+qrtr-smd qcom_q6v5_pas qcom_spss
+snd_event_dlkm_legacy q6_notifier_dlkm_legacy stub_dlkm_legacy
+apr_dlkm
+adsp_loader_dlkm_legacy q6_dlkm_legacy
+platform_dlkm
+native_dlkm machine_dlkm_legacy
+
+endef
+
+# MM Audio reach modules
+define ES_MOD_ORDER_R_AU
+qmi_helpers
+smp2p_sleepstate
+qcom_pil_info
+qcom_ramdump
+qcom_glink qcom_smd smp2p msm_gpi pdr_interface
+qcom_glink_smem qcom_glink_spss
+rproc_qcom_common
+qcom_sysmon frpc-adsprpc
+qcom_q6v5
+qrtr-smd qcom_q6v5_pas qcom_spss
+snd_event_dlkm q6_pdr_dlkm stub_dlkm
+q6_notifier_dlkm
+gpr_dlkm
+spf_core_dlkm
+audpkt_ion_dlkm
+audio_pkt_dlkm
+adsp_loader_dlkm
+q6_dlkm audio_prm_dlkm
+machine_dlkm coupled_ssr_dlkm
+
+endef
+
+# list of mods to search via sed
+es_get_mods = $(subst $(space),,$(foreach mod,$(1),$(if $(filter NEWLINE, $(mod)),,$(mod)\|)))
+es_mod_list=/\($(call es_get_mods,$(subst ${newline}, NEWLINE ,$(1)))dummy\).ko/d
+
+# Add newline chars
+es_update_nl = $(subst $(newline),\n,$(1))
+
+# if module file doesn't exist, error is logged and not added to *.order files
+$(INTERNAL_VENDOR_RAMDISK_UPDATE): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
+$(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INSTALLED_SYSTEMIMAGE_TARGET) $(INSTALLED_VENDORIMAGE_TARGET)
+$(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_BOOTCONFIG_TARGET)
+$(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH)
+	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/ ;\
+  $(foreach mod,$(addsuffix .ko,$(addprefix $(PRODUCT_OUT)/dlkm/lib/modules/,$(ES_DEFAULT_LKMS))), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(notdir $(mod)) --strip-debug $(mod) ;) \
+  echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ;\
+  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order", grep "$(fl).ko" "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_FILE)" 2>&1 >/dev/null && if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
+  echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ;\
+  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_2}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order", grep "$(fl).ko" "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_FILE)" 2>&1 >/dev/null && if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
+  sed -e '$(call es_mod_list,${ES_MOD_ORDER}${ES_MOD_ORDER_2})' "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" | sed 's/.ko//' > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end.order" ;\
+  echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ;\
+  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_DI}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
+  echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_vi.order" ;\
+  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_VI}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_vi.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_vi.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
+  echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_ais.order" ;\
+  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_AIS}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_ais.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_ais.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
+  echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_rv.order" ;\
+  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_RV}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_rv.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_rv.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_au.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_R_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_r_au.order ;\
+  cp -r $(TARGET_RAMDISK_OUT)/vendor_early_services/bin/early_services_init $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
+  cp -r $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/bin/init_early_test $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
+  mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/firmware_mnt; \
+  cp -r $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/vendor_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
+  cp -rf $(PRODUCT_OUT)/system/etc/selinux/plat_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.audio.common@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.audio.effect@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.audio@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libbacktrace.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libbase.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libbinder.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/apex/com.android.runtime/lib64/bionic/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libhidlbase.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libhidltransport.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libhwbinder.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/liblzma.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libtinyalsa.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libutilscallstack.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libc++.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libcrypto.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libcutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/liblog.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libpackagelistparser.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libselinux.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libprocessgroup.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libz.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libvndksupport.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/bin/bootstrap $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libui.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libgraphicsenv.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libnativewindow.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.configstore@1.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.configstore-utils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libnativebridge_lazy.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libnativeloader_lazy.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libSurfaceFlingerProp.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@2.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@3.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common-V3-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.2.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@2.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@2.1.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@3.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libgralloctypes.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.1.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.configstore@1.1.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.common-V2-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libbinder_ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libandroid_runtime_lazy.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libsync.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libion.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libcgrouprc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libnetd_client.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libmmosal.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libmmosal_vendor.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libC2D2.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libgsl.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libdmabufheap.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libadreno_utils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libEGL_adreno.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/egl/libEGL_adreno.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libGLESv2_adreno.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/egl/libGLESv2_adreno.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libllvm-glnext.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/apex/com.android.i18n/lib64/libandroidicu.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/apex/com.android.i18n/lib64/libicuuc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/apex/com.android.i18n/lib64/libicui18n.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libjson.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_cci.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_common_so.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_csi.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_encdec.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/apex/com.android.runtime/lib64/bionic/libdl_android.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libais* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libc2d30_bltlib.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libxml2.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -ar $(PRODUCT_OUT)/vendor/firmware $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/bike_bell.wav $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/etc/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/audio-nxp-auto $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/early_chime $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/splash_nv12_720p30_3secs.h264 $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/etc/ ;\
+	$(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_VENDOR_RAMDISK_OUT) $(PRIVATE_ADDITIONAL_DIR) | $(COMPRESSION_COMMAND) > $(INTERNAL_VENDOR_RAMDISK_TARGET)
+	$(hide) touch $@
+endif
+endif
 endif
 
 # -----------------------------------------------------------------
@@ -6381,6 +6684,15 @@ ifdef BUILDING_VENDOR_BOOT_IMAGE
   ifeq (true,$(BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT))
     $(BUILT_TARGET_FILES_DIR): $(INTERNAL_RECOVERY_RAMDISK_FILES_TIMESTAMP)
   endif
+  ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+    ifneq (,$(filter true,$(BOARD_COPY_VENDOR_BOOT_IMAGE_TO_TARGET_FILES)))
+      $(BUILT_TARGET_FILES_DIR): $(INSTALLED_VENDOR_BOOTIMAGE_TARGET)
+    endif
+  endif
+endif
+
+ifdef BUILDING_VENDOR_KERNEL_BOOT_IMAGE
+  $(BUILT_TARGET_FILES_DIR): $(INTERNAL_VENDOR_KERNEL_RAMDISK_FILES)
 endif
 
 ifdef BUILDING_RECOVERY_IMAGE
@@ -6819,6 +7131,17 @@ ifdef BOARD_PREBUILT_SYSTEM_EXTIMAGE
 	$(hide) mkdir -p $(zip_root)/IMAGES
 	$(hide) cp $(INSTALLED_SYSTEM_EXTIMAGE_TARGET) $(zip_root)/IMAGES/
 endif
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+ifndef BOARD_PREBUILT_VENDORBOOTIMAGE
+ifneq (,$(filter true,$(BOARD_COPY_VENDOR_BOOT_IMAGE_TO_TARGET_FILES)))
+ifdef INSTALLED_VENDOR_BOOTIMAGE_TARGET
+	$(hide) mkdir -p $(zip_root)/IMAGES
+	$(hide) cp $(INSTALLED_VENDOR_BOOTIMAGE_TARGET) $(zip_root)/IMAGES/
+endif #INSTALLED_VENDOR_BOOTIMAGE_TARGET
+endif #BOARD_COPY_VENDOR_BOOT_IMAGE_TO_TARGET_FILES == true
+endif #BOARD_PREBUILT_VENDORBOOTIMAGE not defined
+endif #BOARD_SUPPORTS_RAMDISK_EARLY_INIT==true
+
 ifdef BOARD_PREBUILT_INIT_BOOT_IMAGE
 	$(hide) mkdir -p $(zip_root)/PREBUILT_IMAGES
 	$(hide) cp $(INSTALLED_INIT_BOOT_IMAGE_TARGET) $(zip_root)/PREBUILT_IMAGES/
