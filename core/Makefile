@@ -2934,6 +2934,9 @@ endif
 # - The system_dlkm partition is mounted at /system_dlkm at runtime.
 INTERNAL_SYSTEMIMAGE_FILES += $(call create-partition-compat-symlink,$(TARGET_OUT)/lib/modules,/system_dlkm/lib/modules,system_dlkm.img)
 
+# -----------------------------------------------------------------
+ifdef BUILDING_SYSTEM_IMAGE
+
 FULL_SYSTEMIMAGE_DEPS := $(INTERNAL_SYSTEMIMAGE_FILES) $(INTERNAL_USERIMAGES_DEPS)
 
 # ASAN libraries in the system image - add dependency.
@@ -2945,9 +2948,6 @@ ifneq (,$(filter address, $(SANITIZE_TARGET)))
 endif
 
 FULL_SYSTEMIMAGE_DEPS += $(INTERNAL_ROOT_FILES) $(INSTALLED_FILES_FILE_ROOT)
-
-# -----------------------------------------------------------------
-ifdef BUILDING_SYSTEM_IMAGE
 
 # Install system linker configuration
 # Collect all available stub libraries installed in system and install with predefined linker configuration
@@ -3438,14 +3438,29 @@ clk-dummy qcom-dload-mode pinctrl-sdmshrike mem_buf qcom_soc_wdt msm_performance
 
 endef
 
+# Default modules - first set; Last set auto-generated modules_end.order
+define ES_MOD_ORDER_GEN4
+icc-debug qnoc-qos nvmem_qcom-spmi-sdam qcom_hwspinlock qcom-scm qcom-cpufreq-hw reboot-mode rtc-pm8xxx spmi-pmic-arb msm_dma_iommu_mapping debug-regulator proxy-consumer qcom_cpu_vendor_hooks smem cmd-db qcom_ipc_logging qti-regmap-debugfs regmap-spmi qcom-reboot-reason pcs_xpcs
+qcom_rpmh qrtr minidump llcc-qcom socinfo secure_buffer qcom_aoss qcom-pon qcom-spmi-pmic gdsc-regulator pinctrl-msm qcom-pdc crypto-qti-tz soc_sleep_stats
+icc-bcm-voter msm_qmp clk-rpmh clk-qcom   mem_buf pinctrl-lemans qcom_iommu_util mem_buf_dev qcom_wdt_core qcom-dload-mode crypto-qti-common phy-qcom-ufs boot_stats
+ufshcd-crypto-qti rpmh-regulator icc-rpmh qcom_dma_heaps phy-qcom-ufs dispcc1-lemans dispcc0-lemans camcc-lemans gcc-lemans    qcom_soc_wdt arm_smmu clk-dummy phy-qcom-ufs-qmp-v4-waipio
+ufs_qcom qnoc-lemans
+
+endef
+
 # MM Display modules
 define ES_MOD_ORDER_DI
-refgen
-pinctrl-sx150x msm_geni_serial i2c-mux qseecom_dlkm qseecom_proxy
-qcom_va_minidump llcc-qcom i2c-mux-pca954x smcinvoke_dlkm
-spi-msm-geni i2c-msm-geni gpio-pca953x
-hdcp_qseecom_dlkm
-anx7625
+pinctrl-sx150x msm_geni_serial i2c-mux qseecom_proxy
+qcom_va_minidump llcc-qcom i2c-mux-pca954x hdcp_qseecom_dlkm
+anx7625 spi-msm-geni i2c-msm-geni
+msm_drm
+
+endef
+
+# MM Display modules
+define ES_MOD_ORDER_DI_GEN4
+msm_geni_serial i2c-mux qseecom_dlkm refgen gpio-pca953x i2c-msm-geni spi-msm-geni qcom_ipcc anx7625
+qcom_va_minidump i2c-mux-pca954x smcinvoke_dlkm hdcp_qseecom_dlkm
 msm_drm
 
 endef
@@ -3458,18 +3473,11 @@ endef
 
 # MM RVC modules
 define ES_MOD_ORDER_RV_GEN4
-dcvs_fp gcc-lemans clk-qcom qcom_llcc_pmu
-qcom-pmu-lib
-qcom-dcvs gpucc-lemans qcom_ipcc
-qcom-scm
-qcom_iommu_util cmd-db llcc-qcom
-msm_qmp
-qcom-apcs-ipc-mailbox
-mdt_loader
+gpucc-lemans dcvs_fp qcom_llcc_pmu mdt_loader nvmem_qfprom qcom_ipcc
+qcom-dcvs qcom-pmu-lib
 msm_performance
-arm_smmu
-nvmem_qfprom
 msm_kgsl
+
 endef
 
 # MM RVC modules
@@ -3532,6 +3540,77 @@ native_dlkm machine_dlkm_legacy
 
 endef
 
+ES_SYSTEM_DEPS := \
+ $(PRODUCT_OUT)/system/etc/selinux/plat_file_contexts \
+ $(PRODUCT_OUT)/system/lib64/libbacktrace.so \
+ $(PRODUCT_OUT)/system/lib64/libbase.so \
+ $(PRODUCT_OUT)/system/lib64/libbinder.so \
+ $(PRODUCT_OUT)/system/apex/com.android.runtime/lib64/bionic/libc.so \
+ $(PRODUCT_OUT)/system/apex/com.android.runtime/lib64/bionic/libdl.so \
+ $(PRODUCT_OUT)/system/apex/com.android.runtime/lib64/bionic/libdl_android.so \
+ $(PRODUCT_OUT)/system/apex/com.android.runtime/lib64/bionic/libm.so \
+ $(PRODUCT_OUT)/system/lib64/libhidlbase.so \
+ $(PRODUCT_OUT)/system/lib64/libhidltransport.so \
+ $(PRODUCT_OUT)/system/lib64/libhwbinder.so \
+ $(PRODUCT_OUT)/system/lib64/liblzma.so \
+ $(PRODUCT_OUT)/system/lib64/libtinyalsa.so \
+ $(PRODUCT_OUT)/system/lib64/libutilscallstack.so \
+ $(PRODUCT_OUT)/system/lib64/libc++.so \
+ $(PRODUCT_OUT)/system/lib64/libcrypto.so \
+ $(PRODUCT_OUT)/system/lib64/libcutils.so \
+ $(PRODUCT_OUT)/system/lib64/libutils.so \
+ $(PRODUCT_OUT)/system/lib64/liblog.so \
+ $(PRODUCT_OUT)/system/lib64/libpackagelistparser.so \
+ $(PRODUCT_OUT)/system/lib64/libselinux.so \
+ $(PRODUCT_OUT)/system/lib64/libprocessgroup.so \
+ $(PRODUCT_OUT)/system/lib64/libz.so \
+ $(PRODUCT_OUT)/system/lib64/libvndksupport.so \
+ $(PRODUCT_OUT)/system/bin/bootstrap/linker \
+ $(PRODUCT_OUT)/system/bin/bootstrap/linker_asan \
+ $(PRODUCT_OUT)/system/bin/bootstrap/linker_asan64 \
+ $(PRODUCT_OUT)/system/bin/bootstrap/linker64 \
+ $(PRODUCT_OUT)/system/bin/bootstrap/linkerconfig \
+ $(PRODUCT_OUT)/system/lib64/libui.so \
+ $(PRODUCT_OUT)/system/lib64/libgraphicsenv.so \
+ $(PRODUCT_OUT)/system/lib64/libnativewindow.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.configstore@1.0.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.configstore-utils.so \
+ $(PRODUCT_OUT)/system/lib64/libnativebridge_lazy.so \
+ $(PRODUCT_OUT)/system/lib64/libnativeloader_lazy.so \
+ $(PRODUCT_OUT)/system/lib64/libSurfaceFlingerProp.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator-V1-ndk.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@2.0.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@3.0.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator@4.0.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common-V3-ndk.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.2.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@2.0.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@2.1.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@3.0.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@4.0.so \
+ $(PRODUCT_OUT)/system/lib64/libgralloctypes.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.1.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.configstore@1.1.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.0.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.common-V2-ndk.so \
+ $(PRODUCT_OUT)/system/lib64/libbinder_ndk.so \
+ $(PRODUCT_OUT)/system/lib64/libandroid_runtime_lazy.so \
+ $(PRODUCT_OUT)/system/lib64/libsync.so \
+ $(PRODUCT_OUT)/system/lib64/libion.so \
+ $(PRODUCT_OUT)/system/lib64/libcgrouprc.so \
+ $(PRODUCT_OUT)/system/lib64/libnetd_client.so \
+ $(PRODUCT_OUT)/system/lib64/libdmabufheap.so \
+ $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libandroidicu.so \
+ $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libicuuc.so \
+ $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libicui18n.so \
+ $(PRODUCT_OUT)/system/apex/com.android.runtime/lib64/bionic/libdl_android.so \
+ $(PRODUCT_OUT)/system/lib64/libxml2.so \
+ $(PRODUCT_OUT)/system/lib64/libcamera_metadata.so \
+ $(PRODUCT_OUT)/system/lib64/libhardware.so \
+ $(PRODUCT_OUT)/system/lib64/libunwindstack.so \
+ $(PRODUCT_OUT)/system/lib64/libunwindstack_stdout_log.so\
+ $(PRODUCT_OUT)/system/lib64/vendor.qti.hardware.display.config-V2-ndk.so \
+
 # list of mods to search via sed
 es_get_mods = $(subst $(space),,$(foreach mod,$(1),$(if $(filter NEWLINE, $(mod)),,$(mod)\|)))
 es_mod_list=/\($(call es_get_mods,$(subst ${newline}, NEWLINE ,$(1)))dummy\).ko/d
@@ -3543,7 +3622,7 @@ es_update_nl = $(subst $(newline),\n,$(1))
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INSTALLED_SYSTEMIMAGE_TARGET) $(INSTALLED_VENDORIMAGE_TARGET)
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_BOOTCONFIG_TARGET)
-$(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH)
+$(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH) $(ES_SYSTEM_DEPS)
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/ ;\
   $(foreach mod,$(addsuffix .ko,$(addprefix $(PRODUCT_OUT)/dlkm/lib/modules/,$(ES_DEFAULT_LKMS))), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(notdir $(mod)) --strip-debug $(mod) ;) \
   echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ;\
@@ -3553,6 +3632,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   sed -e '$(call es_mod_list,${ES_MOD_ORDER}${ES_MOD_ORDER_2})' "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" | sed 's/.ko//' > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end.order" ;\
   echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ;\
   $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_DI}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
+  sed -e '$(call es_mod_list,${ES_MOD_ORDER_GEN4})' "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" | sed 's/.ko//' > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end_gen4.order" ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_VI})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_vi.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_AIS})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_ais.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_RV})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_rv.order ;\
@@ -3560,7 +3640,8 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_au.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_R_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_r_au.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_QCX})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_qcx.order ;\
-  echo -e '$(call es_update_nl,${ES_MOD_ORDER_DI})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_DI_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di_gen4.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_gen4.order ;\
   cp -r $(TARGET_RAMDISK_OUT)/vendor_early_services/bin/early_services_init $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
   mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/firmware_mnt; \
   cp -r $(PRODUCT_OUT)/vendor_dlkm/lib/modules/pinctrl-spmi-gpio.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/ ;\
@@ -3568,9 +3649,9 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/vendor_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
   cp -rf $(PRODUCT_OUT)/system/etc/selinux/plat_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
-  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.audio.common@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
-  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.audio.effect@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
-  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.audio@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/android.hardware.audio.common@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/android.hardware.audio.effect@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/android.hardware.audio@4.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libbacktrace.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libbase.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libbinder.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
@@ -3648,8 +3729,20 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/vendor/etc/bike_bell.wav $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/etc/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/bin/audio-nxp-auto $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/bin/pd-mapper $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/ais_server $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/splash_nv12_720p30_3secs.h264 $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/etc/ ;\
-  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcam* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamera_config.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxcommonutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxcustomization.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxhalbuffermanager.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxhwnodecontext.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxifestriping.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamximageformatutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxsettingsmanager.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxstatscore.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxswispiqmodule.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamera_metadata.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxtintlessalgo.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libcamera_metadata.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libbitmlenginev2.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libcom.qti.chinodeutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
@@ -3664,8 +3757,6 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.tuned.* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/libcom.qti.node.dummydepth.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/com.qti.camx.chiiqutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
-  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/libopencv3a.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
-  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/com.qti.stats* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/bin/qcxserver $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libaosal.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libadsprpc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
@@ -3676,18 +3767,15 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libgralloc* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.display.allocator* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.display.mapper* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
-  cp -rf $(PRODUCT_OUT)/system/lib64/vendor.qti.hardware.display.config-V2-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.display.config-V2-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libunwindstack* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libprotobuf-cpp-full-3.9.1.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libdisplayconfig.qti.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libvmmem.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.display.config@2.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/camera/camxoverridesettings.txt $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/ ;\
-  cp -rf $(PRODUCT_OUT)/vendor/lib64/libllvm-qcom.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
-  cp -rf $(PRODUCT_OUT)/vendor/lib64/libCB.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
-  cp -rf $(PRODUCT_OUT)/vendor/lib64/libOpenCL.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libpowerpolicyclient.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
-  cp -rf $(PRODUCT_OUT)/system/lib64/android.frameworks.automotive.powerpolicy-V1-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/android.frameworks.automotive.powerpolicy-V1-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
 
 	$(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_VENDOR_RAMDISK_OUT) $(PRIVATE_ADDITIONAL_DIR) | $(COMPRESSION_COMMAND) > $(INTERNAL_VENDOR_RAMDISK_TARGET)
 	$(hide) touch $@
