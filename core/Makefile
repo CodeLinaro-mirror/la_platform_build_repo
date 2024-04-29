@@ -3543,10 +3543,9 @@ endef
 
 # MM RVC modules
 define ES_MOD_ORDER_RV
-qcom_llcc_pmu
-qcom-pmu-lib
-dcvs_fp msm_performance nvmem_qfprom
-qcom-dcvs
+qcom_llcc_pmu dcvs_fp nvmem_qfprom
+qcom-pmu-lib qcom-dcvs
+msm_performance
 msm_kgsl
 
 endef
