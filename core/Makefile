@@ -1727,31 +1727,6 @@ $(foreach vendor_ramdisk_fragment,$(INTERNAL_VENDOR_RAMDISK_FRAGMENTS), \
   $(eval INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS += $(BOARD_VENDOR_RAMDISK_FRAGMENT.$(vendor_ramdisk_fragment).MKBOOTIMG_ARGS) --vendor_ramdisk_fragment $(vendor_ramdisk_fragment_target)) \
 )
 
-INSTALLED_VENDOR_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot.img
-$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
-$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_BOOTCONFIG_TARGET)
-ifeq ($(BOARD_AVB_ENABLE),true)
-$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH)
-	$(call pretty,"Target vendor_boot image: $@")
-	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
-	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
-	$(AVBTOOL) add_hash_footer \
-           --image $@ \
-	   $(call get-partition-size-argument,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)) \
-	   --salt $$(sha256sum $(BUILD_NUMBER_FILE) $(BUILD_DATETIME_FILE) | cut -d " " -f 1 | tr -d '\n') \
-	   --partition_name vendor_boot $(INTERNAL_AVB_VENDOR_BOOT_SIGNING_ARGS) \
-	   $(BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS)
-else
-$(INSTALLED_VENDOR_BOOTIMAGE_TARGET):
-	$(call pretty,"Target vendor_boot image: $@")
-	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
-	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
-endif
-
-$(call declare-1p-container,$(INSTALLED_VENDOR_BOOTIMAGE_TARGET),)
-$(call declare-container-license-deps,$(INSTALLED_VENDOR_BOOTIMAGE_TARGET),$(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTB_IMAGE_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_BOOTCONDIG_TARGET),$(PRODUCT_OUT)/:/)
-VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_BOOTIMAGE_TARGET)
-
 else # BUILDING_VENDOR_BOOT_IMAGE not defined, use prebuilt image
 
 ifdef BOARD_PREBUILT_VENDOR_BOOTIMAGE
@@ -1760,16 +1735,16 @@ INSTALLED_VENDOR_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot.img
 
 ifeq ($(BOARD_AVB_ENABLE),true)
 $(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(INTERNAL_PREBUILT_VENDOR_BOOTIMAGE) $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOT_KEY_PATH)
-	cp $(INTERNAL_PREBUILT_VENDOR_BOOTIMAGE) $@
-	chmod +w $@
-	$(AVBTOOL) add_hash_footer \
-	    --image $@ \
-	    $(call get-partition-size-argument,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)) \
-	    --partition_name vendor_boot $(INTERNAL_AVB_VENDOR_BOOT_SIGNING_ARGS) \
-	    $(BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS)
+       cp $(INTERNAL_PREBUILT_VENDOR_BOOTIMAGE) $@
+       chmod +w $@
+       $(AVBTOOL) add_hash_footer \
+           --image $@ \
+           $(call get-partition-size-argument,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)) \
+           --partition_name vendor_boot $(INTERNAL_AVB_VENDOR_BOOT_SIGNING_ARGS) \
+           $(BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS)
 else
 $(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(INTERNAL_PREBUILT_VENDOR_BOOTIMAGE)
-	cp $(INTERNAL_PREBUILT_VENDOR_BOOTIMAGE) $@
+       cp $(INTERNAL_PREBUILT_VENDOR_BOOTIMAGE) $@
 
 endif # BOARD_AVB_ENABLE
 $(call declare-1p-container,$(INSTALLED_VENDOR_BOOTIMAGE_TARGET),)
@@ -3098,41 +3073,6 @@ $(call declare-container-license-deps,$(INSTALLED_VENDOR_DEBUG_RAMDISK_TARGET),$
 
 VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_DEBUG_RAMDISK_TARGET)
 
-# -----------------------------------------------------------------
-# vendor_boot-debug.img.
-INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot-debug.img
-
-# The util to sign vendor_boot-debug.img with a test key.
-BOARD_AVB_VENDOR_BOOT_TEST_KEY_PATH := external/avb/test/data/testkey_rsa2048.pem
-INTERNAL_AVB_VENDOR_BOOT_TEST_SIGNING_ARGS := --algorithm SHA256_RSA2048 --key $(BOARD_AVB_VENDOR_BOOT_TEST_KEY_PATH)
-# $(1): the vendor bootimage to sign
-define test-key-sign-vendor-bootimage
-$(call assert-max-image-size,$(1),$(call get-hash-image-max-size,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)))
-$(AVBTOOL) add_hash_footer \
-  --image $(1) \
-  $(call get-partition-size-argument,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)) \
-  --partition_name vendor_boot $(INTERNAL_AVB_VENDOR_BOOT_TEST_SIGNING_ARGS) \
-  $(BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS)
-$(call assert-max-image-size,$(1),$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
-endef
-
-ifneq ($(BOARD_AVB_VENDOR_BOOT_KEY_PATH),)
-$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOT_TEST_KEY_PATH)
-endif
-
-# Depends on vendor_boot.img and vendor-ramdisk-debug.cpio.gz to build the new vendor_boot-debug.img
-$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INSTALLED_VENDOR_BOOTIMAGE_TARGET) $(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET)
-$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS)
-	$(call pretty,"Target vendor_boot debug image: $@")
-	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
-	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
-	$(if $(BOARD_AVB_VENDOR_BOOT_KEY_PATH),$(call test-key-sign-vendor-bootimage,$@))
-
-$(call declare-1p-container,$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET),)
-$(call declare-container-license-deps,$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET),$(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET),$(PRODUCT_OUT)/:/)
-
-VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET)
-
 endif # BUILDING_DEBUG_VENDOR_BOOT_IMAGE
 
 # Appends a few test harness specific properties into the adb_debug.prop.
@@ -3167,133 +3107,6 @@ INTERNAL_TEST_HARNESS_RAMDISK_FILES := $(filter $(TARGET_TEST_HARNESS_RAMDISK_OU
 INTERNAL_TEST_HARNESS_RAMDISK_SRC_DIRS := $(INTERNAL_DEBUG_RAMDISK_SRC_DIRS) $(TARGET_TEST_HARNESS_RAMDISK_OUT)
 INTERNAL_TEST_HARNESS_RAMDISK_SRC_DEPS := $(INSTALLED_FILES_FILE_DEBUG_RAMDISK) $(INTERNAL_TEST_HARNESS_RAMDISK_FILES)
 
-ifdef BUILDING_DEBUG_BOOT_IMAGE
-
-# -----------------------------------------------------------------
-# The test harness ramdisk, which is based off debug_ramdisk, plus a
-# few additional test-harness-specific properties in adb_debug.prop.
-INSTALLED_TEST_HARNESS_RAMDISK_TARGET := $(PRODUCT_OUT)/ramdisk-test-harness.img
-
-$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET): $(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DEPS)
-$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET): $(MKBOOTFS) | $(COMPRESSION_COMMAND_DEPS)
-	@echo "Target test harness ramdisk: $@"
-	$(hide) rm -f $@
-	$(hide) mkdir -p $(dir $@)
-	$(MKBOOTFS) -d $(TARGET_OUT) $(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DIRS) | $(COMPRESSION_COMMAND) > $@
-
-$(call declare-1p-container,$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET),)
-$(call declare-container-license-deps,$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET),$(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DEPS),$(PRODUCT_OUT)/:/)
-
-UNMOUNTED_NOTICE_VENDOR_DEPS+= $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)
-
-.PHONY: ramdisk_test_harness-nodeps
-ramdisk_test_harness-nodeps: $(MKBOOTFS) | $(COMPRESSION_COMMAND_DEPS)
-	@echo "make $@: ignoring dependencies"
-	$(hide) rm -f $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)
-	$(hide) mkdir -p $(dir $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)) $(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DIRS)
-	$(MKBOOTFS) -d $(TARGET_OUT) $(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DIRS) | $(COMPRESSION_COMMAND) > $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)
-
-# -----------------------------------------------------------------
-# the boot-test-harness.img, which is the kernel plus ramdisk-test-harness.img
-#
-# Note: it's intentional to skip signing for boot-test-harness.img, because it
-# can only be used if the device is unlocked with verification error.
-ifneq ($(strip $(BOARD_KERNEL_BINARIES)),)
-  INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET := $(foreach k,$(subst kernel,boot-test-harness,$(BOARD_KERNEL_BINARIES)), \
-    $(PRODUCT_OUT)/$(k).img)
-else
-  INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/boot-test-harness.img
-endif
-
-# Replace ramdisk-debug.img in $(MKBOOTIMG) ARGS with ramdisk-test-harness.img to build boot-test-harness.img
-$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET): $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)
-INTERNAL_TEST_HARNESS_BOOTIMAGE_ARGS := $(subst $(INSTALLED_DEBUG_RAMDISK_TARGET),$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET),$(INTERNAL_DEBUG_BOOTIMAGE_ARGS))
-
-# If boot.img is chained but boot-test-harness.img is not signed, libavb in bootloader
-# will fail to find valid AVB metadata from the end of /boot, thus stop booting.
-# Using a test key to sign boot-test-harness.img to continue booting with the mismatched
-# public key, if the device is unlocked.
-ifneq ($(BOARD_AVB_BOOT_KEY_PATH),)
-$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_BOOT_TEST_KEY_PATH)
-endif
-
-# $(1): output file
-define build-boot-test-harness-target
-  $(MKBOOTIMG) --kernel $(PRODUCT_OUT)/$(subst .img,,$(subst boot-test-harness,kernel,$(notdir $(1)))) \
-    $(INTERNAL_TEST_HARNESS_BOOTIMAGE_ARGS) $(INTERNAL_MKBOOTIMG_VERSION_ARGS) \
-    $(BOARD_MKBOOTIMG_ARGS) --output $@
-  $(if $(BOARD_AVB_BOOT_KEY_PATH),$(call test-key-sign-bootimage,$@,boot-test-harness))
-endef
-
-# Build the new boot-test-harness.img, based on boot-debug.img and ramdisk-test-harness.img.
-$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INSTALLED_DEBUG_BOOTIMAGE_TARGET) $(AVBTOOL)
-	$(call pretty,"Target boot test harness image: $@")
-	$(call build-boot-test-harness-target,$@)
-
-$(call declare-1p-container,$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET),)
-$(call declare-container-license-deps,$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET),$(INSTALLED_DEBUG_BOOTIMAGE_TARGET),$(PRODUCT_OUT)/:/)
-
-UNMOUNTED_NOTICE_VENDOR_DEPS+= $(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET)
-
-.PHONY: bootimage_test_harness-nodeps
-bootimage_test_harness-nodeps: $(MKBOOTIMG) $(AVBTOOL)
-	echo "make $@: ignoring dependencies"
-	$(foreach b,$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET),$(call build-boot-test-harness-target,$b))
-
-endif # BUILDING_DEBUG_BOOT_IMAGE
-
-# -----------------------------------------------------------------
-# vendor test harness ramdisk, which is a vendor ramdisk combined with
-# a test harness ramdisk.
-ifdef BUILDING_DEBUG_VENDOR_BOOT_IMAGE
-
-INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET := $(call intermediates-dir-for,PACKAGING,vendor_boot-test-harness)/vendor_ramdisk-test-harness.cpio$(RAMDISK_EXT)
-
-# The order is important here. The test harness ramdisk staging directory has to
-# come last so that it can override the adb_debug.prop in the debug ramdisk
-# staging directory.
-INTERNAL_TEST_HARNESS_VENDOR_RAMDISK_SRC_DIRS := $(INTERNAL_DEBUG_VENDOR_RAMDISK_SRC_DIRS) $(TARGET_TEST_HARNESS_RAMDISK_OUT)
-INTERNAL_TEST_HARNESS_VENDOR_RAMDISK_SRC_DEPS := $(INSTALLED_FILES_FILE_VENDOR_DEBUG_RAMDISK) $(INTERNAL_TEST_HARNESS_RAMDISK_FILES)
-
-$(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET): $(INTERNAL_TEST_HARNESS_VENDOR_RAMDISK_SRC_DEPS)
-$(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET): $(MKBOOTFS) | $(COMPRESSION_COMMAND_DEPS)
-	$(hide) rm -f $@
-	$(hide) mkdir -p $(dir $@)
-	$(MKBOOTFS) -d $(TARGET_OUT) $(INTERNAL_TEST_HARNESS_VENDOR_RAMDISK_SRC_DIRS) | $(COMPRESSION_COMMAND) > $@
-
-INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET := $(PRODUCT_OUT)/vendor_ramdisk-test-harness.img
-$(INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET): $(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET)
-	@echo "Target test harness vendor ramdisk: $@"
-	$(copy-file-to-target)
-
-$(call declare-1p-container,$(INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET),)
-$(call declare-container-license-deps,$(INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET),$(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET),$(PRODUCT_OUT)/:/)
-
-VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET)
-
-# -----------------------------------------------------------------
-# vendor_boot-test-harness.img.
-INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot-test-harness.img
-
-ifneq ($(BOARD_AVB_VENDOR_BOOT_KEY_PATH),)
-$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOT_TEST_KEY_PATH)
-endif
-
-# Depends on vendor_boot.img and vendor_ramdisk-test-harness.cpio$(RAMDISK_EXT) to build the new vendor_boot-test-harness.img
-$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INSTALLED_VENDOR_BOOTIMAGE_TARGET)
-$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET)
-$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS)
-	$(call pretty,"Target vendor_boot test harness image: $@")
-	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
-	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
-	$(if $(BOARD_AVB_VENDOR_BOOT_KEY_PATH),$(call test-key-sign-vendor-bootimage,$@))
-
-$(call declare-1p-container,$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET),)
-$(call declare-container-license-deps,$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET),$(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET),$(PRODUCT_OUT)/:/)
-
-VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET)
-
-endif # BUILDING_DEBUG_VENDOR_BOOT_IMAGE
 
 endif # BUILDING_DEBUG_BOOT_IMAGE || BUILDING_DEBUG_VENDOR_BOOT_IMAGE
 
@@ -4280,6 +4093,207 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
 endif
 endif
 endif
+
+# -----------------------------------------------------------------
+# vendor_boot.img.
+ifdef BUILDING_VENDOR_BOOT_IMAGE
+INSTALLED_VENDOR_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot.img
+$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
+$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(INSTALLED_SYSTEMIMAGE_TARGET) $(INSTALLED_VENDORIMAGE_TARGET)
+$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_BOOTCONFIG_TARGET)
+ifeq ($(BOARD_AVB_ENABLE),true)
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH) $(INTERNAL_VENDOR_RAMDISK_UPDATE)
+	$(call pretty,"Target vendor_boot image: $@")
+else
+$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH)
+	$(call pretty,"Target vendor_boot image: $@")
+endif
+	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
+	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
+	$(call pretty,"Target vendor_boot image: $@")
+	$(AVBTOOL) add_hash_footer \
+           --image $@ \
+	   $(call get-partition-size-argument,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)) \
+	   --partition_name vendor_boot $(INTERNAL_AVB_VENDOR_BOOT_SIGNING_ARGS) \
+	   $(BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS)
+else
+$(INSTALLED_VENDOR_BOOTIMAGE_TARGET):
+	$(call pretty,"Target vendor_boot image: $@")
+	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
+	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
+endif
+
+$(call declare-1p-container,$(INSTALLED_VENDOR_BOOTIMAGE_TARGET),)
+$(call declare-container-license-deps,$(INSTALLED_VENDOR_BOOTIMAGE_TARGET),$(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTB_IMAGE_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_BOOTCONDIG_TARGET),$(PRODUCT_OUT)/:/)
+VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_BOOTIMAGE_TARGET)
+endif # BUILDING_VENDOR_BOOT_IMAGE
+
+
+# -----------------------------------------------------------------
+# vendor_boot-debug.img.
+ifdef BUILDING_DEBUG_VENDOR_BOOT_IMAGE
+INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot-debug.img
+
+# The util to sign vendor_boot-debug.img with a test key.
+BOARD_AVB_VENDOR_BOOT_TEST_KEY_PATH := external/avb/test/data/testkey_rsa2048.pem
+INTERNAL_AVB_VENDOR_BOOT_TEST_SIGNING_ARGS := --algorithm SHA256_RSA2048 --key $(BOARD_AVB_VENDOR_BOOT_TEST_KEY_PATH)
+# $(1): the vendor bootimage to sign
+define test-key-sign-vendor-bootimage
+$(call assert-max-image-size,$(1),$(call get-hash-image-max-size,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)))
+$(AVBTOOL) add_hash_footer \
+  --image $(1) \
+  $(call get-partition-size-argument,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)) \
+  --partition_name vendor_boot $(INTERNAL_AVB_VENDOR_BOOT_TEST_SIGNING_ARGS) \
+  $(BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS)
+$(call assert-max-image-size,$(1),$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
+endef
+
+ifneq ($(BOARD_AVB_VENDOR_BOOT_KEY_PATH),)
+$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOT_TEST_KEY_PATH)
+endif
+
+# Depends on vendor_boot.img and vendor-ramdisk-debug.cpio.gz to build the new vendor_boot-debug.img
+$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INSTALLED_VENDOR_BOOTIMAGE_TARGET) $(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET)
+$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS)
+	$(call pretty,"Target vendor_boot debug image: $@")
+	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
+	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
+	$(if $(BOARD_AVB_VENDOR_BOOT_KEY_PATH),$(call test-key-sign-vendor-bootimage,$@))
+
+$(call declare-1p-container,$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET),)
+$(call declare-container-license-deps,$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET),$(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET),$(PRODUCT_OUT)/:/)
+
+VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET)
+endif # BUILDING_DEBUG_VENDOR_BOOT_IMAGE
+
+ifdef BUILDING_DEBUG_BOOT_IMAGE
+
+# -----------------------------------------------------------------
+# The test harness ramdisk, which is based off debug_ramdisk, plus a
+# few additional test-harness-specific properties in adb_debug.prop.
+INSTALLED_TEST_HARNESS_RAMDISK_TARGET := $(PRODUCT_OUT)/ramdisk-test-harness.img
+
+$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET): $(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DEPS)
+$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET): $(MKBOOTFS) | $(COMPRESSION_COMMAND_DEPS)
+	@echo "Target test harness ramdisk: $@"
+	$(hide) rm -f $@
+	$(hide) mkdir -p $(dir $@)
+	$(MKBOOTFS) -d $(TARGET_OUT) $(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DIRS) | $(COMPRESSION_COMMAND) > $@
+
+$(call declare-1p-container,$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET),)
+$(call declare-container-license-deps,$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET),$(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DEPS),$(PRODUCT_OUT)/:/)
+
+UNMOUNTED_NOTICE_VENDOR_DEPS+= $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)
+
+.PHONY: ramdisk_test_harness-nodeps
+ramdisk_test_harness-nodeps: $(MKBOOTFS) | $(COMPRESSION_COMMAND_DEPS)
+	@echo "make $@: ignoring dependencies"
+	$(hide) rm -f $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)
+	$(hide) mkdir -p $(dir $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)) $(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DIRS)
+	$(MKBOOTFS) -d $(TARGET_OUT) $(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DIRS) | $(COMPRESSION_COMMAND) > $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)
+
+# -----------------------------------------------------------------
+# the boot-test-harness.img, which is the kernel plus ramdisk-test-harness.img
+#
+# Note: it's intentional to skip signing for boot-test-harness.img, because it
+# can only be used if the device is unlocked with verification error.
+ifneq ($(strip $(BOARD_KERNEL_BINARIES)),)
+  INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET := $(foreach k,$(subst kernel,boot-test-harness,$(BOARD_KERNEL_BINARIES)), \
+    $(PRODUCT_OUT)/$(k).img)
+else
+  INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/boot-test-harness.img
+endif
+
+# Replace ramdisk-debug.img in $(MKBOOTIMG) ARGS with ramdisk-test-harness.img to build boot-test-harness.img
+$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET): $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)
+INTERNAL_TEST_HARNESS_BOOTIMAGE_ARGS := $(subst $(INSTALLED_DEBUG_RAMDISK_TARGET),$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET),$(INTERNAL_DEBUG_BOOTIMAGE_ARGS))
+
+# If boot.img is chained but boot-test-harness.img is not signed, libavb in bootloader
+# will fail to find valid AVB metadata from the end of /boot, thus stop booting.
+# Using a test key to sign boot-test-harness.img to continue booting with the mismatched
+# public key, if the device is unlocked.
+ifneq ($(BOARD_AVB_BOOT_KEY_PATH),)
+$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_BOOT_TEST_KEY_PATH)
+endif
+
+# $(1): output file
+define build-boot-test-harness-target
+  $(MKBOOTIMG) --kernel $(PRODUCT_OUT)/$(subst .img,,$(subst boot-test-harness,kernel,$(notdir $(1)))) \
+    $(INTERNAL_TEST_HARNESS_BOOTIMAGE_ARGS) $(INTERNAL_MKBOOTIMG_VERSION_ARGS) \
+    $(BOARD_MKBOOTIMG_ARGS) --output $@
+  $(if $(BOARD_AVB_BOOT_KEY_PATH),$(call test-key-sign-bootimage,$@,boot-test-harness))
+endef
+
+# Build the new boot-test-harness.img, based on boot-debug.img and ramdisk-test-harness.img.
+$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INSTALLED_DEBUG_BOOTIMAGE_TARGET) $(AVBTOOL)
+	$(call pretty,"Target boot test harness image: $@")
+	$(call build-boot-test-harness-target,$@)
+
+$(call declare-1p-container,$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET),)
+$(call declare-container-license-deps,$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET),$(INSTALLED_DEBUG_BOOTIMAGE_TARGET),$(PRODUCT_OUT)/:/)
+
+UNMOUNTED_NOTICE_VENDOR_DEPS+= $(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET)
+
+.PHONY: bootimage_test_harness-nodeps
+bootimage_test_harness-nodeps: $(MKBOOTIMG) $(AVBTOOL)
+	echo "make $@: ignoring dependencies"
+	$(foreach b,$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET),$(call build-boot-test-harness-target,$b))
+
+endif # BUILDING_DEBUG_BOOT_IMAGE
+
+# -----------------------------------------------------------------
+# vendor test harness ramdisk, which is a vendor ramdisk combined with
+# a test harness ramdisk.
+ifdef BUILDING_DEBUG_VENDOR_BOOT_IMAGE
+
+INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET := $(call intermediates-dir-for,PACKAGING,vendor_boot-test-harness)/vendor_ramdisk-test-harness.cpio$(RAMDISK_EXT)
+
+# The order is important here. The test harness ramdisk staging directory has to
+# come last so that it can override the adb_debug.prop in the debug ramdisk
+# staging directory.
+INTERNAL_TEST_HARNESS_VENDOR_RAMDISK_SRC_DIRS := $(INTERNAL_DEBUG_VENDOR_RAMDISK_SRC_DIRS) $(TARGET_TEST_HARNESS_RAMDISK_OUT)
+INTERNAL_TEST_HARNESS_VENDOR_RAMDISK_SRC_DEPS := $(INSTALLED_FILES_FILE_VENDOR_DEBUG_RAMDISK) $(INTERNAL_TEST_HARNESS_RAMDISK_FILES)
+
+$(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET): $(INTERNAL_TEST_HARNESS_VENDOR_RAMDISK_SRC_DEPS)
+$(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET): $(MKBOOTFS) | $(COMPRESSION_COMMAND_DEPS)
+	$(hide) rm -f $@
+	$(hide) mkdir -p $(dir $@)
+	$(MKBOOTFS) -d $(TARGET_OUT) $(INTERNAL_TEST_HARNESS_VENDOR_RAMDISK_SRC_DIRS) | $(COMPRESSION_COMMAND) > $@
+
+INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET := $(PRODUCT_OUT)/vendor_ramdisk-test-harness.img
+$(INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET): $(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET)
+	@echo "Target test harness vendor ramdisk: $@"
+	$(copy-file-to-target)
+
+$(call declare-1p-container,$(INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET),)
+$(call declare-container-license-deps,$(INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET),$(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET),$(PRODUCT_OUT)/:/)
+
+VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET)
+
+# -----------------------------------------------------------------
+# vendor_boot-test-harness.img.
+INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot-test-harness.img
+
+ifneq ($(BOARD_AVB_VENDOR_BOOT_KEY_PATH),)
+$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOT_TEST_KEY_PATH)
+endif
+
+# Depends on vendor_boot.img and vendor_ramdisk-test-harness.cpio$(RAMDISK_EXT) to build the new vendor_boot-test-harness.img
+$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INSTALLED_VENDOR_BOOTIMAGE_TARGET)
+$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET)
+$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS)
+	$(call pretty,"Target vendor_boot test harness image: $@")
+	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
+	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
+	$(if $(BOARD_AVB_VENDOR_BOOT_KEY_PATH),$(call test-key-sign-vendor-bootimage,$@))
+
+$(call declare-1p-container,$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET),)
+$(call declare-container-license-deps,$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET),$(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET),$(PRODUCT_OUT)/:/)
+
+VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET)
+
+endif # BUILDING_DEBUG_VENDOR_BOOT_IMAGE
 
 # -----------------------------------------------------------------
 # product partition image
