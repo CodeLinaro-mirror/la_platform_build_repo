@@ -3523,7 +3523,7 @@ endef
 
 # MM Display modules
 define ES_MOD_ORDER_DI
-mdt_loader qcom-apcs-ipc-mailbox silent_boot refgen qseecom_proxy drm_display_helper drm_dp_aux_bus i2c-mux pinctrl-sx150x msm_geni_serial scc-sm8150 scc-sm6150 llcc-qcom mem_buf_dev
+qcom-apcs-ipc-mailbox silent_boot refgen qseecom_proxy drm_display_helper drm_dp_aux_bus i2c-mux pinctrl-sx150x msm_geni_serial scc-sm8150 scc-sm6150 llcc-qcom mem_buf_dev
 silent-mode-hw-monitoring qseecom_dlkm
 i2c-mux-pca954x spidev smcinvoke_dlkm
 hdcp_qseecom_dlkm
@@ -3543,7 +3543,7 @@ endef
 
 # MM RVC modules
 define ES_MOD_ORDER_RV
-qcom_llcc_pmu dcvs_fp nvmem_qfprom
+qcom_llcc_pmu dcvs_fp nvmem_qfprom mdt_loader
 qcom-pmu-lib qcom-dcvs
 msm_performance
 msm_kgsl
