@@ -480,6 +480,10 @@ class BuildInfo(object):
     return self.get("virtual_ab_compression_method", "")
 
   @property
+  def vabc_cow_version(self):
+    return self.get("virtual_ab_cow_version", "")
+
+  @property
   def vendor_api_level(self):
     vendor_prop = self.info_dict.get("vendor.build.prop")
     if not vendor_prop:
@@ -951,6 +955,13 @@ def LoadInfoDict(input_file, repacking=False):
   d["build.prop"] = d["system.build.prop"]
 
   if d.get("avb_enable") == "true":
+    build_info = BuildInfo(d, use_legacy_id=True)
+    # Set up the salt for partitions without build.prop
+    if build_info.fingerprint:
+      if "fingerprint" not in d:
+        d["fingerprint"] = build_info.fingerprint
+      if "avb_salt" not in d:
+        d["avb_salt"] = sha256(build_info.fingerprint.encode()).hexdigest()
     # Set the vbmeta digest if exists
     try:
       d["vbmeta_digest"] = read_helper("META/vbmeta_digest.txt").rstrip()
@@ -1309,7 +1320,11 @@ def MergeDynamicPartitionInfoDicts(framework_dict, vendor_dict):
     key = "super_%s_partition_list" % partition_group
     merged_dict[key] = uniq_concat(
         framework_dict.get(key, ""), vendor_dict.get(key, ""))
-
+  # in the case that vendor is on s build, but is taking a v3 -> v3 vabc ota, we want to fallback to v2
+  if "vabc_cow_version" not in vendor_dict or "vabc_cow_version" not in framework_dict:
+    merged_dict["vabc_cow_version"] = '2'
+  else:
+    merged_dict["vabc_cow_version"] = min(vendor_dict["vabc_cow_version"], framework_dict["vabc_cow_version"])
   # Various other flags should be copied from the vendor dict, if defined.
   for key in ("virtual_ab", "virtual_ab_retrofit", "lpmake",
               "super_metadata_device", "super_partition_error_limit",
@@ -1565,50 +1580,6 @@ def GetAvbChainedPartitionArg(partition, info_dict, key=None):
       pubkey_path=pubkey_path)
 
 
-def _HasGkiCertificationArgs():
-  return ("gki_signing_key_path" in OPTIONS.info_dict and
-          "gki_signing_algorithm" in OPTIONS.info_dict)
-
-
-def _GenerateGkiCertificate(image, image_name):
-  key_path = OPTIONS.info_dict.get("gki_signing_key_path")
-  algorithm = OPTIONS.info_dict.get("gki_signing_algorithm")
-
-  key_path = ResolveAVBSigningPathArgs(key_path)
-
-  # Checks key_path exists, before processing --gki_signing_* args.
-  if not os.path.exists(key_path):
-    raise ExternalError(
-        'gki_signing_key_path: "{}" not found'.format(key_path))
-
-  output_certificate = tempfile.NamedTemporaryFile()
-  cmd = [
-      "generate_gki_certificate",
-      "--name", image_name,
-      "--algorithm", algorithm,
-      "--key", key_path,
-      "--output", output_certificate.name,
-      image,
-  ]
-
-  signature_args = OPTIONS.info_dict.get("gki_signing_signature_args", "")
-  signature_args = signature_args.strip()
-  if signature_args:
-    cmd.extend(["--additional_avb_args", signature_args])
-
-  args = OPTIONS.info_dict.get("avb_boot_add_hash_footer_args", "")
-  args = args.strip()
-  if args:
-    cmd.extend(["--additional_avb_args", args])
-
-  RunAndCheckOutput(cmd)
-
-  output_certificate.seek(os.SEEK_SET, 0)
-  data = output_certificate.read()
-  output_certificate.close()
-  return data
-
-
 def BuildVBMeta(image_path, partitions, name, needed_partitions,
                 resolve_rollback_index_location_conflict=False):
   """Creates a VBMeta image.
@@ -1830,29 +1801,6 @@ def _BuildBootableImage(image_name, sourcedir, fs_config_file,
       cmd.extend(["--recovery_acpio", fn])
 
   RunAndCheckOutput(cmd)
-
-  if _HasGkiCertificationArgs():
-    if not os.path.exists(img.name):
-      raise ValueError("Cannot find GKI boot.img")
-    if kernel_path is None or not os.path.exists(kernel_path):
-      raise ValueError("Cannot find GKI kernel.img")
-
-    # Certify GKI images.
-    boot_signature_bytes = b''
-    boot_signature_bytes += _GenerateGkiCertificate(img.name, "boot")
-    boot_signature_bytes += _GenerateGkiCertificate(
-        kernel_path, "generic_kernel")
-
-    BOOT_SIGNATURE_SIZE = 16 * 1024
-    if len(boot_signature_bytes) > BOOT_SIGNATURE_SIZE:
-      raise ValueError(
-          f"GKI boot_signature size must be <= {BOOT_SIGNATURE_SIZE}")
-    boot_signature_bytes += (
-        b'\0' * (BOOT_SIGNATURE_SIZE - len(boot_signature_bytes)))
-    assert len(boot_signature_bytes) == BOOT_SIGNATURE_SIZE
-
-    with open(img.name, 'ab') as f:
-      f.write(boot_signature_bytes)
 
   # Sign the image if vboot is non-empty.
   if info_dict.get("vboot"):
@@ -2519,7 +2467,7 @@ def GetMinSdkVersion(apk_name):
     m = re.match(r'(?:minSdkVersion|sdkVersion):\'([^\']*)\'', line)
     if m:
       return m.group(1)
-  raise ExternalError("No minSdkVersion returned by aapt2")
+  raise ExternalError("No minSdkVersion returned by aapt2 for apk: {}".format(apk_name))
 
 
 def GetMinSdkVersionInt(apk_name, codename_to_api_level_map):

@@ -287,6 +287,11 @@ endif
 endif
 endif
 
+# Do this early because sysprop.mk depends on BUILT_KERNEL_VERSION_FILE_FOR_UFFD_GC.
+ifeq (default,$(ENABLE_UFFD_GC))
+BUILT_KERNEL_VERSION_FILE_FOR_UFFD_GC := $(OUT_DIR)/soong/dexpreopt/kernel_version_for_uffd_gc.txt
+endif # ENABLE_UFFD_GC
+
 include $(BUILD_SYSTEM)/sysprop.mk
 
 # ----------------------------------------------------------------
@@ -460,9 +465,7 @@ $(3)/$(DEPMOD_STAGING_SUBDIR)/modules.dep: $(1) $(6)
 	)
 	$(if $(1),\
 	  cp $$(PRIVATE_MODULES) $$(PRIVATE_MODULE_DIR)/; \
-	  for MODULE in $$(PRIVATE_LOAD_MODULES); do \
-	    basename $$$$MODULE >> $$(PRIVATE_LOAD_FILE); \
-	  done; \
+	  if [ -n "$$(PRIVATE_LOAD_MODULES)" ]; then basename -a $$(PRIVATE_LOAD_MODULES); fi > $$(PRIVATE_LOAD_FILE); \
 	)
 	# The ln -sf + find -delete sequence is to remove any modules in
 	# PRIVATE_EXTRA_MODULES which have same basename as MODULES in PRIVATE_MODULES
@@ -1470,8 +1473,13 @@ $(BUILT_BOOT_OTA_PACKAGE_4K): $(OTA_FROM_RAW_IMG) $(INSTALLED_BOOTIMAGE_TARGET) 
 boototapackage_4k: $(BUILT_BOOT_OTA_PACKAGE_4K)
 .PHONY: boototapackage_4k
 
+ifeq ($(BOARD_16K_OTA_MOVE_VENDOR),true)
+$(eval $(call copy-one-file,$(BUILT_BOOT_OTA_PACKAGE_4K),$(TARGET_OUT_VENDOR)/boot_otas/boot_ota_4k.zip))
+$(eval $(call copy-one-file,$(BUILT_BOOT_OTA_PACKAGE_16K),$(TARGET_OUT_VENDOR)/boot_otas/boot_ota_16k.zip))
+else
 $(eval $(call copy-one-file,$(BUILT_BOOT_OTA_PACKAGE_4K),$(TARGET_OUT)/boot_otas/boot_ota_4k.zip))
 $(eval $(call copy-one-file,$(BUILT_BOOT_OTA_PACKAGE_16K),$(TARGET_OUT)/boot_otas/boot_ota_16k.zip))
+endif # BOARD_16K_OTA_MOVE_VENDOR == true
 
 ALL_DEFAULT_INSTALLED_MODULES += $(TARGET_OUT)/boot_otas/boot_ota_4k.zip
 ALL_DEFAULT_INSTALLED_MODULES += $(TARGET_OUT)/boot_otas/boot_ota_16k.zip
@@ -2079,11 +2087,6 @@ endif
 
 # Get a colon-separated list of search paths.
 INTERNAL_USERIMAGES_BINARY_PATHS := $(subst $(space),:,$(sort $(dir $(INTERNAL_USERIMAGES_DEPS))))
-
-# Collects file_contexts files from modules to be installed
-$(call merge-fc-files, \
-  $(sort $(foreach m,$(product_MODULES),$(ALL_MODULES.$(m).FILE_CONTEXTS))),\
-  $(call intermediates-dir-for,ETC,file_contexts.bin)/file_contexts.modules.tmp)
 
 SELINUX_FC := $(call intermediates-dir-for,ETC,file_contexts.bin)/file_contexts.bin
 
@@ -2713,6 +2716,8 @@ $(INTERNAL_RECOVERY_RAMDISK_FILES_TIMESTAMP): $(MKBOOTFS) $(COMPRESSION_COMMAND_
 	$(if $(strip $(recovery_wipe)), \
 	  cp -f $(recovery_wipe) $(TARGET_RECOVERY_ROOT_OUT)/system/etc/recovery.wipe)
 	ln -sf prop.default $(TARGET_RECOVERY_ROOT_OUT)/default.prop
+	# Silence warnings in first_stage_console.
+	touch $(TARGET_RECOVERY_ROOT_OUT)/linkerconfig/ld.config.txt
 	$(BOARD_RECOVERY_IMAGE_PREPARE)
 	$(hide) touch $@
 
@@ -3068,7 +3073,6 @@ $1:
 	  exit 1; \
 	fi
 	ln -sfn $2 $1
-$1: .KATI_SYMLINK_OUTPUTS := $1
 )
 $(eval PARTITION_COMPAT_SYMLINKS += $1)
 $1
@@ -3215,9 +3219,6 @@ ifdef BOARD_USES_SYSTEM_DLKMIMAGE
   ALL_DEFAULT_INSTALLED_MODULES += $(_system_dlkm_lib_modules_symlink)
 endif
 
-# -----------------------------------------------------------------
-ifdef BUILDING_SYSTEM_IMAGE
-
 FULL_SYSTEMIMAGE_DEPS := $(INTERNAL_SYSTEMIMAGE_FILES) $(INTERNAL_USERIMAGES_DEPS)
 
 # ASAN libraries in the system image - add dependency.
@@ -3229,6 +3230,17 @@ ifneq (,$(filter address, $(SANITIZE_TARGET)))
 endif
 
 FULL_SYSTEMIMAGE_DEPS += $(INTERNAL_ROOT_FILES) $(INSTALLED_FILES_FILE_ROOT)
+
+define write-file-lines
+$(1):
+	@echo Writing $$@
+	rm -f $$@
+	echo -n > $$@
+	$$(foreach f,$(2),echo "$$(f)" >> $$@$$(newline))
+endef
+
+# -----------------------------------------------------------------
+ifdef BUILDING_SYSTEM_IMAGE
 
 # Install system linker configuration
 # Collect all available stub libraries installed in system and install with predefined linker configuration
@@ -3272,21 +3284,8 @@ $(eval $(call declare-0p-target,$(INSTALLED_FILES_JSON)))
 .PHONY: installed-file-list
 installed-file-list: $(INSTALLED_FILES_FILE)
 
-systemimage_intermediates :=$= $(call intermediates-dir-for,PACKAGING,systemimage)
+systemimage_intermediates :=$= $(call intermediates-dir-for,PACKAGING,system)
 BUILT_SYSTEMIMAGE :=$= $(systemimage_intermediates)/system.img
-
-
-# Used by the bazel sandwich to request the staging dir be built
-$(systemimage_intermediates)/staging_dir.stamp: $(FULL_SYSTEMIMAGE_DEPS)
-	touch $@
-
-define write-file-lines
-$(1):
-	@echo Writing $$@
-	rm -f $$@
-	echo -n > $$@
-	$$(foreach f,$(2),echo "$$(f)" >> $$@$$(newline))
-endef
 
 # $(1): output file
 define build-systemimage-target
@@ -3304,6 +3303,9 @@ define build-systemimage-target
 endef
 
 $(eval $(call write-file-lines,$(systemimage_intermediates)/file_list.txt,$(subst $(TARGET_OUT)/,,$(filter $(TARGET_OUT)/%,$(FULL_SYSTEMIMAGE_DEPS)))))
+# Used by soong sandwich to request the staging dir be built
+$(systemimage_intermediates)/staging_dir.stamp: $(filter $(TARGET_OUT)/%,$(FULL_SYSTEMIMAGE_DEPS))
+	touch $@
 
 ifeq ($(BOARD_AVB_ENABLE),true)
 $(BUILT_SYSTEMIMAGE): $(BOARD_AVB_SYSTEM_KEY_PATH)
@@ -3417,6 +3419,9 @@ INSTALLED_USERDATAIMAGE_TARGET_DEPS := \
     $(INTERNAL_USERDATAIMAGE_FILES)
 
 $(eval $(call write-file-lines,$(userdataimage_intermediates)/file_list.txt,$(subst $(TARGET_OUT_DATA)/,,$(filter $(TARGET_OUT_DATA)/%,$(INSTALLED_USERDATAIMAGE_TARGET_DEPS)))))
+# Used by soong sandwich to request the staging dir be built
+$(userdataimage_intermediates)/staging_dir.stamp: $(filter $(TARGET_OUT_DATA)/%,$(INSTALLED_USERDATAIMAGE_TARGET_DEPS))
+	touch $@
 
 $(INSTALLED_USERDATAIMAGE_TARGET): $(INSTALLED_USERDATAIMAGE_TARGET_DEPS)
 	$(build-userdataimage-target)
@@ -3470,6 +3475,9 @@ define build-cacheimage-target
 endef
 
 $(eval $(call write-file-lines,$(cacheimage_intermediates)/file_list.txt,$(subst $(TARGET_OUT_CACHE)/,,$(filter $(TARGET_OUT_CACHE)/%,$(INTERNAL_CACHEIMAGE_FILES)))))
+# Used by soong sandwich to request the staging dir be built
+$(cacheimage_intermediates)/staging_dir.stamp: $(filter $(TARGET_OUT_CACHE)/%,$(INTERNAL_CACHEIMAGE_FILES))
+	touch $@
 
 # We just build this directly to the install location.
 INSTALLED_CACHEIMAGE_TARGET := $(BUILT_CACHEIMAGE_TARGET)
@@ -3554,6 +3562,9 @@ define build-systemotherimage-target
 endef
 
 $(eval $(call write-file-lines,$(systemotherimage_intermediates)/file_list.txt,$(subst $(TARGET_OUT_SYSTEM_OTHER)/,,$(filter $(TARGET_OUT_SYSTEM_OTHER)/%,$(INTERNAL_SYSTEMOTHERIMAGE_FILES)))))
+# Used by soong sandwich to request the staging dir be built
+$(systemotherimage_intermediates)/staging_dir.stamp: $(filter $(TARGET_OUT_SYSTEM_OTHER)/%,$(INTERNAL_SYSTEMOTHERIMAGE_FILES))
+	touch $@
 
 # We just build this directly to the install location.
 INSTALLED_SYSTEMOTHERIMAGE_TARGET := $(BUILT_SYSTEMOTHERIMAGE_TARGET)
@@ -3656,6 +3667,9 @@ define build-vendorimage-target
 endef
 
 $(eval $(call write-file-lines,$(vendorimage_intermediates)/file_list.txt,$(subst $(TARGET_OUT_VENDOR)/,,$(filter $(TARGET_OUT_VENDOR)/%,$(INTERNAL_VENDORIMAGE_FILES)))))
+# Used by soong sandwich to request the staging dir be built
+$(vendorimage_intermediates)/staging_dir.stamp: $(filter $(TARGET_OUT_VENDOR)/%,$(INTERNAL_VENDORIMAGE_FILES))
+	touch $@
 
 # We just build this directly to the install location.
 INSTALLED_VENDORIMAGE_TARGET := $(BUILT_VENDORIMAGE_TARGET)
@@ -4260,6 +4274,9 @@ define build-productimage-target
 endef
 
 $(eval $(call write-file-lines,$(productimage_intermediates)/file_list.txt,$(subst $(TARGET_OUT_PRODUCT)/,,$(filter $(TARGET_OUT_PRODUCT)/%,$(INTERNAL_PRODUCTIMAGE_FILES)))))
+# Used by soong sandwich to request the staging dir be built
+$(productimage_intermediates)/staging_dir.stamp: $(filter $(TARGET_OUT_PRODUCT)/%,$(INTERNAL_PRODUCTIMAGE_FILES))
+	touch $@
 
 # We just build this directly to the install location.
 INSTALLED_PRODUCTIMAGE_TARGET := $(BUILT_PRODUCTIMAGE_TARGET)
@@ -4327,6 +4344,9 @@ define build-system_extimage-target
 endef
 
 $(eval $(call write-file-lines,$(system_extimage_intermediates)/file_list.txt,$(subst $(TARGET_OUT_SYSTEM_EXT)/,,$(filter $(TARGET_OUT_SYSTEM_EXT)/%,$(INTERNAL_SYSTEM_EXTIMAGE_FILES)))))
+# Used by soong sandwich to request the staging dir be built
+$(system_extimage_intermediates)/staging_dir.stamp: $(filter $(TARGET_OUT_SYSTEM_EXT)/%,$(INTERNAL_SYSTEM_EXTIMAGE_FILES))
+	touch $@
 
 # We just build this directly to the install location.
 INSTALLED_SYSTEM_EXTIMAGE_TARGET := $(BUILT_SYSTEM_EXTIMAGE_TARGET)
@@ -4413,6 +4433,9 @@ define build-odmimage-target
 endef
 
 $(eval $(call write-file-lines,$(odmimage_intermediates)/file_list.txt,$(subst $(TARGET_OUT_ODM)/,,$(filter $(TARGET_OUT_ODM)/%,$(INTERNAL_ODMIMAGE_FILES)))))
+# Used by soong sandwich to request the staging dir be built
+$(odmimage_intermediates)/staging_dir.stamp: $(filter $(TARGET_OUT_ODM)/%,$(INTERNAL_ODMIMAGE_FILES))
+	touch $@
 
 # We just build this directly to the install location.
 INSTALLED_ODMIMAGE_TARGET := $(BUILT_ODMIMAGE_TARGET)
@@ -4478,6 +4501,9 @@ define build-vendor_dlkmimage-target
 endef
 
 $(eval $(call write-file-lines,$(vendor_dlkmimage_intermediates)/file_list.txt,$(subst $(TARGET_OUT_VENDOR_DLKM)/,,$(filter $(TARGET_OUT_VENDOR_DLKM)/%,$(INTERNAL_VENDOR_DLKMIMAGE_FILES)))))
+# Used by soong sandwich to request the staging dir be built
+$(vendor_dlkmimage_intermediates)/staging_dir.stamp: $(filter $(TARGET_OUT_VENDOR_DLKM)/%,$(INTERNAL_VENDOR_DLKMIMAGE_FILES))
+	touch $@
 
 # We just build this directly to the install location.
 INSTALLED_VENDOR_DLKMIMAGE_TARGET := $(BUILT_VENDOR_DLKMIMAGE_TARGET)
@@ -4542,6 +4568,9 @@ define build-odm_dlkmimage-target
 endef
 
 $(eval $(call write-file-lines,$(odm_dlkmimage_intermediates)/file_list.txt,$(subst $(TARGET_OUT_ODM_DLKM)/,,$(filter $(TARGET_OUT_ODM_DLKM)/%,$(INTERNAL_ODM_DLKMIMAGE_FILES)))))
+# Used by soong sandwich to request the staging dir be built
+$(odm_dlkmimage_intermediates)/staging_dir.stamp: $(filter $(TARGET_OUT_ODM_DLKM)/%,$(INTERNAL_ODM_DLKMIMAGE_FILES))
+	touch $@
 
 # We just build this directly to the install location.
 INSTALLED_ODM_DLKMIMAGE_TARGET := $(BUILT_ODM_DLKMIMAGE_TARGET)
@@ -4608,6 +4637,9 @@ define build-system_dlkmimage-target
 endef
 
 $(eval $(call write-file-lines,$(system_dlkmimage_intermediates)/file_list.txt,$(subst $(TARGET_OUT_SYSTEM_DLKM)/,,$(filter $(TARGET_OUT_SYSTEM_DLKM)/%,$(INTERNAL_SYSTEM_DLKMIMAGE_FILES)))))
+# Used by soong sandwich to request the staging dir be built
+$(system_dlkmimage_intermediates)/staging_dir.stamp: $(filter $(TARGET_OUT_SYSTEM_DLKM)/%,$(INTERNAL_SYSTEM_DLKMIMAGE_FILES))
+	touch $@
 
 # We just build this directly to the install location.
 INSTALLED_SYSTEM_DLKMIMAGE_TARGET := $(BUILT_SYSTEM_DLKMIMAGE_TARGET)
@@ -4957,10 +4989,18 @@ BOARD_AVB_PVMFW_ADD_HASH_FOOTER_ARGS += \
     --prop com.android.build.pvmfw.security_patch:$(PVMFW_SECURITY_PATCH)
 endif
 
-# Append avbpubkey of microdroid-vendor partition into vendor_boot partition.
-ifdef MICRODROID_VENDOR_AVBKEY
-BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS += \
-    --prop_from_file com.android.build.microdroid-vendor.avbpubkey:$(MICRODROID_VENDOR_AVBKEY)
+# Append root digest of microdroid-vendor partition's hashtree descriptor into vendor partition.
+ifdef MICRODROID_VENDOR_IMAGE_MODULE
+MICRODROID_VENDOR_IMAGE := \
+    $(call intermediates-dir-for,ETC,$(MICRODROID_VENDOR_IMAGE_MODULE))/$(MICRODROID_VENDOR_IMAGE_MODULE)
+MICRODROID_VENDOR_ROOT_DIGEST := $(PRODUCT_OUT)/microdroid_vendor_root_digest
+BOARD_AVB_VENDOR_ADD_HASHTREE_FOOTER_ARGS += \
+    --prop_from_file com.android.build.microdroid-vendor.root_digest:$(MICRODROID_VENDOR_ROOT_DIGEST)
+$(MICRODROID_VENDOR_ROOT_DIGEST): $(AVBTOOL) $(MICRODROID_VENDOR_IMAGE)
+	$(AVBTOOL) print_partition_digests \
+      --image $(MICRODROID_VENDOR_IMAGE) \
+      | tr -d '\n' | sed -E 's/.*: //g' > $@
+$(INSTALLED_VENDORIMAGE_TARGET): $(MICRODROID_VENDOR_ROOT_DIGEST)
 endif
 
 BOOT_FOOTER_ARGS := BOARD_AVB_BOOT_ADD_HASH_FOOTER_ARGS
@@ -5411,9 +5451,12 @@ intermediates := $(call intermediates-dir-for,PACKAGING,check_vintf_all)
 check_vintf_all_deps :=
 
 # -----------------------------------------------------------------
-# Activate vendor APEXes for checkvintf
+# Activate APEXes for checkvintf
 
 apex_dirs := \
+  $(TARGET_OUT)/apex/% \
+  $(TARGET_OUT_PRODUCT)/apex/% \
+  $(TARGET_OUT_SYSTEM_EXT)/apex/% \
   $(TARGET_OUT_VENDOR)/apex/% \
 
 apex_files := $(sort $(filter $(apex_dirs), $(INTERNAL_ALLIMAGES_FILES)))
@@ -5429,7 +5472,10 @@ $(APEX_INFO_FILE): $(HOST_OUT_EXECUTABLES)/apexd_host $(apex_files)
 	@echo $(PRIVATE_APEX_FILES) > /dev/null
 	@rm -rf $(APEX_OUT)
 	@mkdir -p $(APEX_OUT)
-	$< --vendor_path $(TARGET_OUT_VENDOR) \
+	$< --system_path $(TARGET_OUT) \
+	   --system_ext_path $(TARGET_OUT_SYSTEM_EXT) \
+	   --product_path $(TARGET_OUT_PRODUCT) \
+	   --vendor_path $(TARGET_OUT_VENDOR) \
 	   --apex_path $(APEX_OUT)
 
 apex_files :=
@@ -5437,14 +5483,14 @@ apex_dirs :=
 
 # The build system only writes VINTF metadata to */etc/vintf paths. Legacy paths aren't needed here
 # because they are only used for prebuilt images.
-# APEX files in /vendor/apex can have VINTF fragments as well.
+# APEX files in /$partition/apex can have VINTF fragments as well.
 check_vintf_common_srcs_patterns := \
   $(TARGET_OUT)/etc/vintf/% \
   $(TARGET_OUT_VENDOR)/etc/vintf/% \
   $(TARGET_OUT_ODM)/etc/vintf/% \
   $(TARGET_OUT_PRODUCT)/etc/vintf/% \
   $(TARGET_OUT_SYSTEM_EXT)/etc/vintf/% \
-  $(TARGET_OUT_VENDOR)/apex/% \
+  $(apex_dirs)
 
 check_vintf_common_srcs := $(sort $(filter $(check_vintf_common_srcs_patterns),$(INTERNAL_ALLIMAGES_FILES)))
 check_vintf_common_srcs_patterns :=
@@ -5459,15 +5505,20 @@ ifneq (,$(filter EMPTY_VENDOR_SKU_PLACEHOLDER,$(DEVICE_MANIFEST_SKUS)))
 $(error EMPTY_VENDOR_SKU_PLACEHOLDER is an internal variable and cannot be used for DEIVCE_MANIFEST_SKUS)
 endif
 
-# -- Check system manifest / matrix including fragments (excluding other framework manifests / matrices, e.g. product);
-check_vintf_system_deps := $(filter $(TARGET_OUT)/etc/vintf/%, $(check_vintf_common_srcs))
+# -- Check system and system_ext manifests / matrices including fragments (excluding other framework manifests / matrices, e.g. product);
+ifdef BUILDING_SYSTEM_IMAGE
+check_vintf_system_deps := $(filter $(TARGET_OUT)/etc/vintf/% \
+                                    $(TARGET_OUT_SYSTEM_EXT)/etc/vintf/% \
+                                    $(TARGET_OUT)/apex/% \
+                                    $(TARGET_OUT_SYSTEM_EXT)/apex/%, \
+                                    $(check_vintf_common_srcs))
 ifneq ($(check_vintf_system_deps),)
 check_vintf_has_system := true
 
 check_vintf_system_log := $(intermediates)/check_vintf_system.log
 check_vintf_all_deps += $(check_vintf_system_log)
-$(check_vintf_system_log): $(HOST_OUT_EXECUTABLES)/checkvintf $(check_vintf_system_deps)
-	@( $< --check-one --dirmap /system:$(TARGET_OUT) > $@ 2>&1 ) || ( cat $@ && exit 1 )
+$(check_vintf_system_log): $(HOST_OUT_EXECUTABLES)/checkvintf $(check_vintf_system_deps) $(APEX_INFO_FILE)
+	@( $< --check-one --dirmap /system:$(TARGET_OUT) --dirmap /apex:$(APEX_OUT) > $@ 2>&1 ) || ( cat $@ && exit 1 )
 $(call declare-1p-target,$(check_vintf_system_log))
 check_vintf_system_log :=
 
@@ -5476,10 +5527,11 @@ ifneq (true, $(BUILDING_VENDOR_IMAGE))
     vintffm_log := $(intermediates)/vintffm.log
 endif
 check_vintf_all_deps += $(vintffm_log)
-$(vintffm_log): $(HOST_OUT_EXECUTABLES)/vintffm $(check_vintf_system_deps)
+$(vintffm_log): $(HOST_OUT_EXECUTABLES)/vintffm $(check_vintf_system_deps) $(APEX_INFO_FILE)
 	@( $< --check --dirmap /system:$(TARGET_OUT) \
 	  --dirmap /system_ext:$(TARGET_OUT_SYSTEM_EXT) \
 	  --dirmap /product:$(TARGET_OUT_PRODUCT) \
+	  --dirmap /apex:$(APEX_OUT) \
 	  $(VINTF_FRAMEWORK_MANIFEST_FROZEN_DIR) > $@ 2>&1 ) || ( cat $@ && exit 1 )
 
 $(call declare-1p-target,$(vintffm_log))
@@ -5487,9 +5539,12 @@ $(call declare-1p-target,$(vintffm_log))
 endif # check_vintf_system_deps
 check_vintf_system_deps :=
 
+endif # BUILDING_SYSTEM_IMAGE
+
 # -- Check vendor manifest / matrix including fragments (excluding other device manifests / matrices)
-check_vintf_vendor_deps := $(filter $(TARGET_OUT_VENDOR)/etc/vintf/%, $(check_vintf_common_srcs))
-check_vintf_vendor_deps += $(filter $(TARGET_OUT_VENDOR)/apex/%, $(check_vintf_common_srcs))
+check_vintf_vendor_deps := $(filter $(TARGET_OUT_VENDOR)/etc/vintf/% \
+                                    $(TARGET_OUT_VENDOR)/apex/%, \
+                                    $(check_vintf_common_srcs))
 ifneq ($(strip $(check_vintf_vendor_deps)),)
 check_vintf_has_vendor := true
 check_vintf_vendor_log := $(intermediates)/check_vintf_vendor.log
@@ -5610,6 +5665,34 @@ my_decompress_tools :=
 my_board_extracted_kernel :=
 
 endif # PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS
+
+ifeq (default,$(ENABLE_UFFD_GC))
+
+ifneq (,$(BUILT_KERNEL_VERSION_FILE))
+$(BUILT_KERNEL_VERSION_FILE_FOR_UFFD_GC): $(BUILT_KERNEL_VERSION_FILE)
+$(BUILT_KERNEL_VERSION_FILE_FOR_UFFD_GC):
+	cp $(BUILT_KERNEL_VERSION_FILE) $(BUILT_KERNEL_VERSION_FILE_FOR_UFFD_GC)
+else
+# We make this a warning rather than an error to avoid breaking too many builds. When it happens,
+# we use a placeholder as the kernel version, which is consumed by uffd_gc_utils.py.
+$(BUILT_KERNEL_VERSION_FILE_FOR_UFFD_GC):
+	echo $$'\
+Unable to determine UFFD GC flag because the kernel version is not available and\n\
+PRODUCT_ENABLE_UFFD_GC is "default".\n\
+You can fix this by:\n\
+  1. [Recommended] Making the kernel version available.\n\
+    (1). Set PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS to "true".\n\
+    (2). If you are still getting this message after doing so, see the warning about\n\
+         PRODUCT_OTA_ENFORCE_VINTF_KERNEL_REQUIREMENTS in the build logs.\n\
+  or\n\
+  2. Explicitly setting PRODUCT_ENABLE_UFFD_GC to "true" or "false" based on the kernel version.\n\
+    (1). Set PRODUCT_ENABLE_UFFD_GC to "true" if the kernel is a GKI kernel and is android12-5.4\n\
+         or above, or a non-GKI kernel that supports userfaultfd(2) and MREMAP_DONTUNMAP.\n\
+    (2). Set PRODUCT_ENABLE_UFFD_GC to "false" otherwise.'\
+	  && echo '<unknown-kernel>' > $@
+endif # BUILT_KERNEL_VERSION_FILE
+
+endif # ENABLE_UFFD_GC == "default"
 
 # -- Check VINTF compatibility of build.
 # Skip partial builds; only check full builds. Only check if:
@@ -5983,7 +6066,12 @@ endif # build_otatools_package
 FASTBOOT_INFO_VERSION = 1
 
 INSTALLED_FASTBOOT_INFO_TARGET := $(PRODUCT_OUT)/fastboot-info.txt
-
+ifdef TARGET_BOARD_FASTBOOT_INFO_FILE
+$(INSTALLED_FASTBOOT_INFO_TARGET): $(TARGET_BOARD_FASTBOOT_INFO_FILE)
+	rm -f $@
+	$(call pretty,"Target fastboot-info.txt: $@")
+	$(hide) cp $< $@
+else
 $(INSTALLED_FASTBOOT_INFO_TARGET):
 	rm -f $@
 	$(call pretty,"Target fastboot-info.txt: $@")
@@ -6028,6 +6116,10 @@ ifneq (,$(strip $(BOARD_AVB_VBMETA_CUSTOM_PARTITIONS)))
 	  echo "flash vbmeta_$(partition)" >> $@;)
 endif
 endif # BOARD_AVB_ENABLE
+ifneq (,$(strip $(BOARD_CUSTOMIMAGES_PARTITION_LIST)))
+	$(hide) $(foreach partition,$(BOARD_CUSTOMIMAGES_PARTITION_LIST), \
+	  echo "flash $(partition)" >> $@;)
+endif
 	$(hide) echo "reboot fastboot" >> $@
 	$(hide) echo "update-super" >> $@
 	$(hide) $(foreach partition,$(BOARD_SUPER_PARTITION_PARTITION_LIST), \
@@ -6041,6 +6133,7 @@ endif
 	$(hide) echo "if-wipe erase userdata" >> $@
 ifeq ($(BOARD_USES_METADATA_PARTITION),true)
 	$(hide) echo "if-wipe erase metadata" >> $@
+endif
 endif
 
 # -----------------------------------------------------------------
@@ -6391,7 +6484,7 @@ endif
 # $1: root directory
 # $2: add prefix
 define fs_config
-(cd $(1); find . -type d | sed 's,$$,/,'; find . \! -type d) | cut -c 3- | sort | sed 's,^,$(2),' | $(HOST_OUT_EXECUTABLES)/fs_config -C -D $(TARGET_OUT) -S $(SELINUX_FC) -R "$(2)"
+(cd $(1); find . -type d | sed 's,$$,/,'; find . \! -type d) | cut -c 3- | sort | sed 's,^,$(2),' | $(HOST_OUT_EXECUTABLES)/fs_config -C -D $(TARGET_OUT) -R "$(2)"
 endef
 
 define filter-out-missing-vendor
@@ -7120,7 +7213,7 @@ endif
 
 $(BUILT_TARGET_FILES_PACKAGE): $(BUILT_TARGET_FILES_DIR)
 	@echo "Packaging target files: $@"
-	$(hide) $(SOONG_ZIP) -d -o $@ -C $(zip_root) -r $@.list
+	$(hide) $(SOONG_ZIP) -d -o $@ -C $(zip_root) -r $@.list -sha256
 
 .PHONY: target-files-package
 target-files-package: $(BUILT_TARGET_FILES_PACKAGE)
@@ -7886,6 +7979,24 @@ sdk_atree_files += $(PRODUCT_SDK_ATREE_FILES)
 else
 sdk_atree_files += $(atree_dir)/sdk.atree
 endif
+
+SDK_METADATA_DIR :=$= $(call intermediates-dir-for,PACKAGING,framework-doc-stubs-metadata,,COMMON)
+SDK_METADATA_FILES :=$= $(addprefix $(SDK_METADATA_DIR)/,\
+    activity_actions.txt \
+    broadcast_actions.txt \
+    categories.txt \
+    features.txt \
+    service_actions.txt \
+    widgets.txt)
+SDK_METADATA :=$= $(firstword $(SDK_METADATA_FILES))
+$(SDK_METADATA): .KATI_IMPLICIT_OUTPUTS := $(filter-out $(SDK_METADATA),$(SDK_METADATA_FILES))
+$(SDK_METADATA): $(TARGET_OUT_COMMON_INTERMEDIATES)/PACKAGING/framework-doc-stubs-metadata.zip
+	rm -rf $(SDK_METADATA_DIR)
+	mkdir -p $(SDK_METADATA_DIR)
+	unzip -DDqo $< -d $(SDK_METADATA_DIR)
+
+.PHONY: framework-doc-stubs
+framework-doc-stubs: $(SDK_METADATA)
 
 deps := \
 	$(OUT_DOCS)/offline-sdk-timestamp \

@@ -62,7 +62,7 @@ Invoke ". build/envsetup.sh" from your shell to add the following functions to y
               invocations of 'm' etc.
 - tapas:      tapas [<App1> <App2> ...] [arm|x86|arm64|x86_64] [eng|userdebug|user]
               Sets up the build environment for building unbundled apps (APKs).
-- banchan:    banchan <module1> [<module2> ...] \
+- banchan:    banchan <module1> [<module2> ...] \\
                       [arm|x86|arm64|riscv64|x86_64|arm64_only|x86_64only] [eng|userdebug|user]
               Sets up the build environment for building unbundled modules (APEXes).
 - croot:      Changes directory to the top of the tree, or a subdirectory thereof.
@@ -254,7 +254,7 @@ function set_lunch_paths()
     # Note: on windows/cygwin, ANDROID_LUNCH_BUILD_PATHS will contain spaces
     # due to "C:\Program Files" being in the path.
 
-    # Handle compat with the old ANDROID_BUILD_PATHS variable. 
+    # Handle compat with the old ANDROID_BUILD_PATHS variable.
     # TODO: Remove this after we think everyone has lunched again.
     if [ -z "$ANDROID_LUNCH_BUILD_PATHS" -a -n "$ANDROID_BUILD_PATHS" ] ; then
       ANDROID_LUNCH_BUILD_PATHS="$ANDROID_BUILD_PATHS"
@@ -366,7 +366,8 @@ function set_global_paths()
     fi
 
     # And in with the new...
-    ANDROID_GLOBAL_BUILD_PATHS=$T/build/bazel/bin
+    ANDROID_GLOBAL_BUILD_PATHS=$T/build/soong/bin
+    ANDROID_GLOBAL_BUILD_PATHS+=:$T/build/bazel/bin
     ANDROID_GLOBAL_BUILD_PATHS+=:$T/development/scripts
     ANDROID_GLOBAL_BUILD_PATHS+=:$T/prebuilts/devtools/tools
 
@@ -775,7 +776,7 @@ function lunch()
         answer=$1
     else
         print_lunch_menu
-        echo "Which would you like? [aosp_arm-trunk_staging-eng]"
+        echo "Which would you like? [aosp_cf_x86_64_phone-trunk_staging-eng]"
         echo -n "Pick from common choices above (e.g. 13) or specify your own (e.g. aosp_barbet-trunk_staging-eng): "
         read answer
         used_lunch_menu=1
@@ -785,10 +786,10 @@ function lunch()
 
     if [ -z "$answer" ]
     then
-        selection=aosp_arm-trunk_staging-eng
+        selection=aosp_cf_x86_64_phone-trunk_staging-eng
     elif (echo -n $answer | grep -q -e "^[0-9][0-9]*$")
     then
-        local choices=($(TARGET_BUILD_APPS= get_build_var COMMON_LUNCH_CHOICES))
+        local choices=($(TARGET_BUILD_APPS= TARGET_PRODUCT= TARGET_RELEASE= TARGET_BUILD_VARIANT= get_build_var COMMON_LUNCH_CHOICES 2>/dev/null))
         if [ $answer -le ${#choices[@]} ]
         then
             # array in zsh starts from 1 instead of 0.
@@ -1102,8 +1103,23 @@ function cproj()
     echo "can't find Android.mk"
 }
 
+# Ensure that we're always using the adb in the tree. This works around the fact
+# that bash caches $PATH lookups, so if you use adb before lunching/building the
+# one in your tree, you'll continue to get /usr/bin/adb or whatever even after
+# you have the one from your current tree on your path. Historically this would
+# cause confusion because glinux had adb in /usr/bin/ by default, though that
+# doesn't appear to be the case on my rodete hosts; it is however still the case
+# that my Mac has /usr/local/bin/adb installed by default and on the default
+# path.
 function adb() {
-   command adb "${@}"
+    # We need `command which` because zsh has a built-in `which` that's more
+    # like `type`.
+    local ADB=$(command which adb)
+    if [ -z "$ADB" ]; then
+        echo "Command adb not found; try lunch (and building) first?"
+        return 1
+    fi
+    $ADB "${@}"
 }
 
 # simplified version of ps; output in the form
@@ -1942,6 +1958,11 @@ function _trigger_build()
       >&2 echo "Couldn't locate the top of the tree. Try setting TOP."
       return 1
     fi
+    local ret=$?
+    if [[ ret -eq 0 &&  -z "${ANDROID_QUIET_BUILD:-}" && -n "${ANDROID_BUILD_BANNER}" ]]; then
+      echo "${ANDROID_BUILD_BANNER}"
+    fi
+    return $ret
 )
 
 function m()

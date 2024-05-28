@@ -110,6 +110,7 @@ $(KATI_obsolete_var BUILD_BROKEN_DUP_COPY_HEADERS)
 $(KATI_obsolete_var BUILD_BROKEN_ENG_DEBUG_TAGS)
 $(KATI_obsolete_export It is a global setting. See $(CHANGES_URL)#export_keyword)
 $(KATI_obsolete_var BUILD_BROKEN_ANDROIDMK_EXPORTS)
+$(KATI_obsolete_var PRODUCT_NOTICE_SPLIT_OVERRIDE,Stop using this, keep calm, and carry on.)
 $(KATI_obsolete_var PRODUCT_STATIC_BOOT_CONTROL_HAL,Use shared library module instead. See $(CHANGES_URL)#PRODUCT_STATIC_BOOT_CONTROL_HAL)
 $(KATI_obsolete_var \
   ARCH_ARM_HAVE_ARMV7A \
@@ -171,6 +172,7 @@ $(KATI_obsolete_var PRODUCT_VERITY_SIGNING_KEY,VB 1.0 and related variables are 
 $(KATI_obsolete_var BOARD_PREBUILT_PVMFWIMAGE,pvmfw.bin is now built in AOSP and custom versions are no longer supported)
 $(KATI_obsolete_var BUILDING_PVMFW_IMAGE,BUILDING_PVMFW_IMAGE is no longer used)
 $(KATI_obsolete_var BOARD_BUILD_SYSTEM_ROOT_IMAGE)
+$(KATI_obsolete_var FS_GET_STATS)
 
 # Used to force goals to build.  Only use for conditionally defined goals.
 .PHONY: FORCE
@@ -373,16 +375,6 @@ ANDROID_BUILDSPEC := $(TOPDIR)buildspec.mk
 endif
 -include $(ANDROID_BUILDSPEC)
 
-# Starting in Android U, non-VNDK devices not supported
-# WARNING: DO NOT CHANGE: if you are downstream of AOSP, and you change this, without
-# letting upstream know it's important to you, we may do cleanup which breaks this
-# significantly. Please let us know if you are changing this.
-ifndef BOARD_VNDK_VERSION
-# READ WARNING - DO NOT CHANGE
-BOARD_VNDK_VERSION := current
-# READ WARNING - DO NOT CHANGE
-endif
-
 # ---------------------------------------------------------------
 # Define most of the global variables.  These are the ones that
 # are specific to the user's build configuration.
@@ -415,35 +407,22 @@ ifdef PRODUCT_MAX_PAGE_SIZE_SUPPORTED
 else ifeq ($(strip $(call is-low-mem-device)),true)
   # Low memory device will have 4096 binary alignment.
   TARGET_MAX_PAGE_SIZE_SUPPORTED := 4096
-else
-  # The default binary alignment for userspace is 4096.
+else ifeq ($(call math_lt,$(VSR_VENDOR_API_LEVEL),34),true)
   TARGET_MAX_PAGE_SIZE_SUPPORTED := 4096
-  # When VSR vendor API level >= 34, binary alignment will be 65536.
-  ifeq ($(call math_gt_or_eq,$(VSR_VENDOR_API_LEVEL),34),true)
-    ifeq ($(TARGET_ARCH),arm64)
-      TARGET_MAX_PAGE_SIZE_SUPPORTED := 65536
-    endif
-  endif
+else ifeq (,$(filter arm64 x86_64,$(TARGET_ARCH)))
+  # TARGET_MAX_PAGE_SIZE_SUPPORTED > 4096 is only supported in arm64 and
+  # x86_64 targets.
+  TARGET_MAX_PAGE_SIZE_SUPPORTED := 4096
+else
+  # The default binary alignment for userspace is 16384.
+  TARGET_MAX_PAGE_SIZE_SUPPORTED := 16384
 endif
 .KATI_READONLY := TARGET_MAX_PAGE_SIZE_SUPPORTED
 
-# Only arm64 and x86_64 archs supports TARGET_MAX_PAGE_SIZE_SUPPORTED greater than 4096.
-ifneq ($(TARGET_MAX_PAGE_SIZE_SUPPORTED),4096)
-  ifeq (,$(filter arm64 x86_64,$(TARGET_ARCH)))
-    $(error TARGET_MAX_PAGE_SIZE_SUPPORTED=$(TARGET_MAX_PAGE_SIZE_SUPPORTED) is greater than 4096. Only supported in arm64 and x86_64 archs)
-  endif
-endif
-
-# Boolean variable determining if AOSP is page size agnostic. This means
-# that AOSP can use a kernel configured with 4k/16k/64k PAGE SIZES.
+# Boolean variable determining if AOSP relies on bionic's PAGE_SIZE macro.
 TARGET_NO_BIONIC_PAGE_SIZE_MACRO := false
 ifdef PRODUCT_NO_BIONIC_PAGE_SIZE_MACRO
   TARGET_NO_BIONIC_PAGE_SIZE_MACRO := $(PRODUCT_NO_BIONIC_PAGE_SIZE_MACRO)
-  ifeq ($(TARGET_NO_BIONIC_PAGE_SIZE_MACRO),true)
-      ifneq ($(TARGET_MAX_PAGE_SIZE_SUPPORTED),65536)
-          $(error TARGET_MAX_PAGE_SIZE_SUPPORTED has to be 65536 to support page size agnostic)
-      endif
-  endif
 endif
 .KATI_READONLY := TARGET_NO_BIONIC_PAGE_SIZE_MACRO
 
@@ -688,18 +667,12 @@ MKBOOTIMG := $(HOST_OUT_EXECUTABLES)/mkbootimg$(HOST_EXECUTABLE_SUFFIX)
 else
 MKBOOTIMG := $(BOARD_CUSTOM_MKBOOTIMG)
 endif
-ifeq (,$(strip $(BOARD_CUSTOM_BPTTOOL)))
-BPTTOOL := $(HOST_OUT_EXECUTABLES)/bpttool$(HOST_EXECUTABLE_SUFFIX)
-else
-BPTTOOL := $(BOARD_CUSTOM_BPTTOOL)
-endif
 ifeq (,$(strip $(BOARD_CUSTOM_AVBTOOL)))
 AVBTOOL := $(HOST_OUT_EXECUTABLES)/avbtool$(HOST_EXECUTABLE_SUFFIX)
 else
 AVBTOOL := $(BOARD_CUSTOM_AVBTOOL)
 endif
 APICHECK := $(HOST_OUT_JAVA_LIBRARIES)/metalava$(COMMON_JAVA_PACKAGE_SUFFIX)
-FS_GET_STATS := $(HOST_OUT_EXECUTABLES)/fs_get_stats$(HOST_EXECUTABLE_SUFFIX)
 MKEXTUSERIMG := $(HOST_OUT_EXECUTABLES)/mkuserimg_mke2fs
 MKE2FS_CONF := system/extras/ext4_utils/mke2fs.conf
 MKEROFS := $(HOST_OUT_EXECUTABLES)/mkfs.erofs
@@ -777,16 +750,9 @@ else ifneq ($(call math_gt_or_eq,$(PRODUCT_SHIPPING_API_LEVEL),26),)
   PRODUCT_FULL_TREBLE := true
 endif
 
-# TODO(b/69865032): Make PRODUCT_NOTICE_SPLIT the default behavior and remove
-#    references to it here and below.
-ifdef PRODUCT_NOTICE_SPLIT_OVERRIDE
-   $(error PRODUCT_NOTICE_SPLIT_OVERRIDE cannot be set.)
-endif
-
 requirements := \
     PRODUCT_TREBLE_LINKER_NAMESPACES \
-    PRODUCT_ENFORCE_VINTF_MANIFEST \
-    PRODUCT_NOTICE_SPLIT
+    PRODUCT_ENFORCE_VINTF_MANIFEST
 
 # If it is overriden, then the requirement override is taken, otherwise it's
 # PRODUCT_FULL_TREBLE
@@ -799,24 +765,25 @@ $(foreach req,$(requirements),$(eval \
 PRODUCT_FULL_TREBLE_OVERRIDE ?=
 $(foreach req,$(requirements),$(eval $(req)_OVERRIDE ?=))
 
+# used to be a part of PRODUCT_FULL_TREBLE, but now always set it
+PRODUCT_NOTICE_SPLIT := true
+
 # TODO(b/114488870): disallow PRODUCT_FULL_TREBLE_OVERRIDE from being used.
 .KATI_READONLY := \
     PRODUCT_FULL_TREBLE_OVERRIDE \
     $(foreach req,$(requirements),$(req)_OVERRIDE) \
     $(requirements) \
     PRODUCT_FULL_TREBLE \
+    PRODUCT_NOTICE_SPLIT \
+
+ifneq ($(PRODUCT_FULL_TREBLE),true)
+    $(warning This device does not have Treble enabled. This is unsafe.)
+endif
 
 $(KATI_obsolete_var $(foreach req,$(requirements),$(req)_OVERRIDE) \
     ,This should be referenced without the _OVERRIDE suffix.)
 
 requirements :=
-
-# Set default value of KEEP_VNDK.
-ifeq ($(RELEASE_DEPRECATE_VNDK),true)
-  KEEP_VNDK ?= false
-else
-  KEEP_VNDK ?= true
-endif
 
 # BOARD_PROPERTY_OVERRIDES_SPLIT_ENABLED can be true only if early-mount of
 # partitions is supported. But the early-mount must be supported for full
@@ -829,14 +796,10 @@ endif
 # Set BOARD_SYSTEMSDK_VERSIONS to the latest SystemSDK version starting from P-launching
 # devices if unset.
 ifndef BOARD_SYSTEMSDK_VERSIONS
-  ifdef PRODUCT_SHIPPING_API_LEVEL
-  ifneq ($(call math_gt_or_eq,$(PRODUCT_SHIPPING_API_LEVEL),28),)
-    ifeq (REL,$(PLATFORM_VERSION_CODENAME))
-      BOARD_SYSTEMSDK_VERSIONS := $(PLATFORM_SDK_VERSION)
-    else
-      BOARD_SYSTEMSDK_VERSIONS := $(PLATFORM_VERSION_CODENAME)
-    endif
-  endif
+  ifeq (REL,$(PLATFORM_VERSION_CODENAME))
+    BOARD_SYSTEMSDK_VERSIONS := $(PLATFORM_SDK_VERSION)
+  else
+    BOARD_SYSTEMSDK_VERSIONS := $(PLATFORM_VERSION_CODENAME)
   endif
 endif
 
@@ -890,40 +853,11 @@ BUILD_DATETIME_FROM_FILE := $$(cat $(BUILD_DATETIME_FILE))
 
 # SEPolicy versions
 
-# PLATFORM_SEPOLICY_VERSION is a number of the form "NN.m" with "NN" mapping to
-# PLATFORM_SDK_VERSION and "m" as a minor number which allows for SELinux
-# changes independent of PLATFORM_SDK_VERSION.  This value will be set to
-# 10000.0 to represent tip-of-tree development that is inherently unstable and
-# thus designed not to work with any shipping vendor policy.  This is similar in
-# spirit to how DEFAULT_APP_TARGET_SDK is set.
-# The minor version ('m' component) must be updated every time a platform release
-# is made which breaks compatibility with the previous platform sepolicy version,
-# not just on every increase in PLATFORM_SDK_VERSION.  The minor version should
-# be reset to 0 on every bump of the PLATFORM_SDK_VERSION.
-sepolicy_major_vers := 34
-sepolicy_minor_vers := 0
-
-ifneq ($(sepolicy_major_vers), $(PLATFORM_SDK_VERSION))
-$(error sepolicy_major_version does not match PLATFORM_SDK_VERSION, please update.)
-endif
-
-TOT_SEPOLICY_VERSION := 10000.0
-ifneq (REL,$(PLATFORM_VERSION_CODENAME))
-    PLATFORM_SEPOLICY_VERSION := $(TOT_SEPOLICY_VERSION)
-else
-    PLATFORM_SEPOLICY_VERSION := $(join $(addsuffix .,$(sepolicy_major_vers)), $(sepolicy_minor_vers))
-endif
-sepolicy_major_vers :=
-sepolicy_minor_vers :=
-
-# BOARD_SEPOLICY_VERS must take the format "NN.m" and contain the sepolicy
-# version identifier corresponding to the sepolicy on which the non-platform
-# policy is to be based. If unspecified, this will build against the current
-# public platform policy in tree
-ifndef BOARD_SEPOLICY_VERS
-# The default platform policy version.
+# PLATFORM_SEPOLICY_VERSION is a number of the form "YYYYMM" with "YYYYMM"
+# mapping to vFRC version.
+PLATFORM_SEPOLICY_VERSION := $(BOARD_API_LEVEL)
 BOARD_SEPOLICY_VERS := $(PLATFORM_SEPOLICY_VERSION)
-endif
+.KATI_READONLY := PLATFORM_SEPOLICY_VERSION BOARD_SEPOLICY_VERS
 
 # A list of SEPolicy versions, besides PLATFORM_SEPOLICY_VERSION, that the framework supports.
 PLATFORM_SEPOLICY_COMPAT_VERSIONS := $(filter-out $(PLATFORM_SEPOLICY_VERSION), \
@@ -933,12 +867,12 @@ PLATFORM_SEPOLICY_COMPAT_VERSIONS := $(filter-out $(PLATFORM_SEPOLICY_VERSION), 
     32.0 \
     33.0 \
     34.0 \
+    202404 \
     )
 
 .KATI_READONLY := \
     PLATFORM_SEPOLICY_COMPAT_VERSIONS \
     PLATFORM_SEPOLICY_VERSION \
-    TOT_SEPOLICY_VERSION \
 
 ifeq ($(PRODUCT_RETROFIT_DYNAMIC_PARTITIONS),true)
   ifneq ($(PRODUCT_USE_DYNAMIC_PARTITIONS),true)
@@ -1228,7 +1162,6 @@ TARGET_AVAILABLE_SDK_VERSIONS := $(patsubst %/test,test_%,$(TARGET_AVAILABLE_SDK
 TARGET_AVAILABLE_SDK_VERSIONS := $(filter-out %/module-lib %/system-server,$(TARGET_AVAILABLE_SDK_VERSIONS))
 TARGET_AVAIALBLE_SDK_VERSIONS := $(call numerically_sort,$(TARGET_AVAILABLE_SDK_VERSIONS))
 
-TARGET_SDK_VERSIONS_WITHOUT_JAVA_1_8_SUPPORT := $(call numbers_less_than,24,$(TARGET_AVAILABLE_SDK_VERSIONS))
 TARGET_SDK_VERSIONS_WITHOUT_JAVA_1_9_SUPPORT := $(call numbers_less_than,30,$(TARGET_AVAILABLE_SDK_VERSIONS))
 TARGET_SDK_VERSIONS_WITHOUT_JAVA_11_SUPPORT := $(call numbers_less_than,32,$(TARGET_AVAILABLE_SDK_VERSIONS))
 TARGET_SDK_VERSIONS_WITHOUT_JAVA_17_SUPPORT := $(call numbers_less_than,34,$(TARGET_AVAILABLE_SDK_VERSIONS))
@@ -1312,6 +1245,15 @@ DEFAULT_DATA_OUT_MODULES := ltp $(ltp_packages)
 .KATI_READONLY := DEFAULT_DATA_OUT_MODULES
 
 include $(BUILD_SYSTEM)/dumpvar.mk
+
+ifneq ($(KEEP_VNDK),true)
+ifdef BOARD_VNDK_VERSION
+BOARD_VNDK_VERSION=
+endif
+ifdef PLATFORM_VNDK_VERSION
+PLATFORM_VNDK_VERSION=
+endif
+endif
 
 ifeq (true,$(FULL_SYSTEM_OPTIMIZE_JAVA))
 ifeq (false,$(SYSTEM_OPTIMIZE_JAVA))

@@ -13,10 +13,15 @@ define write-optional-json-bool
 $(if $(strip $(2)),'$(COMMA)$(strip $(1)): "$(strip $(2))"')
 endef
 
-$(MODULE_INFO_JSON):
+SOONG_MODULE_INFO := $(SOONG_OUT_DIR)/module-info-$(TARGET_PRODUCT).json
+
+$(MODULE_INFO_JSON): PRIVATE_SOONG_MODULE_INFO := $(SOONG_MODULE_INFO)
+$(MODULE_INFO_JSON): PRIVATE_MERGE_JSON_OBJECTS := $(HOST_OUT_EXECUTABLES)/merge_module_info_json
+$(MODULE_INFO_JSON): $(HOST_OUT_EXECUTABLES)/merge_module_info_json
+$(MODULE_INFO_JSON): $(SOONG_MODULE_INFO)
 	@echo Generating $@
-	$(hide) echo -ne '{\n ' > $@
-	$(hide) echo -ne $(KATI_foreach_sep m,$(COMMA)$(_NEWLINE), $(sort $(ALL_MODULES)),\
+	$(hide) echo -ne '{\n ' > $@.tmp
+	$(hide) echo -ne $(KATI_foreach_sep m,$(COMMA)$(_NEWLINE), $(sort $(ALL_MAKE_MODULE_INFO_JSON_MODULES)),\
 		'"$(m)": {' \
 			'"module_name": "$(ALL_MODULES.$(m).MODULE_NAME)"' \
 			$(call write-optional-json-list, "class", $(sort $(ALL_MODULES.$(m).CLASS))) \
@@ -34,7 +39,7 @@ $(MODULE_INFO_JSON):
 			$(call write-optional-json-list, "srcjars", $(sort $(ALL_MODULES.$(m).SRCJARS))) \
 			$(call write-optional-json-list, "classes_jar", $(sort $(ALL_MODULES.$(m).CLASSES_JAR))) \
 			$(call write-optional-json-list, "test_mainline_modules", $(sort $(ALL_MODULES.$(m).TEST_MAINLINE_MODULES))) \
-			$(call write-optional-json-bool, $(ALL_MODULES.$(m).IS_UNIT_TEST)) \
+			$(call write-optional-json-bool, "is_unit_test", $(ALL_MODULES.$(m).IS_UNIT_TEST)) \
 			$(call write-optional-json-list, "test_options_tags", $(sort $(ALL_MODULES.$(m).TEST_OPTIONS_TAGS))) \
 			$(call write-optional-json-list, "data", $(sort $(ALL_MODULES.$(m).TEST_DATA))) \
 			$(call write-optional-json-list, "runtime_dependencies", $(sort $(ALL_MODULES.$(m).LOCAL_RUNTIME_LIBRARIES))) \
@@ -43,7 +48,9 @@ $(MODULE_INFO_JSON):
 			$(call write-optional-json-list, "supported_variants", $(sort $(ALL_MODULES.$(m).SUPPORTED_VARIANTS))) \
 			$(call write-optional-json-list, "host_dependencies", $(sort $(ALL_MODULES.$(m).HOST_REQUIRED_FROM_TARGET))) \
 			$(call write-optional-json-list, "target_dependencies", $(sort $(ALL_MODULES.$(m).TARGET_REQUIRED_FROM_HOST))) \
-		'}')'\n}\n' >> $@
+		'}')'\n}\n' >> $@.tmp
+	$(PRIVATE_MERGE_JSON_OBJECTS) -o $@ $(PRIVATE_SOONG_MODULE_INFO) $@.tmp
+	rm $@.tmp
 
 
 droidcore-unbundled: $(MODULE_INFO_JSON)

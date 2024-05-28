@@ -17,7 +17,9 @@
 # Base modules and settings for the system partition.
 PRODUCT_PACKAGES += \
     abx \
+    aconfigd \
     adbd_system_api \
+    aflags \
     am \
     android.hidl.base-V1.0-java \
     android.hidl.manager-V1.0-java \
@@ -70,7 +72,7 @@ PRODUCT_PACKAGES += \
     com.android.scheduling \
     com.android.sdkext \
     com.android.tethering \
-    com.android.tzdata \
+    $(RELEASE_PACKAGE_TZDATA_MODULE) \
     com.android.uwb \
     com.android.virt \
     com.android.wifi \
@@ -88,14 +90,15 @@ PRODUCT_PACKAGES += \
     dump.erofs \
     dumpstate \
     dumpsys \
+    E2eeContactKeysProvider \
     e2fsck \
+    enhanced-confirmation.xml \
     ExtShared \
     flags_health_check \
     framework-graphics \
     framework-location \
     framework-minus-apex \
     framework-minus-apex-install-dependencies \
-    framework-nfc \
     framework-sysconfig.xml \
     fsck.erofs \
     fsck_msdos \
@@ -128,6 +131,7 @@ PRODUCT_PACKAGES += \
     ip \
     iptables \
     javax.obex \
+    kcmdlinectrl \
     keystore2 \
     credstore \
     ld.mc \
@@ -202,6 +206,7 @@ PRODUCT_PACKAGES += \
     libui \
     libusbhost \
     libutils \
+    libvintf_jni \
     libvulkan \
     libwilhelm \
     linker \
@@ -223,6 +228,7 @@ PRODUCT_PACKAGES += \
     mke2fs \
     mkfs.erofs \
     monkey \
+    misctrl \
     mtectrl \
     ndc \
     netd \
@@ -231,8 +237,10 @@ PRODUCT_PACKAGES += \
     org.apache.http.legacy \
     otacerts \
     PackageInstaller \
+    package-shareduid-allowlist.xml \
     passwd_system \
     perfetto \
+    perfetto-extras \
     ping \
     ping6 \
     pintool \
@@ -282,6 +290,7 @@ PRODUCT_PACKAGES += \
     uiautomator \
     uinput \
     uncrypt \
+    uprobestats \
     usbd \
     vdc \
     voip-common \
@@ -290,6 +299,13 @@ PRODUCT_PACKAGES += \
     wificond \
     wifi.rc \
     wm \
+
+# When we release crashrecovery module
+ifeq ($(RELEASE_CRASHRECOVERY_MODULE),true)
+  PRODUCT_PACKAGES += \
+        com.android.crashrecovery \
+
+endif
 
 # These packages are not used on Android TV
 ifneq ($(PRODUCT_IS_ATV),true)
@@ -303,6 +319,28 @@ ifneq ($(PRODUCT_NO_DYNAMIC_SYSTEM_UPDATE),true)
     PRODUCT_PACKAGES += \
         DynamicSystemInstallationService \
 
+endif
+
+# Check if the build supports NFC apex or not
+ifeq ($(RELEASE_PACKAGE_NFC_STACK),NfcNci)
+    PRODUCT_PACKAGES += \
+        framework-nfc \
+        NfcNci
+else
+    PRODUCT_PACKAGES += \
+        com.android.nfcservices
+endif
+
+# Check if the build supports Profiling module
+ifeq ($(RELEASE_PACKAGE_PROFILING_MODULE),true)
+    PRODUCT_PACKAGES += \
+       com.android.profiling \
+       trace_redactor
+endif
+
+ifeq ($(RELEASE_USE_WEBVIEW_BOOTSTRAP_MODULE),true)
+    PRODUCT_PACKAGES += \
+        com.android.webview.bootstrap
 endif
 
 # VINTF data for system image
@@ -348,14 +386,10 @@ ifeq (,$(DISABLE_WALLPAPER_BACKUP))
     WallpaperBackup
 endif
 
-# Moving angle from vendor to system
-ifeq ($(RELEASE_ANGLE_ON_SYSTEM),true)
 PRODUCT_PACKAGES += \
     libEGL_angle \
     libGLESv1_CM_angle \
     libGLESv2_angle
-$(call soong_config_set,angle,angle_on_system,true)
-endif
 
 # For testing purposes
 ifeq ($(FORCE_AUDIO_SILENT), true)
@@ -398,13 +432,12 @@ PRODUCT_HOST_PACKAGES += \
     tz_version_host \
     tz_version_host_tzdata_apex \
 
+PRODUCT_PACKAGES += init.usb.rc init.usb.configfs.rc
 
 PRODUCT_COPY_FILES += \
-    system/core/rootdir/init.usb.rc:system/etc/init/hw/init.usb.rc \
-    system/core/rootdir/init.usb.configfs.rc:system/etc/init/hw/init.usb.configfs.rc \
     system/core/rootdir/etc/hosts:system/etc/hosts
 
-PRODUCT_COPY_FILES += system/core/rootdir/init.zygote32.rc:system/etc/init/hw/init.zygote32.rc
+PRODUCT_PACKAGES += init.zygote32.rc
 PRODUCT_VENDOR_PROPERTIES += ro.zygote?=zygote32
 
 PRODUCT_SYSTEM_PROPERTIES += debug.atrace.tags.enableflags=0
@@ -427,6 +460,7 @@ PRODUCT_PACKAGES_DEBUG := \
     logpersist.start \
     logtagd.rc \
     ot-cli-ftd \
+    ot-ctl \
     procrank \
     profcollectd \
     profcollectctl \
@@ -468,5 +502,11 @@ PRODUCT_COPY_FILES += $(call add-to-product-copy-files-if-exists,\
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/runtime_libart.mk)
 
+# Ensure all trunk-stable flags are available.
+$(call inherit-product, $(SRC_TARGET_DIR)/product/build_variables.mk)
+
 # Use "image" APEXes always.
 $(call inherit-product,$(SRC_TARGET_DIR)/product/updatable_apex.mk)
+
+$(call soong_config_set, bionic, large_system_property_node, $(RELEASE_LARGE_SYSTEM_PROPERTY_NODE))
+$(call soong_config_set, SettingsLib, legacy_avatar_picker_app_enabled, $(if $(RELEASE_AVATAR_PICKER_APP),,true))

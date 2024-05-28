@@ -8,12 +8,6 @@ function revert_droidstubs_hack() {
     fi
 }
 
-function revert_resources_sdk_int_fix() {
-    if grep -q 'public static final int RESOURCES_SDK_INT = SDK_INT;' "$top/frameworks/base/core/java/android/os/Build.java" ; then
-        patch --strip=1 --no-backup-if-mismatch --directory="$top/frameworks/base" --input=../../build/make/tools/finalization/frameworks_base.revert_resource_sdk_int.diff
-    fi
-}
-
 function apply_prerelease_sdk_hack() {
     if ! grep -q 'STOPSHIP: hack for the pre-release SDK' "$top/frameworks/base/core/java/android/content/pm/parsing/FrameworkParsingPackageUtils.java" ; then
         patch --strip=1 --no-backup-if-mismatch --directory="$top/frameworks/base" --input=../../build/make/tools/finalization/frameworks_base.apply_hack.diff
@@ -30,18 +24,14 @@ function finalize_sdk_rel() {
     # let the apps built with pre-release SDK parse
     apply_prerelease_sdk_hack
 
-    # in REL mode, resources would correctly set the resources_sdk_int, no fix required
-    revert_resources_sdk_int_fix
-
     # cts
-    echo "$FINAL_PLATFORM_VERSION" > "$top/cts/tests/tests/os/assets/platform_versions.txt"
+    if ! grep -q "${FINAL_PLATFORM_VERSION}" "$top/cts/tests/tests/os/assets/platform_versions.txt" ; then
+        echo ${FINAL_PLATFORM_VERSION} >> "$top/cts/tests/tests/os/assets/platform_versions.txt"
+    fi
     if [ "$FINAL_PLATFORM_CODENAME" != "$CURRENT_PLATFORM_CODENAME" ]; then
         echo "$CURRENT_PLATFORM_CODENAME" >> "./cts/tests/tests/os/assets/platform_versions.txt"
     fi
     git -C "$top/cts" mv hostsidetests/theme/assets/${FINAL_PLATFORM_CODENAME} hostsidetests/theme/assets/${FINAL_PLATFORM_SDK_VERSION}
-
-    # system/sepolicy
-    system/sepolicy/tools/finalize-sdk-rel.sh "$top" "$FINAL_PLATFORM_SDK_VERSION"
 
     # prebuilts/abi-dumps/platform
     mkdir -p "$top/prebuilts/abi-dumps/platform/$FINAL_PLATFORM_SDK_VERSION"
@@ -52,10 +42,6 @@ function finalize_sdk_rel() {
     # prebuilts/abi-dumps/ndk
     #mkdir -p "$top/prebuilts/abi-dumps/ndk/$FINAL_PLATFORM_SDK_VERSION"
     #cp -r "$top/prebuilts/abi-dumps/ndk/current/64/" "$top/prebuilts/abi-dumps/ndk/$FINAL_PLATFORM_SDK_VERSION/"
-    #if [ "$FINAL_STATE" != "sdk" ] || [ "$FINAL_PLATFORM_CODENAME" == "$CURRENT_PLATFORM_CODENAME" ] ; then
-        # prebuilts/abi-dumps/vndk
-        #mv "$top/prebuilts/abi-dumps/vndk/$CURRENT_PLATFORM_CODENAME" "$top/prebuilts/abi-dumps/vndk/$FINAL_PLATFORM_SDK_VERSION"
-    #fi;
 }
 
 finalize_sdk_rel
