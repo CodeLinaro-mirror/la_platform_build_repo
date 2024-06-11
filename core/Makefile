@@ -3510,6 +3510,7 @@ pinctrl-msm secure_buffer qcom_aoss qcom_rpmh qcom-pdc clk-dummy nvmem_qfprom dw
 pinctrl-sm8150 pinctrl-sm6150 qcom_iommu_util socinfo icc-bcm-voter crypto-qti rpmh-regulator clk-rpmh dispcc-sm6150 debugcc-sm6150
 ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs gcc-sm8150 dispcc-sm8250 gcc-sc8180x gcc-sm6150
 ufs_qcom qnoc-sm8150 qnoc-sc8180x-auto qnoc-sm6150 phy-qcom-ufs-qmp-v4 phy-qcom-ufs-qmp-v3-660
+camcc-sm8150 camcc-sc8180x camcc-sm6150
 
 endef
 
@@ -3539,7 +3540,6 @@ endef
 
 # MM AIS modules
 define ES_MOD_ORDER_AIS
-camcc-sm8150 camcc-sc8180x camcc-sm6150
 gpucc-sm8150 gpucc-sm6150
 ais
 
