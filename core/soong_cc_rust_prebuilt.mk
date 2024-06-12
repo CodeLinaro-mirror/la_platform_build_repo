@@ -38,14 +38,6 @@ ifndef LOCAL_UNINSTALLABLE_MODULE
   endif
 endif
 
-# Don't install modules of current VNDK when it is told so
-ifeq ($(TARGET_SKIP_CURRENT_VNDK),true)
-  ifeq ($(LOCAL_SOONG_VNDK_VERSION),$(PLATFORM_VNDK_VERSION))
-    LOCAL_UNINSTALLABLE_MODULE := true
-  endif
-endif
-
-
 # Use the Soong output as the checkbuild target instead of LOCAL_BUILT_MODULE
 # to avoid checkbuilds making an extra copy of every module.
 LOCAL_CHECKED_MODULE := $(LOCAL_PREBUILT_MODULE_FILE)
@@ -99,7 +91,7 @@ ifneq ($(filter STATIC_LIBRARIES SHARED_LIBRARIES RLIB_LIBRARIES DYLIB_LIBRARIES
   include $(BUILD_SYSTEM)/link_type.mk
 endif
 
-ifdef LOCAL_USE_VNDK
+ifeq ($(call module-in-vendor-or-product),true)
   ifneq ($(LOCAL_VNDK_DEPEND_ON_CORE_VARIANT),true)
     name_without_suffix := $(patsubst %.vendor,%,$(LOCAL_MODULE))
     ifneq ($(name_without_suffix),$(LOCAL_MODULE))
@@ -128,8 +120,8 @@ endif
 ifdef LOCAL_INSTALLED_MODULE
   ifdef LOCAL_SHARED_LIBRARIES
     my_shared_libraries := $(LOCAL_SHARED_LIBRARIES)
-    ifdef LOCAL_USE_VNDK
-      ifdef LOCAL_USE_VNDK_PRODUCT
+    ifeq ($(call module-in-vendor-or-product),true)
+      ifdef LOCAL_IN_PRODUCT
         my_shared_libraries := $(foreach l,$(my_shared_libraries),\
           $(if $(SPLIT_PRODUCT.SHARED_LIBRARIES.$(l)),$(l).product,$(l)))
       else
@@ -143,8 +135,8 @@ ifdef LOCAL_INSTALLED_MODULE
   ifdef LOCAL_DYLIB_LIBRARIES
     my_dylibs := $(LOCAL_DYLIB_LIBRARIES)
     # Treat these as shared library dependencies for installation purposes.
-    ifdef LOCAL_USE_VNDK
-      ifdef LOCAL_USE_VNDK_PRODUCT
+    ifeq ($(call module-in-vendor-or-product),true)
+      ifdef LOCAL_IN_PRODUCT
         my_dylibs := $(foreach l,$(my_dylibs),\
           $(if $(SPLIT_PRODUCT.SHARED_LIBRARIES.$(l)),$(l).product,$(l)))
       else

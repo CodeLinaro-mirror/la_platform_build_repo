@@ -1515,6 +1515,7 @@ class CommonUtilsTest(test_utils.ReleaseToolsTestCase):
         'super_group_a_group_size': '1000',
         'super_group_b_partition_list': 'product',
         'super_group_b_group_size': '2000',
+        'vabc_cow_version': '2',
     }
     self.assertEqual(merged_dict, expected_merged_dict)
 
@@ -1525,6 +1526,7 @@ class CommonUtilsTest(test_utils.ReleaseToolsTestCase):
         'dynamic_partition_list': 'system',
         'super_group_a_partition_list': 'system',
         'super_group_a_group_size': '5000',
+        'vabc_cow_version': '3',
     }
     vendor_dict = {
         'use_dynamic_partitions': 'true',
@@ -1546,6 +1548,7 @@ class CommonUtilsTest(test_utils.ReleaseToolsTestCase):
         'super_group_a_group_size': '1000',
         'super_group_b_partition_list': 'product',
         'super_group_b_group_size': '2000',
+        'vabc_cow_version': '2',
     }
     self.assertEqual(merged_dict, expected_merged_dict)
 
@@ -1604,40 +1607,6 @@ class CommonUtilsTest(test_utils.ReleaseToolsTestCase):
     self.assertEqual('recovery', chained_partition_args.partition)
     self.assertEqual(3, chained_partition_args.rollback_index_location)
     self.assertTrue(os.path.exists(chained_partition_args.pubkey_path))
-
-  def test_GenerateGkiCertificate_KeyPathNotFound(self):
-    pubkey = os.path.join(self.testdata_dir, 'no_testkey_gki.pem')
-    self.assertFalse(os.path.exists(pubkey))
-
-    common.OPTIONS.info_dict = {
-        'gki_signing_key_path': pubkey,
-        'gki_signing_algorithm': 'SHA256_RSA4096',
-        'gki_signing_signature_args': '--prop foo:bar',
-    }
-    common.OPTIONS.search_path = None
-    test_file = tempfile.NamedTemporaryFile()
-    self.assertRaises(common.ExternalError, common._GenerateGkiCertificate,
-                      test_file.name, 'generic_kernel')
-
-  def test_GenerateGkiCertificate_SearchKeyPathNotFound(self):
-    pubkey = 'no_testkey_gki.pem'
-    self.assertFalse(os.path.exists(pubkey))
-
-    # Tests it should raise ExternalError if no key found under
-    # OPTIONS.search_path.
-    search_path_dir = common.MakeTempDir()
-    search_pubkey = os.path.join(search_path_dir, pubkey)
-    self.assertFalse(os.path.exists(search_pubkey))
-
-    common.OPTIONS.search_path = search_path_dir
-    common.OPTIONS.info_dict = {
-        'gki_signing_key_path': pubkey,
-        'gki_signing_algorithm': 'SHA256_RSA4096',
-        'gki_signing_signature_args': '--prop foo:bar',
-    }
-    test_file = tempfile.NamedTemporaryFile()
-    self.assertRaises(common.ExternalError, common._GenerateGkiCertificate,
-                      test_file.name, 'generic_kernel')
 
 
 class InstallRecoveryScriptFormatTest(test_utils.ReleaseToolsTestCase):

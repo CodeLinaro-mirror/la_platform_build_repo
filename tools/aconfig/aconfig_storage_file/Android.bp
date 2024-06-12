@@ -1,0 +1,71 @@
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+rust_defaults {
+    name: "aconfig_storage_file.defaults",
+    edition: "2021",
+    lints: "none",
+    rustlibs: [
+        "libanyhow",
+        "libthiserror",
+        "libtempfile",
+        "libprotobuf",
+        "libclap",
+        "libaconfig_storage_protos",
+    ],
+}
+
+rust_library {
+    name: "libaconfig_storage_file",
+    crate_name: "aconfig_storage_file",
+    host_supported: true,
+    defaults: ["aconfig_storage_file.defaults"],
+    srcs: ["src/lib.rs"],
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    min_sdk_version: "29",
+}
+
+rust_binary_host {
+    name: "aconfig-storage",
+    defaults: ["aconfig_storage_file.defaults"],
+    srcs: ["src/main.rs"],
+    rustlibs: ["libaconfig_storage_file"],
+}
+
+rust_test_host {
+    name: "aconfig_storage_file.test",
+    test_suites: ["general-tests"],
+    defaults: ["aconfig_storage_file.defaults"],
+    srcs: ["src/lib.rs"],
+}
+
+rust_protobuf {
+    name: "libaconfig_storage_protos",
+    protos: ["protos/aconfig_storage_metadata.proto"],
+    crate_name: "aconfig_storage_protos",
+    source_stem: "aconfig_storage_protos",
+    host_supported: true,
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    min_sdk_version: "29",
+}
+
+cc_library_static {
+    name: "libaconfig_storage_protos_cc",
+    proto: {
+        export_proto_headers: true,
+        type: "lite",
+    },
+    srcs: ["protos/aconfig_storage_metadata.proto"],
+    apex_available: [
+        "//apex_available:platform",
+        "//apex_available:anyapex",
+    ],
+    host_supported: true,
+}

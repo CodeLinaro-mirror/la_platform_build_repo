@@ -52,59 +52,9 @@ ifeq (,$(BRANCH_DEFAULT_MODULE_BUILD_FROM_SOURCE))
   BRANCH_DEFAULT_MODULE_BUILD_FROM_SOURCE := false
 endif
 
-ifneq ($(SANITIZE_TARGET)$(EMMA_INSTRUMENT_FRAMEWORK),)
-  # Always use sources when building the framework with Java coverage or
-  # sanitized builds as they both require purpose built prebuilts which we do
-  # not provide.
-  BRANCH_DEFAULT_MODULE_BUILD_FROM_SOURCE := true
-endif
-
-ifneq ($(CLANG_COVERAGE)$(NATIVE_COVERAGE_PATHS),)
-  # Always use sources when building with clang coverage and native coverage.
-  # It is possible that there are certain situations when building with coverage
-  # would work with prebuilts, e.g. when the coverage is not being applied to
-  # modules for which we provide prebuilts. Unfortunately, determining that
-  # would require embedding knowledge of which coverage paths affect which
-  # modules here. That would duplicate a lot of information, add yet another
-  # location  module authors have to update and complicate the logic here.
-  # For nowe we will just always build from sources when doing coverage builds.
-  BRANCH_DEFAULT_MODULE_BUILD_FROM_SOURCE := true
-endif
-
-# ART does not provide linux_bionic variants needed for products that
-# set HOST_CROSS_OS=linux_bionic.
-ifeq (linux_bionic,${HOST_CROSS_OS})
-  BRANCH_DEFAULT_MODULE_BUILD_FROM_SOURCE := true
-endif
-
-# ART does not provide host side arm64 variants needed for products that
-# set HOST_CROSS_ARCH=arm64.
-ifeq (arm64,${HOST_CROSS_ARCH})
-  BRANCH_DEFAULT_MODULE_BUILD_FROM_SOURCE := true
-endif
-
-# TV based devices do not seem to work with prebuilts, so build from source
-# for now and fix in a follow up.
-ifneq (,$(filter tv,$(subst $(comma),$(space),${PRODUCT_CHARACTERISTICS})))
-  BRANCH_DEFAULT_MODULE_BUILD_FROM_SOURCE := true
-endif
-
-# ATV based devices do not seem to work with prebuilts, so build from source
-# for now and fix in a follow up.
-ifneq (,${PRODUCT_IS_ATV})
-  BRANCH_DEFAULT_MODULE_BUILD_FROM_SOURCE := true
-endif
-
 ifneq (,$(MODULE_BUILD_FROM_SOURCE))
   # Keep an explicit setting.
-else ifeq (,$(filter docs sdk win_sdk sdk_addon,$(MAKECMDGOALS))$(findstring com.google.android.conscrypt,$(PRODUCT_PACKAGES))$(findstring com.google.android.go.conscrypt,$(PRODUCT_PACKAGES)))
-  # Prebuilt module SDKs require prebuilt modules to work, and currently
-  # prebuilt modules are only provided for com.google.android(.go)?.xxx. If we can't
-  # find one of them in PRODUCT_PACKAGES then assume com.android.xxx are in use,
-  # and disable prebuilt SDKs. In particular this applies to AOSP builds.
-  #
-  # However, docs/sdk/win_sdk/sdk_addon builds might not include com.google.android.xxx
-  # packages, so for those we respect the default behavior.
+else ifeq (,$(filter docs sdk win_sdk sdk_addon,$(MAKECMDGOALS)))
   MODULE_BUILD_FROM_SOURCE := true
 else ifneq (,$(PRODUCT_MODULE_BUILD_FROM_SOURCE))
   # Let products override the branch default.
@@ -136,10 +86,24 @@ endif
 # are controlled by the MODULE_BUILD_FROM_SOURCE environment variable by
 # default.
 INDIVIDUALLY_TOGGLEABLE_PREBUILT_MODULES := \
+  adservices \
+  appsearch \
   btservices \
+  configinfrastructure \
+  conscrypt \
   devicelock \
+  healthfitness \
+  ipsec \
+  media \
+  mediaprovider \
+  mediaprovider \
+  ondevicepersonalization \
   permission \
   rkpd \
+  scheduling \
+  sdkext \
+  statsd \
+  tethering \
   uwb \
   wifi \
   mediaprovider \
@@ -161,25 +125,12 @@ ifeq (true,$(MODULE_BUILD_FROM_SOURCE))
 $(call add_soong_config_var_value,ANDROID,module_build_from_source,true)
 endif
 
-# Messaging app vars
-ifeq (eng,$(TARGET_BUILD_VARIANT))
-$(call soong_config_set,messaging,build_variant_eng,true)
-endif
-
 # Enable SystemUI optimizations by default unless explicitly set.
 SYSTEMUI_OPTIMIZE_JAVA ?= true
 $(call add_soong_config_var,ANDROID,SYSTEMUI_OPTIMIZE_JAVA)
 
-# Enable Compose in SystemUI by default.
-SYSTEMUI_USE_COMPOSE ?= true
-$(call add_soong_config_var,ANDROID,SYSTEMUI_USE_COMPOSE)
-
 ifdef PRODUCT_AVF_ENABLED
 $(call add_soong_config_var_value,ANDROID,avf_enabled,$(PRODUCT_AVF_ENABLED))
-endif
-
-ifdef PRODUCT_AVF_KERNEL_MODULES_ENABLED
-$(call add_soong_config_var_value,ANDROID,avf_kernel_modules_enabled,$(PRODUCT_AVF_KERNEL_MODULES_ENABLED))
 endif
 
 $(call add_soong_config_var_value,ANDROID,release_avf_allow_preinstalled_apps,$(RELEASE_AVF_ALLOW_PREINSTALLED_APPS))
@@ -189,8 +140,15 @@ $(call add_soong_config_var_value,ANDROID,release_avf_enable_llpvm_changes,$(REL
 $(call add_soong_config_var_value,ANDROID,release_avf_enable_multi_tenant_microdroid_vm,$(RELEASE_AVF_ENABLE_MULTI_TENANT_MICRODROID_VM))
 $(call add_soong_config_var_value,ANDROID,release_avf_enable_remote_attestation,$(RELEASE_AVF_ENABLE_REMOTE_ATTESTATION))
 $(call add_soong_config_var_value,ANDROID,release_avf_enable_vendor_modules,$(RELEASE_AVF_ENABLE_VENDOR_MODULES))
+$(call add_soong_config_var_value,ANDROID,release_avf_enable_virt_cpufreq,$(RELEASE_AVF_ENABLE_VIRT_CPUFREQ))
+$(call add_soong_config_var_value,ANDROID,release_avf_microdroid_kernel_version,$(RELEASE_AVF_MICRODROID_KERNEL_VERSION))
+$(call add_soong_config_var_value,ANDROID,release_avf_support_custom_vm_with_paravirtualized_devices,$(RELEASE_AVF_SUPPORT_CUSTOM_VM_WITH_PARAVIRTUALIZED_DEVICES))
 
 $(call add_soong_config_var_value,ANDROID,release_binder_death_recipient_weak_from_jni,$(RELEASE_BINDER_DEATH_RECIPIENT_WEAK_FROM_JNI))
+
+$(call add_soong_config_var_value,ANDROID,release_package_libandroid_runtime_punch_holes,$(RELEASE_PACKAGE_LIBANDROID_RUNTIME_PUNCH_HOLES))
+
+$(call add_soong_config_var_value,ANDROID,release_selinux_data_data_ignore,$(RELEASE_SELINUX_DATA_DATA_IGNORE))
 
 # Enable system_server optimizations by default unless explicitly set or if
 # there may be dependent runtime jars.
@@ -215,6 +173,9 @@ endif
 $(call add_soong_config_var,ANDROID,SYSTEM_OPTIMIZE_JAVA)
 $(call add_soong_config_var,ANDROID,FULL_SYSTEM_OPTIMIZE_JAVA)
 
+# TODO(b/319697968): Remove this build flag support when metalava fully supports flagged api
+$(call soong_config_set,ANDROID,release_hidden_api_exportable_stubs,$(RELEASE_HIDDEN_API_EXPORTABLE_STUBS))
+
 # Check for SupplementalApi module.
 ifeq ($(wildcard packages/modules/SupplementalApi),)
 $(call add_soong_config_var_value,ANDROID,include_nonpublic_framework_api,false)
@@ -222,3 +183,19 @@ else
 $(call add_soong_config_var_value,ANDROID,include_nonpublic_framework_api,true)
 endif
 
+# Add crashrecovery build flag to soong
+$(call soong_config_set,ANDROID,release_crashrecovery_module,$(RELEASE_CRASHRECOVERY_MODULE))
+# Add crashrecovery file move flags to soong, for both platform and module
+ifeq (true,$(RELEASE_CRASHRECOVERY_FILE_MOVE))
+  $(call soong_config_set,ANDROID,crashrecovery_files_in_module,true)
+  $(call soong_config_set,ANDROID,crashrecovery_files_in_platform,false)
+else
+  $(call soong_config_set,ANDROID,crashrecovery_files_in_module,false)
+  $(call soong_config_set,ANDROID,crashrecovery_files_in_platform,true)
+endif
+# Required as platform_bootclasspath is using this namespace
+$(call soong_config_set,bootclasspath,release_crashrecovery_module,$(RELEASE_CRASHRECOVERY_MODULE))
+
+# Enable Profiling module. Also used by platform_bootclasspath.
+$(call soong_config_set,ANDROID,release_package_profiling_module,$(RELEASE_PACKAGE_PROFILING_MODULE))
+$(call soong_config_set,bootclasspath,release_package_profiling_module,$(RELEASE_PACKAGE_PROFILING_MODULE))

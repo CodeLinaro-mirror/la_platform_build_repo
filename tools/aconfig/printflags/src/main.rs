@@ -16,10 +16,11 @@
 
 //! `printflags` is a device binary to print feature flags.
 
-use aconfig_protos::aconfig::Flag_state as State;
-use aconfig_protos::aconfig::Parsed_flags as ProtoParsedFlags;
+use aconfig_protos::ProtoFlagState as State;
+use aconfig_protos::ProtoParsedFlags;
 use anyhow::{bail, Context, Result};
 use regex::Regex;
+use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::process::Command;
 use std::{fs, str};
@@ -66,9 +67,23 @@ fn main() -> Result<()> {
     let device_config_flags = parse_device_config(dc_stdout);
 
     // read aconfig_flags.pb files
-    let mut flags: HashMap<String, Vec<String>> = HashMap::new();
-    for partition in ["system", "system_ext", "product", "vendor"] {
-        let path = format!("/{}/etc/aconfig_flags.pb", partition);
+    let apex_pattern = Regex::new(r"^/apex/[^@]+\.[^@]+$").unwrap();
+    let mut mount_points = vec![
+        "system".to_string(),
+        "system_ext".to_string(),
+        "product".to_string(),
+        "vendor".to_string(),
+    ];
+    for apex in fs::read_dir("/apex")? {
+        let path_name = apex?.path().display().to_string();
+        if let Some(canonical_path) = apex_pattern.captures(&path_name) {
+            mount_points.push(canonical_path.get(0).unwrap().as_str().to_owned());
+        }
+    }
+
+    let mut flags: BTreeMap<String, Vec<String>> = BTreeMap::new();
+    for mount_point in mount_points {
+        let path = format!("/{}/etc/aconfig_flags.pb", mount_point);
         let Ok(bytes) = fs::read(&path) else {
             eprintln!("warning: failed to read {}", path);
             continue;
@@ -79,18 +94,17 @@ fn main() -> Result<()> {
             })?;
         for flag in parsed_flags.parsed_flag {
             let key = format!("{}/{}.{}", flag.namespace(), flag.package(), flag.name());
-            let value = format!("{:?} + {:?} ({})", flag.permission(), flag.state(), partition);
+            let value = format!("{:?} + {:?} ({})", flag.permission(), flag.state(), mount_point);
             flags.entry(key).or_default().push(value);
         }
     }
 
     // print flags
     for (key, mut value) in flags {
-        let (_, package_and_name) = key.split_once('/').unwrap();
         if let Some(dc_value) = device_config_flags.get(&key) {
             value.push(dc_value.to_string());
         }
-        println!("{}: {}", package_and_name, value.join(", "));
+        println!("{}: {}", key, value.join(", "));
     }
 
     Ok(())

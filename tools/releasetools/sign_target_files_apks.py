@@ -124,14 +124,8 @@ Usage:  sign_target_files_apks [flags] input_target_files output_target_files
 
   --gki_signing_algorithm <algorithm>
   --gki_signing_key <key>
-      Use the specified algorithm (e.g. SHA256_RSA4096) and the key to generate
-      'boot signature' in a v4 boot.img. Otherwise it uses the existing values
-      in info dict.
-
   --gki_signing_extra_args <args>
-      Specify any additional args that are needed to generate 'boot signature'
-      (e.g. --prop foo:bar). The args will be appended to the existing ones
-      in info dict.
+      DEPRECATED Does nothing.
 
   --android_jar_path <path>
       Path to the android.jar to repack the apex file.
@@ -221,9 +215,6 @@ OPTIONS.tag_changes = ("-test-keys", "-dev-keys", "+release-keys")
 OPTIONS.avb_keys = {}
 OPTIONS.avb_algorithms = {}
 OPTIONS.avb_extra_args = {}
-OPTIONS.gki_signing_key = None
-OPTIONS.gki_signing_algorithm = None
-OPTIONS.gki_signing_extra_args = None
 OPTIONS.android_jar_path = None
 OPTIONS.vendor_partitions = set()
 OPTIONS.vendor_otatools = None
@@ -280,6 +271,10 @@ def IsOtaPackage(fp):
 
 def IsEntryOtaPackage(input_zip, filename):
   with input_zip.open(filename, "r") as fp:
+    external_attr = input_zip.getinfo(filename).external_attr
+    if stat.S_ISLNK(external_attr >> 16):
+      return IsEntryOtaPackage(input_zip,
+          os.path.join(os.path.dirname(filename), fp.read().decode()))
     return IsOtaPackage(fp)
 
 
@@ -595,7 +590,7 @@ def ProcessTargetFiles(input_tf_zip: zipfile.ZipFile, output_tf_zip, misc_info,
         [len(os.path.basename(i.filename)) for i in input_tf_zip.infolist()
          if GetApkFileInfo(i.filename, compressed_extension, [])[0]])
   except ValueError:
-    # Sets this to zero for targets without APK files, e.g., gki_arm64.
+    # Sets this to zero for targets without APK files.
     maxsize = 0
 
   for info in input_tf_zip.infolist():
@@ -804,6 +799,16 @@ def ProcessTargetFiles(input_tf_zip: zipfile.ZipFile, output_tf_zip, misc_info,
         # Copy it verbatim if we allow the file to exist.
         common.ZipWriteStr(output_tf_zip, out_info, data)
 
+    # Sign microdroid_vendor.img.
+    elif filename == "VENDOR/etc/avf/microdroid/microdroid_vendor.img":
+      vendor_key = OPTIONS.avb_keys.get("vendor")
+      vendor_algorithm = OPTIONS.avb_algorithms.get("vendor")
+      with tempfile.NamedTemporaryFile() as image:
+        image.write(data)
+        image.flush()
+        ReplaceKeyInAvbHashtreeFooter(image, vendor_key, vendor_algorithm,
+            misc_info)
+        common.ZipWrite(output_tf_zip, image.name, filename)
     # A non-APK file; copy it verbatim.
     else:
       common.ZipWriteStr(output_tf_zip, out_info, data)
@@ -818,12 +823,111 @@ def ProcessTargetFiles(input_tf_zip: zipfile.ZipFile, output_tf_zip, misc_info,
   if misc_info.get('avb_enable') == 'true':
     RewriteAvbProps(misc_info)
 
-  # Replace the GKI signing key for boot.img, if any.
-  ReplaceGkiSigningKey(misc_info)
-
   # Write back misc_info with the latest values.
   ReplaceMiscInfoTxt(input_tf_zip, output_tf_zip, misc_info)
 
+# Parse string output of `avbtool info_image`.
+def ParseAvbInfo(info_raw):
+  # line_matcher is for parsing each output line of `avbtool info_image`.
+  # example string input: "      Hash Algorithm:        sha1"
+  # example matched input: ("      ", "Hash Algorithm", "sha1")
+  line_matcher = re.compile(r'^(\s*)([^:]+):\s*(.*)$')
+  # prop_matcher is for parsing value part of 'Prop' in `avbtool info_image`.
+  # example string input: "example_prop_key -> 'example_prop_value'"
+  # example matched output: ("example_prop_key", "example_prop_value")
+  prop_matcher = re.compile(r"(.+)\s->\s'(.+)'")
+  info = {}
+  indent_stack = [[-1, info]]
+  for line_info_raw in info_raw.split('\n'):
+    # Parse the line
+    line_info_parsed = line_matcher.match(line_info_raw)
+    if not line_info_parsed:
+      continue
+    indent = len(line_info_parsed.group(1))
+    key = line_info_parsed.group(2).strip()
+    value = line_info_parsed.group(3).strip()
+
+    # Pop indentation stack
+    while indent <= indent_stack[-1][0]:
+      del indent_stack[-1]
+
+    # Insert information into 'info'.
+    cur_info = indent_stack[-1][1]
+    if value == "":
+      if key == "Descriptors":
+        empty_list = []
+        cur_info[key] = empty_list
+        indent_stack.append([indent, empty_list])
+      else:
+        empty_dict = {}
+        cur_info.append({key:empty_dict})
+        indent_stack.append([indent, empty_dict])
+    elif key == "Prop":
+      prop_parsed = prop_matcher.match(value)
+      if not prop_parsed:
+        raise ValueError(
+            "Failed to parse prop while getting avb information.")
+      cur_info.append({key:{prop_parsed.group(1):prop_parsed.group(2)}})
+    else:
+      cur_info[key] = value
+  return info
+
+def ReplaceKeyInAvbHashtreeFooter(image, new_key, new_algorithm, misc_info):
+  # Get avb information about the image by parsing avbtool info_image.
+  def GetAvbInfo(avbtool, image_name):
+    # Get information with raw string by `avbtool info_image`.
+    info_raw = common.RunAndCheckOutput([
+      avbtool, 'info_image',
+      '--image', image_name
+    ])
+    return ParseAvbInfo(info_raw)
+
+  # Get hashtree descriptor from info
+  def GetAvbHashtreeDescriptor(avb_info):
+    hashtree_descriptors = tuple(filter(lambda x: "Hashtree descriptor" in x,
+        info.get('Descriptors')))
+    if len(hashtree_descriptors) != 1:
+      raise ValueError("The number of hashtree descriptor is not 1.")
+    return hashtree_descriptors[0]["Hashtree descriptor"]
+
+  # Get avb info
+  avbtool = misc_info['avb_avbtool']
+  info = GetAvbInfo(avbtool, image.name)
+  hashtree_descriptor = GetAvbHashtreeDescriptor(info)
+
+  # Generate command
+  cmd = [avbtool, 'add_hashtree_footer',
+    '--key', new_key,
+    '--algorithm', new_algorithm,
+    '--partition_name', hashtree_descriptor.get("Partition Name"),
+    '--partition_size', info.get("Image size").removesuffix(" bytes"),
+    '--hash_algorithm', hashtree_descriptor.get("Hash Algorithm"),
+    '--salt', hashtree_descriptor.get("Salt"),
+    '--do_not_generate_fec',
+    '--image', image.name
+  ]
+
+  # Append properties into command
+  props = map(lambda x: x.get("Prop"), filter(lambda x: "Prop" in x,
+      info.get('Descriptors')))
+  for prop_wrapped in props:
+    prop = tuple(prop_wrapped.items())
+    if len(prop) != 1:
+      raise ValueError("The number of property is not 1.")
+    cmd.append('--prop')
+    cmd.append(prop[0][0] + ':' + prop[0][1])
+
+  # Replace Hashtree Footer with new key
+  common.RunAndCheckOutput(cmd)
+
+  # Check root digest is not changed
+  new_info = GetAvbInfo(avbtool, image.name)
+  new_hashtree_descriptor = GetAvbHashtreeDescriptor(info)
+  root_digest = hashtree_descriptor.get("Root Digest")
+  new_root_digest = new_hashtree_descriptor.get("Root Digest")
+  assert root_digest == new_root_digest, \
+      ("Root digest in hashtree descriptor shouldn't be changed. Old: {}, New: "
+       "{}").format(root_digest, new_root_digest)
 
 def ReplaceCerts(data):
   """Replaces all the occurences of X.509 certs with the new ones.
@@ -1102,27 +1206,6 @@ def RewriteAvbProps(misc_info):
       misc_info[args_key] = result
 
 
-def ReplaceGkiSigningKey(misc_info):
-  """Replaces the GKI signing key."""
-
-  key = OPTIONS.gki_signing_key
-  if not key:
-    return
-
-  algorithm = OPTIONS.gki_signing_algorithm
-  if not algorithm:
-    raise ValueError("Missing --gki_signing_algorithm")
-
-  print('Replacing GKI signing key with "%s" (%s)' % (key, algorithm))
-  misc_info["gki_signing_algorithm"] = algorithm
-  misc_info["gki_signing_key_path"] = key
-
-  extra_args = OPTIONS.gki_signing_extra_args
-  if extra_args:
-    print('Setting GKI signing args: "%s"' % (extra_args))
-    misc_info["gki_signing_signature_args"] = extra_args
-
-
 def BuildKeyMap(misc_info, key_mapping_options):
   for s, d in key_mapping_options:
     if s is None:   # -d option
@@ -1137,6 +1220,7 @@ def BuildKeyMap(misc_info, key_mapping_options):
           devkeydir + "/shared":   d + "/shared",
           devkeydir + "/platform": d + "/platform",
           devkeydir + "/networkstack": d + "/networkstack",
+          devkeydir + "/sdk_sandbox": d + "/sdk_sandbox",
       })
     else:
       OPTIONS.key_map[s] = d
@@ -1476,12 +1560,6 @@ def main(argv):
       # 'oem=--signing_helper_with_files=/tmp/avbsigner.sh'.
       partition, extra_args = a.split("=", 1)
       OPTIONS.avb_extra_args[partition] = extra_args
-    elif o == "--gki_signing_key":
-      OPTIONS.gki_signing_key = a
-    elif o == "--gki_signing_algorithm":
-      OPTIONS.gki_signing_algorithm = a
-    elif o == "--gki_signing_extra_args":
-      OPTIONS.gki_signing_extra_args = a
     elif o == "--vendor_otatools":
       OPTIONS.vendor_otatools = a
     elif o == "--vendor_partitions":
@@ -1492,6 +1570,8 @@ def main(argv):
       OPTIONS.override_apk_keys = a
     elif o == "--override_apex_keys":
       OPTIONS.override_apex_keys = a
+    elif o in ("--gki_signing_key",  "--gki_signing_algorithm",  "--gki_signing_extra_args"):
+      print(f"{o} is deprecated and does nothing")
     else:
       return False
     return True
