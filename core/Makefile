@@ -3524,7 +3524,7 @@ define ES_MOD_ORDER
 spmi-pmic-arb qcom_hwspinlock qcom-cpufreq-hw rtc-pm8xxx qnoc-qos gh_msgq debug_symbol smem pinctrl-slpi proxy-consumer nvmem_qcom-spmi-sdam msm_dma_iommu_mapping iommu-logger icc-debug debug-regulator cmd-db
 gh_rm_drv minidump qti-fixed-regulator gdsc-regulator
 qcom-scm qcom_ipc_logging clk-qcom
-pinctrl-msm secure_buffer qcom_aoss qcom_rpmh qcom-pdc clk-dummy
+pinctrl-msm secure_buffer qcom_aoss qcom_rpmh qcom-pdc clk-dummy nvmem_qfprom dwc3-msm
 pinctrl-sm8150 pinctrl-sm6150 qcom_iommu_util socinfo icc-bcm-voter crypto-qti rpmh-regulator clk-rpmh dispcc-sm6150 debugcc-sm6150
 ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs gcc-sm8150 dispcc-sm8250 gcc-sc8180x gcc-sm6150
 ufs_qcom qnoc-sm8150 qnoc-sc8180x-auto qnoc-sm6150 phy-qcom-ufs-qmp-v4 phy-qcom-ufs-qmp-v3-660
@@ -3541,7 +3541,7 @@ endef
 
 # MM Display modules
 define ES_MOD_ORDER_DI
-mdt_loader qcom-apcs-ipc-mailbox silent_boot refgen qseecom_proxy drm_display_helper drm_dp_aux_bus i2c-mux pinctrl-sx150x msm_geni_serial scc-sm8150 scc-sm6150 llcc-qcom mem_buf_dev
+qcom-apcs-ipc-mailbox silent_boot refgen qseecom_proxy drm_display_helper drm_dp_aux_bus i2c-mux pinctrl-sx150x msm_geni_serial scc-sm8150 scc-sm6150 llcc-qcom mem_buf_dev
 silent-mode-hw-monitoring qseecom_dlkm
 i2c-mux-pca954x spidev smcinvoke_dlkm
 hdcp_qseecom_dlkm
@@ -3561,10 +3561,9 @@ endef
 
 # MM RVC modules
 define ES_MOD_ORDER_RV
-qcom_llcc_pmu
-qcom-pmu-lib
-dcvs_fp msm_performance nvmem_qfprom
-qcom-dcvs
+qcom_llcc_pmu dcvs_fp nvmem_qfprom mdt_loader
+qcom-pmu-lib qcom-dcvs
+msm_performance
 msm_kgsl
 
 endef
@@ -3708,6 +3707,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/system/lib64/libcgrouprc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libnetd_client.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libmmosal.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libmmosal_vendor.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libC2D2.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libgsl.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libdmabufheap.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
