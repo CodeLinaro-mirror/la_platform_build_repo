@@ -3768,7 +3768,7 @@ define ES_MOD_ORDER_DI
 mdt_loader qcom-apcs-ipc-mailbox silent_boot refgen qseecom_proxy drm_display_helper drm_dp_aux_bus i2c-mux pinctrl-sx150x msm_geni_serial scc-sm8150 scc-sm6150 llcc-qcom mem_buf_dev
 silent-mode-hw-monitoring qseecom_dlkm
 i2c-mux-pca954x spidev smcinvoke_dlkm
-hdcp_qseecom_dlkm
+hdcp_qseecom_dlkm msm_gpi
 spi-msm-geni i2c-msm-geni
 anx7625
 msm_drm
