@@ -37,16 +37,12 @@ PRODUCT_PACKAGES += \
     Bluetooth \
     BluetoothMidiService \
     BookmarkProvider \
-    BuiltInPrintService \
-    CalendarProvider \
     cameraserver \
     CameraExtensionsProxy \
     CaptivePortalLogin \
     CertInstaller \
     CredentialManager \
-    DocumentsUI \
     DownloadProviderUi \
-    EasterEgg \
     ExternalStorageProvider \
     FusedLocation \
     InputDevices \
@@ -54,25 +50,21 @@ PRODUCT_PACKAGES += \
     librs_jni \
     ManagedProvisioning \
     MtpService \
-    MusicFX \
     PacProcessor \
-    preinstalled-packages-platform-handheld-system.xml \
-    PrintRecommendationService \
-    PrintSpooler \
-    ProxyHandler \
     screenrecord \
     SharedStorageBackup \
-    SimAppDialog \
     Telecom \
     TelephonyProvider \
     Traceur \
     UserDictionaryProvider \
     VpnDialogs \
-    vr \
 
 ifneq ($(TARGET_NO_TELEPHONY), true)
+ifneq ($(TARGET_HAS_QTI_OPTIMIZATIONS), true)
 PRODUCT_PACKAGES += \
-  MmsService \
+  MmsService
+endif #TARGET_HAS_QTI_OPTIMIZATIONS
+PRODUCT_PACKAGES += \
   TeleService
 endif #TARGET_NO_TELEPHONY
 
@@ -80,6 +72,22 @@ ifneq ($(TARGET_HAS_LOW_RAM), true)
 PRODUCT_PACKAGES += \
     SecureElement
 endif
+
+ifneq ($(TARGET_HAS_QTI_OPTIMIZATIONS), true)
+PRODUCT_PACKAGES += \
+    BuiltInPrintService \
+    CalendarProvider \
+    DocumentsUI \
+    EasterEgg \
+    MusicFX \
+    preinstalled-packages-platform-handheld-system.xml \
+    PrintRecommendationService \
+    PrintSpooler \
+    ProxyHandler \
+    PrintSpooler \
+    SimAppDialog \
+    vr
+endif #TARGET_HAS_QTI_OPTIMIZATIONS
 
 PRODUCT_SYSTEM_SERVER_APPS += \
     FusedLocation \

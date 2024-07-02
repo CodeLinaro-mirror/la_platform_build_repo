@@ -23,12 +23,15 @@ TARGET_USES_QCOM_BSP_ATEL := true
 PRODUCT_PACKAGES := \
 
 ifneq ($(TARGET_NO_TELEPHONY), true)
+ifneq ($(TARGET_HAS_QTI_OPTIMIZATIONS), true)
 PRODUCT_PACKAGES += \
     ONS \
-    CarrierDefaultApp \
-    CallLogBackup \
     com.android.cellbroadcast \
     CellBroadcastLegacyApp
+endif #TARGET_HAS_QTI_OPTIMIZATIONS
+PRODUCT_PACKAGES += \
+    CarrierDefaultApp \
+    CallLogBackup
 endif #TARGET_NO_TELEPHONY
 
 PRODUCT_COPY_FILES := \

@@ -19,7 +19,9 @@
 
 # /product packages
 ifneq ($(TARGET_NO_TELEPHONY), true)
+ifneq ($(TARGET_HAS_QTI_OPTIMIZATIONS), true)
 PRODUCT_PACKAGES += \
     ImsServiceEntitlement \
     preinstalled-packages-platform-telephony-product.xml
+endif #TARGET_HAS_QTI_OPTIMIZATIONS
 endif #TARGET_NO_TELEPHONY
