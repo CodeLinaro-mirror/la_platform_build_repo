@@ -3523,7 +3523,7 @@ endef
 
 # MM Display modules
 define ES_MOD_ORDER_DI
-qcom_glink qcom_smd
+qcom_glink qcom_smd msm_gpi
 qcom_glink_smem scc-sm8150 scc-sm6150
 rproc_qcom_common
 qcom-geni-se-ssc
