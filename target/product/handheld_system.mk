@@ -67,11 +67,6 @@ PRODUCT_PACKAGES += \
 endif #TARGET_NO_TELEPHONY
 
 ifneq ($(TARGET_BUILD_2W),true)
-ifneq ($(TARGET_USES_QSPA), true)
-PRODUCT_PACKAGES += \
-    PrintSpooler
-endif
-
 PRODUCT_PACKAGES += \
     BasicDreams \
     BlockedNumberProvider \
@@ -81,6 +76,7 @@ PRODUCT_PACKAGES += \
     ManagedProvisioning \
     EasterEgg \
     PrintRecommendationService \
+    PrintSpooler \
     screenrecord \
     vr
 

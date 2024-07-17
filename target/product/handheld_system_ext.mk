@@ -24,20 +24,12 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/media_system_ext.mk)
 PRODUCT_PACKAGES += \
     AccessibilityMenu \
     Settings \
-    StorageManager
-
-ifneq ($(TARGET_USES_QSPA),true)
-  PRODUCT_PACKAGES += \
-      SystemUI
-
-  ifneq ($(TARGET_BUILD_2W),true)
-    PRODUCT_PACKAGES += \
-        Launcher3QuickStep
-  endif
-endif
+    StorageManager \
+    SystemUI \
 
 ifneq ($(TARGET_BUILD_2W),true)
-  PRODUCT_PACKAGES += \
-      Provision \
-      WallpaperCropper
+PRODUCT_PACKAGES += \
+    Launcher3QuickStep \
+    Provision \
+    WallpaperCropper
 endif
