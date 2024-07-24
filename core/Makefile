@@ -3562,7 +3562,7 @@ endef
 
 # MM Audio modules
 define ES_MOD_ORDER_AU
-qmi_helpers
+qmi_helpers mdt_loader
 smp2p_sleepstate
 qcom_pil_info
 qcom_ramdump
