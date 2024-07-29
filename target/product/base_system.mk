@@ -203,6 +203,7 @@ PRODUCT_PACKAGES += \
     libstdc++ \
     libsysutils \
     libui \
+    libuprobestats_client \
     libusbhost \
     libutils \
     libvintf_jni \
