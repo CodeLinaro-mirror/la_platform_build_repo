@@ -42,26 +42,23 @@ pub mod flag_value_query;
 pub mod mapped_file;
 pub mod package_table_query;
 
-#[cfg(test)]
-mod test_utils;
-
-pub use aconfig_storage_file::{AconfigStorageError, StorageFileType};
+pub use aconfig_storage_file::{AconfigStorageError, FlagValueType, StorageFileType};
 pub use flag_table_query::FlagReadContext;
 pub use package_table_query::PackageReadContext;
 
 use aconfig_storage_file::{read_u32_from_bytes, FILE_VERSION};
-use flag_info_query::find_boolean_flag_attribute;
+use flag_info_query::find_flag_attribute;
 use flag_table_query::find_flag_read_context;
 use flag_value_query::find_boolean_flag_value;
 use package_table_query::find_package_read_context;
 
 use anyhow::anyhow;
-use memmap2::Mmap;
+pub use memmap2::Mmap;
 use std::fs::File;
 use std::io::Read;
 
-/// Storage file location pb file
-pub const STORAGE_LOCATION_FILE: &str = "/metadata/aconfig/boot/available_storage_file_records.pb";
+/// Storage file location
+pub const STORAGE_LOCATION: &str = "/metadata/aconfig";
 
 /// Get read only mapped storage files.
 ///
@@ -78,7 +75,7 @@ pub unsafe fn get_mapped_storage_file(
     container: &str,
     file_type: StorageFileType,
 ) -> Result<Mmap, AconfigStorageError> {
-    unsafe { crate::mapped_file::get_mapped_file(STORAGE_LOCATION_FILE, container, file_type) }
+    unsafe { crate::mapped_file::get_mapped_file(STORAGE_LOCATION, container, file_type) }
 }
 
 /// Get package read context for a specific package.
@@ -149,16 +146,21 @@ pub fn get_storage_file_version(file_path: &str) -> Result<u32, AconfigStorageEr
     read_u32_from_bytes(&buffer, &mut head)
 }
 
-/// Get the boolean flag attribute.
+/// Get the flag attribute.
 ///
 /// \input file: mapped flag info file
-/// \input index: boolean flag index
+/// \input flag_type: flag value type
+/// \input flag_index: flag index
 ///
 /// \return
-/// If the provide offset is valid, it returns the boolean flag attribute bitfiled, otherwise it
+/// If the provide offset is valid, it returns the flag attribute bitfiled, otherwise it
 /// returns the error message.
-pub fn get_boolean_flag_attribute(file: &Mmap, index: u32) -> Result<u8, AconfigStorageError> {
-    find_boolean_flag_attribute(file, index)
+pub fn get_flag_attribute(
+    file: &Mmap,
+    flag_type: FlagValueType,
+    flag_index: u32,
+) -> Result<u8, AconfigStorageError> {
+    find_flag_attribute(file, flag_type, flag_index)
 }
 
 // *************************************** //
@@ -201,7 +203,7 @@ mod ffi {
     }
 
     // Flag info query return for cc interlop
-    pub struct BooleanFlagAttributeQueryCXX {
+    pub struct FlagAttributeQueryCXX {
         pub query_success: bool,
         pub error_message: String,
         pub flag_attribute: u8,
@@ -224,10 +226,11 @@ mod ffi {
 
         pub fn get_boolean_flag_value_cxx(file: &[u8], offset: u32) -> BooleanFlagValueQueryCXX;
 
-        pub fn get_boolean_flag_attribute_cxx(
+        pub fn get_flag_attribute_cxx(
             file: &[u8],
-            offset: u32,
-        ) -> BooleanFlagAttributeQueryCXX;
+            flag_type: u16,
+            flag_index: u32,
+        ) -> FlagAttributeQueryCXX;
     }
 }
 
@@ -312,7 +315,7 @@ impl ffi::BooleanFlagValueQueryCXX {
 }
 
 /// Implement the flag info interlop return type, create from actual flag info api return type
-impl ffi::BooleanFlagAttributeQueryCXX {
+impl ffi::FlagAttributeQueryCXX {
     pub(crate) fn new(info_result: Result<u8, AconfigStorageError>) -> Self {
         match info_result {
             Ok(info) => {
@@ -365,12 +368,18 @@ pub fn get_boolean_flag_value_cxx(file: &[u8], offset: u32) -> ffi::BooleanFlagV
     ffi::BooleanFlagValueQueryCXX::new(find_boolean_flag_value(file, offset))
 }
 
-/// Get boolean flag attribute cc interlop
-pub fn get_boolean_flag_attribute_cxx(
+/// Get flag attribute cc interlop
+pub fn get_flag_attribute_cxx(
     file: &[u8],
-    offset: u32,
-) -> ffi::BooleanFlagAttributeQueryCXX {
-    ffi::BooleanFlagAttributeQueryCXX::new(find_boolean_flag_attribute(file, offset))
+    flag_type: u16,
+    flag_index: u32,
+) -> ffi::FlagAttributeQueryCXX {
+    match FlagValueType::try_from(flag_type) {
+        Ok(value_type) => {
+            ffi::FlagAttributeQueryCXX::new(find_flag_attribute(file, value_type, flag_index))
+        }
+        Err(errmsg) => ffi::FlagAttributeQueryCXX::new(Err(errmsg)),
+    }
 }
 
 /// Get storage version number cc interlop
@@ -382,45 +391,41 @@ pub fn get_storage_file_version_cxx(file_path: &str) -> ffi::VersionNumberQueryC
 mod tests {
     use super::*;
     use crate::mapped_file::get_mapped_file;
-    use crate::test_utils::copy_to_temp_file;
-    use aconfig_storage_file::protos::storage_record_pb::write_proto_to_temp_file;
     use aconfig_storage_file::{FlagInfoBit, StoredFlagType};
-    use tempfile::NamedTempFile;
+    use rand::Rng;
+    use std::fs;
 
-    fn create_test_storage_files() -> [NamedTempFile; 5] {
-        let package_map = copy_to_temp_file("./tests/package.map").unwrap();
-        let flag_map = copy_to_temp_file("./tests/flag.map").unwrap();
-        let flag_val = copy_to_temp_file("./tests/flag.val").unwrap();
-        let flag_info = copy_to_temp_file("./tests/flag.info").unwrap();
+    fn create_test_storage_files() -> String {
+        let mut rng = rand::thread_rng();
+        let number: u32 = rng.gen();
+        let storage_dir = String::from("/tmp/") + &number.to_string();
+        if std::fs::metadata(&storage_dir).is_ok() {
+            fs::remove_dir_all(&storage_dir).unwrap();
+        }
+        let maps_dir = storage_dir.clone() + "/maps";
+        let boot_dir = storage_dir.clone() + "/boot";
+        fs::create_dir(&storage_dir).unwrap();
+        fs::create_dir(&maps_dir).unwrap();
+        fs::create_dir(&boot_dir).unwrap();
 
-        let text_proto = format!(
-            r#"
-files {{
-    version: 0
-    container: "mockup"
-    package_map: "{}"
-    flag_map: "{}"
-    flag_val: "{}"
-    flag_info: "{}"
-    timestamp: 12345
-}}
-"#,
-            package_map.path().display(),
-            flag_map.path().display(),
-            flag_val.path().display(),
-            flag_info.path().display()
-        );
-        let pb_file = write_proto_to_temp_file(&text_proto).unwrap();
-        [package_map, flag_map, flag_val, flag_info, pb_file]
+        let package_map = storage_dir.clone() + "/maps/mockup.package.map";
+        let flag_map = storage_dir.clone() + "/maps/mockup.flag.map";
+        let flag_val = storage_dir.clone() + "/boot/mockup.val";
+        let flag_info = storage_dir.clone() + "/boot/mockup.info";
+        fs::copy("./tests/package.map", &package_map).unwrap();
+        fs::copy("./tests/flag.map", &flag_map).unwrap();
+        fs::copy("./tests/flag.val", &flag_val).unwrap();
+        fs::copy("./tests/flag.info", &flag_info).unwrap();
+
+        return storage_dir;
     }
 
     #[test]
     // this test point locks down flag package read context query
     fn test_package_context_query() {
-        let [_package_map, _flag_map, _flag_val, _flag_info, pb_file] = create_test_storage_files();
-        let pb_file_path = pb_file.path().display().to_string();
+        let storage_dir = create_test_storage_files();
         let package_mapped_file = unsafe {
-            get_mapped_file(&pb_file_path, "mockup", StorageFileType::PackageMap).unwrap()
+            get_mapped_file(&storage_dir, "mockup", StorageFileType::PackageMap).unwrap()
         };
 
         let package_context =
@@ -448,16 +453,15 @@ files {{
     #[test]
     // this test point locks down flag read context query
     fn test_flag_context_query() {
-        let [_package_map, _flag_map, _flag_val, _flag_info, pb_file] = create_test_storage_files();
-        let pb_file_path = pb_file.path().display().to_string();
+        let storage_dir = create_test_storage_files();
         let flag_mapped_file =
-            unsafe { get_mapped_file(&pb_file_path, "mockup", StorageFileType::FlagMap).unwrap() };
+            unsafe { get_mapped_file(&storage_dir, "mockup", StorageFileType::FlagMap).unwrap() };
 
         let baseline = vec![
             (0, "enabled_ro", StoredFlagType::ReadOnlyBoolean, 1u16),
             (0, "enabled_rw", StoredFlagType::ReadWriteBoolean, 2u16),
-            (1, "disabled_ro", StoredFlagType::ReadOnlyBoolean, 0u16),
-            (2, "enabled_ro", StoredFlagType::ReadOnlyBoolean, 1u16),
+            (2, "enabled_rw", StoredFlagType::ReadWriteBoolean, 1u16),
+            (1, "disabled_rw", StoredFlagType::ReadWriteBoolean, 0u16),
             (1, "enabled_fixed_ro", StoredFlagType::FixedReadOnlyBoolean, 1u16),
             (1, "enabled_ro", StoredFlagType::ReadOnlyBoolean, 2u16),
             (2, "enabled_fixed_ro", StoredFlagType::FixedReadOnlyBoolean, 0u16),
@@ -474,10 +478,9 @@ files {{
     #[test]
     // this test point locks down flag value query
     fn test_flag_value_query() {
-        let [_package_map, _flag_map, _flag_val, _flag_info, pb_file] = create_test_storage_files();
-        let pb_file_path = pb_file.path().display().to_string();
+        let storage_dir = create_test_storage_files();
         let flag_value_file =
-            unsafe { get_mapped_file(&pb_file_path, "mockup", StorageFileType::FlagVal).unwrap() };
+            unsafe { get_mapped_file(&storage_dir, "mockup", StorageFileType::FlagVal).unwrap() };
         let baseline: Vec<bool> = vec![false, true, true, false, true, true, true, true];
         for (offset, expected_value) in baseline.into_iter().enumerate() {
             let flag_value = get_boolean_flag_value(&flag_value_file, offset as u32).unwrap();
@@ -488,16 +491,16 @@ files {{
     #[test]
     // this test point locks donw flag info query
     fn test_flag_info_query() {
-        let [_package_map, _flag_map, _flag_val, _flag_info, pb_file] = create_test_storage_files();
-        let pb_file_path = pb_file.path().display().to_string();
+        let storage_dir = create_test_storage_files();
         let flag_info_file =
-            unsafe { get_mapped_file(&pb_file_path, "mockup", StorageFileType::FlagInfo).unwrap() };
-        let is_rw: Vec<bool> = vec![true, false, true, false, false, false, false, false];
+            unsafe { get_mapped_file(&storage_dir, "mockup", StorageFileType::FlagInfo).unwrap() };
+        let is_rw: Vec<bool> = vec![true, false, true, true, false, false, false, true];
         for (offset, expected_value) in is_rw.into_iter().enumerate() {
-            let attribute = get_boolean_flag_attribute(&flag_info_file, offset as u32).unwrap();
-            assert!((attribute & FlagInfoBit::IsSticky as u8) == 0u8);
+            let attribute =
+                get_flag_attribute(&flag_info_file, FlagValueType::Boolean, offset as u32).unwrap();
             assert_eq!((attribute & FlagInfoBit::IsReadWrite as u8) != 0u8, expected_value);
-            assert!((attribute & FlagInfoBit::HasOverride as u8) == 0u8);
+            assert!((attribute & FlagInfoBit::HasServerOverride as u8) == 0u8);
+            assert!((attribute & FlagInfoBit::HasLocalOverride as u8) == 0u8);
         }
     }
 

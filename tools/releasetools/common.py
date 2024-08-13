@@ -490,7 +490,6 @@ class BuildInfo(object):
       return -1
 
     props = [
-        "ro.board.api_level",
         "ro.board.first_api_level",
         "ro.product.first_api_level",
     ]
@@ -1524,7 +1523,7 @@ def GetAvbPartitionsArg(partitions,
       AVB_ARG_NAME_CHAIN_PARTITION: []
   }
 
-  for partition, path in partitions.items():
+  for partition, path in sorted(partitions.items()):
     avb_partition_arg = GetAvbPartitionArg(partition, path, info_dict)
     if not avb_partition_arg:
       continue
@@ -1612,7 +1611,7 @@ def BuildVBMeta(image_path, partitions, name, needed_partitions,
       "avb_custom_vbmeta_images_partition_list", "").strip().split()]
 
   avb_partitions = {}
-  for partition, path in partitions.items():
+  for partition, path in sorted(partitions.items()):
     if partition not in needed_partitions:
       continue
     assert (partition in AVB_PARTITIONS or
@@ -1972,7 +1971,7 @@ def GetBootableImage(name, prebuilt_name, unpack_dir, tree_subdir,
   return None
 
 
-def _BuildVendorBootImage(sourcedir, partition_name, info_dict=None):
+def _BuildVendorBootImage(sourcedir, fs_config_file, partition_name, info_dict=None):
   """Build a vendor boot image from the specified sourcedir.
 
   Take a ramdisk, dtb, and vendor_cmdline from the input (in 'sourcedir'), and
@@ -1988,7 +1987,7 @@ def _BuildVendorBootImage(sourcedir, partition_name, info_dict=None):
   img = tempfile.NamedTemporaryFile()
 
   ramdisk_format = GetRamdiskFormat(info_dict)
-  ramdisk_img = _MakeRamdisk(sourcedir, ramdisk_format=ramdisk_format)
+  ramdisk_img = _MakeRamdisk(sourcedir, fs_config_file=fs_config_file, ramdisk_format=ramdisk_format)
 
   # use MKBOOTIMG from environ, or "mkbootimg" if empty or not set
   mkbootimg = os.getenv('MKBOOTIMG') or "mkbootimg"
@@ -2102,8 +2101,9 @@ def GetVendorBootImage(name, prebuilt_name, unpack_dir, tree_subdir,
   if info_dict is None:
     info_dict = OPTIONS.info_dict
 
+  fs_config = "META/" + tree_subdir.lower() + "_filesystem_config.txt"
   data = _BuildVendorBootImage(
-      os.path.join(unpack_dir, tree_subdir), "vendor_boot", info_dict)
+      os.path.join(unpack_dir, tree_subdir), os.path.join(unpack_dir, fs_config), "vendor_boot", info_dict)
   if data:
     return File(name, data)
   return None
@@ -2127,7 +2127,7 @@ def GetVendorKernelBootImage(name, prebuilt_name, unpack_dir, tree_subdir,
     info_dict = OPTIONS.info_dict
 
   data = _BuildVendorBootImage(
-      os.path.join(unpack_dir, tree_subdir), "vendor_kernel_boot", info_dict)
+      os.path.join(unpack_dir, tree_subdir), None, "vendor_kernel_boot", info_dict)
   if data:
     return File(name, data)
   return None
