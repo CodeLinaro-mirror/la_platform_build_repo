@@ -3506,7 +3506,7 @@ define ES_MOD_ORDER
 spmi-pmic-arb qcom_hwspinlock qcom-cpufreq-hw rtc-pm8xxx qnoc-qos gh_msgq debug_symbol smem pinctrl-slpi proxy-consumer nvmem_qcom-spmi-sdam msm_dma_iommu_mapping iommu-logger icc-debug debug-regulator cmd-db
 gh_rm_drv minidump qti-fixed-regulator gdsc-regulator
 qcom-scm qcom_ipc_logging clk-qcom
-pinctrl-msm secure_buffer qcom_aoss qcom_rpmh qcom-pdc clk-dummy nvmem_qfprom dwc3-msm gpucc-sm6150 camcc-sm8150 camcc-sc8180x camcc-sm6150
+pinctrl-msm secure_buffer qcom_aoss qcom_rpmh qcom-pdc clk-dummy nvmem_qfprom dwc3-msm gpucc-sm8150 gpucc-sm6150 camcc-sm8150 camcc-sc8180x camcc-sm6150
 pinctrl-sm8150 pinctrl-sm6150 qcom_iommu_util socinfo icc-bcm-voter crypto-qti rpmh-regulator clk-rpmh dispcc-sm6150 debugcc-sm6150 mem_buf_dev
 ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs gcc-sm8150 dispcc-sm8250 gcc-sc8180x gcc-sm6150 qcom_dma_heaps
 ufs_qcom qnoc-sm8150 qnoc-sc8180x-auto qnoc-sm6150 phy-qcom-ufs-qmp-v4 phy-qcom-ufs-qmp-v3-660
@@ -3539,7 +3539,6 @@ endef
 
 # MM AIS modules
 define ES_MOD_ORDER_AIS
-gpucc-sm8150
 ais
 
 endef
@@ -3561,19 +3560,11 @@ endef
 
 # MM Audio modules
 define ES_MOD_ORDER_AU
-qmi_helpers mdt_loader
-smp2p_sleepstate
-qcom_pil_info
-qcom_ramdump
-qcom_glink qcom_smd smp2p pdr_interface
-qcom_glink_smem qcom_glink_spss
-rproc_qcom_common
-qcom_sysmon
-qcom_q6v5
-qrtr-smd qcom_q6v5_pas qcom_spss
-snd_event_dlkm_legacy q6_notifier_dlkm_legacy stub_dlkm_legacy
-apr_dlkm
-adsp_loader_dlkm_legacy q6_dlkm_legacy
+smp2p stub_dlkm_legacy snd_event_dlkm_legacy qcom_smd qcom_glink qcom_ramdump qcom_pil_info smp2p_sleepstate qmi_helpers mdt_loader
+qrtr-smd qcom_glink_spss rproc_qcom_common qcom_glink_smem pdr_interface
+q6_notifier_dlkm_legacy qcom_sysmon
+qcom_q6v5 qcom_spss apr_dlkm
+adsp_loader_dlkm_legacy q6_dlkm_legacy qcom_q6v5_pas
 platform_dlkm
 native_dlkm machine_dlkm_legacy
 
