@@ -3810,7 +3810,7 @@ endef
 define ES_MOD_ORDER_RV
 qcom_llcc_pmu
 qcom-pmu-lib
-dcvs_fp msm_performance nvmem_qfprom
+dcvs_fp msm_performance nvmem_qfprom mdt_loader
 qcom-dcvs
 msm_kgsl
 
