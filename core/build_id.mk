@@ -18,4 +18,9 @@
 # (like "CRB01").  It must be a single word, and is
 # capitalized by convention.
 
-BUILD_ID=XKQ1.240828.002
+BUILD_ID=XKQ1.240829.001
+
+
+
+# TEST -- DOES THIS FILE GET MERGE-UPDATED OR SNAP-OVERWRITTEN
+BUILD_ID:=${BUILD_ID}-ZP1A.240726.001
