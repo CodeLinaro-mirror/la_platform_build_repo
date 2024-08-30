@@ -3441,9 +3441,9 @@ endef
 # Default modules - first set; Last set auto-generated modules_end.order
 define ES_MOD_ORDER_GEN4
 icc-debug qnoc-qos nvmem_qcom-spmi-sdam qcom_hwspinlock qcom-scm qcom-cpufreq-hw reboot-mode rtc-pm8xxx spmi-pmic-arb msm_dma_iommu_mapping debug-regulator proxy-consumer qcom_cpu_vendor_hooks smem cmd-db qcom_ipc_logging qti-regmap-debugfs regmap-spmi qcom-reboot-reason pcs_xpcs
-qcom_rpmh qrtr minidump llcc-qcom socinfo secure_buffer qcom_aoss qcom-pon qcom-spmi-pmic gdsc-regulator pinctrl-msm qcom-pdc crypto-qti-tz soc_sleep_stats
+qcom_rpmh qrtr minidump llcc-qcom socinfo secure_buffer qcom_aoss qcom-pon qcom-spmi-pmic gdsc-regulator pinctrl-msm qcom-pdc crypto-qti-tz soc_sleep_stats pinctrl-spmi-gpio gpio-pca953x
 icc-bcm-voter msm_qmp clk-rpmh clk-qcom   mem_buf pinctrl-lemans qcom_iommu_util mem_buf_dev qcom_wdt_core qcom-dload-mode crypto-qti-common phy-qcom-ufs boot_stats
-ufshcd-crypto-qti rpmh-regulator icc-rpmh qcom_dma_heaps phy-qcom-ufs dispcc1-lemans dispcc0-lemans camcc-lemans gcc-lemans    qcom_soc_wdt arm_smmu clk-dummy phy-qcom-ufs-qmp-v4-waipio
+ufshcd-crypto-qti rpmh-regulator icc-rpmh qcom_dma_heaps phy-qcom-ufs dispcc1-lemans dispcc0-lemans camcc-lemans gcc-lemans qcom_soc_wdt arm_smmu clk-dummy phy-qcom-ufs-qmp-v4-waipio
 ufs_qcom qnoc-lemans
 
 endef
@@ -3491,8 +3491,6 @@ endef
 
 # MM QCXServer modules
 define ES_MOD_ORDER_QCX
-pinctrl-spmi-gpio
-gpio-pca953x
 camera
 
 endef
