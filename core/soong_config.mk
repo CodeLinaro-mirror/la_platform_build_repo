@@ -364,6 +364,8 @@ $(call add_json_bool, BoardUseVbmetaDigestInFingerprint, $(filter true,$(BOARD_U
 
 $(call add_json_list, OemProperties, $(PRODUCT_OEM_PROPERTIES))
 
+$(call add_json_list, SystemPropFiles, $(TARGET_SYSTEM_PROP))
+
 $(call add_json_bool, DisableSoongConfigTrace, $(filter true,$(DISABLE_SOONG_CONFIG_TRACE)))
 
 # Do not set ArtTargetIncludeDebugBuild into any value if PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD is not set,
@@ -371,6 +373,11 @@ $(call add_json_bool, DisableSoongConfigTrace, $(filter true,$(DISABLE_SOONG_CON
 ifneq ($(PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD),)
 $(call add_json_bool, ArtTargetIncludeDebugBuild, $(PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD))
 endif
+
+_config_enable_uffd_gc := \
+  $(firstword $(OVERRIDE_ENABLE_UFFD_GC) $(PRODUCT_ENABLE_UFFD_GC) default)
+$(call add_json_str, EnableUffdGc, $(_config_enable_uffd_gc))
+_config_enable_uffd_gc :=
 
 $(call json_end)
 
