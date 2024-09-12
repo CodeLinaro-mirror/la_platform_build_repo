@@ -3764,6 +3764,7 @@ ES_DEFAULT_LKMS := \
    machine_dlkm \
    coupled_ssr_dlkm \
    pdr_interface \
+   boot_marker
 
 
 # Default modules - first set; Last set auto-generated modules_end.order
