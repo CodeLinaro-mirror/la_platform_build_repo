@@ -1,5 +1,4 @@
-#
-# Copyright (C) 2015 The Android Open Source Project
+# Copyright (C) 2024 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,12 +13,9 @@
 # limitations under the License.
 #
 
-# Provides dependencies necessary for verified boot
+# Window Extensions
+$(call inherit-product, $(SRC_TARGET_DIR)/product/window_extensions.mk)
 
-PRODUCT_SUPPORTS_VBOOT := true
-
-# The dev key is used to sign boot and recovery images.
-# We expect this file to exist with the suffixes ".vbprivk" and ".vbpupk".
-# TODO: find a proper location for this
-PRODUCT_VBOOT_SIGNING_KEY := external/vboot_reference/tests/devkeys/kernel_data_key
-PRODUCT_VBOOT_SIGNING_SUBKEY := external/vboot_reference/tests/devkeys/kernel_subkey
+# Enable Settings 2-pane optimization for large-screen
+PRODUCT_SYSTEM_PROPERTIES += \
+    persist.settings.large_screen_opt.enabled=true
