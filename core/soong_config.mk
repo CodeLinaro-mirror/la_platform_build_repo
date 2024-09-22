@@ -368,6 +368,7 @@ $(call add_json_list, OemProperties, $(PRODUCT_OEM_PROPERTIES))
 $(call add_json_list, SystemPropFiles, $(TARGET_SYSTEM_PROP))
 $(call add_json_list, SystemExtPropFiles, $(TARGET_SYSTEM_EXT_PROP))
 $(call add_json_list, ProductPropFiles, $(TARGET_PRODUCT_PROP))
+$(call add_json_list, OdmPropFiles, $(TARGET_ODM_PROP))
 
 $(call add_json_bool, DisableSoongConfigTrace, $(filter true,$(DISABLE_SOONG_CONFIG_TRACE)))
 
@@ -381,11 +382,6 @@ _config_enable_uffd_gc := \
   $(firstword $(OVERRIDE_ENABLE_UFFD_GC) $(PRODUCT_ENABLE_UFFD_GC) default)
 $(call add_json_str, EnableUffdGc, $(_config_enable_uffd_gc))
 _config_enable_uffd_gc :=
-
-$(call add_json_list, DeviceFrameworkCompatibilityMatrixFile, $(DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE))
-$(call add_json_list, DeviceProductCompatibilityMatrixFile, $(DEVICE_PRODUCT_COMPATIBILITY_MATRIX_FILE))
-$(call add_json_list, BoardAvbSystemAddHashtreeFooterArgs, $(BOARD_AVB_SYSTEM_ADD_HASHTREE_FOOTER_ARGS))
-$(call add_json_bool, BoardAvbEnable, $(filter true,$(BOARD_AVB_ENABLE)))
 
 $(call json_end)
 
