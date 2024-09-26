@@ -846,6 +846,11 @@ function lunch()
     if [ -e device/qcom/$TARGET_BOARD_PLATFORM$TARGET_BOARD_SUFFIX$TARGET_BOARD_DERIVATIVE_SUFFIX/patch_apply.sh ]; then
             if [ "$CUSTOM_PATCHES_MODE" == "apply" ]; then
                     $(gettop)/device/qcom/$TARGET_BOARD_PLATFORM$TARGET_BOARD_SUFFIX$TARGET_BOARD_DERIVATIVE_SUFFIX/patch_apply.sh apply
+                    if [ $? -ne 0 ]
+                    then
+                        echo "Custom patching script failed. Please check the errors above."
+                        return 1
+                    fi
                     export RECOMPILE_KERNEL=1
             fi
     fi
