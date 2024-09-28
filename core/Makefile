@@ -3225,6 +3225,9 @@ ifdef BOARD_USES_SYSTEM_DLKMIMAGE
   ALL_DEFAULT_INSTALLED_MODULES += $(_system_dlkm_lib_modules_symlink)
 endif
 
+# -----------------------------------------------------------------
+ifdef BUILDING_SYSTEM_IMAGE
+
 FULL_SYSTEMIMAGE_DEPS := $(INTERNAL_SYSTEMIMAGE_FILES) $(INTERNAL_USERIMAGES_DEPS)
 
 # ASAN libraries in the system image - add dependency.
@@ -3261,9 +3264,6 @@ $(1): $$(HOST_OUT_EXECUTABLES)/extra_install_zips_file_list $(foreach p,$(call r
 	$$(foreach f,$(subst $(2)/,,$(filter $(2)/%,$(3))),echo "$$(f)" >> $$@$$(newline))
 	$$(HOST_OUT_EXECUTABLES)/extra_install_zips_file_list $(2) $(call relevant-extra-install-zips,$(filter $(2)/%,$(3))) >> $$@
 endef
-
-# -----------------------------------------------------------------
-ifdef BUILDING_SYSTEM_IMAGE
 
 # Install system linker configuration
 # Collect all available stub libraries installed in system and install with predefined linker configuration
@@ -3771,17 +3771,17 @@ define ES_MOD_ORDER
 spmi-pmic-arb qcom_hwspinlock qcom-cpufreq-hw rtc-pm8xxx qnoc-qos gh_msgq debug_symbol smem pinctrl-slpi proxy-consumer nvmem_qcom-spmi-sdam msm_dma_iommu_mapping iommu-logger icc-debug debug-regulator cmd-db
 gh_rm_drv minidump qti-fixed-regulator gdsc-regulator
 qcom-scm qcom_ipc_logging clk-qcom
-pinctrl-msm secure_buffer qcom_aoss qcom_rpmh qcom-pdc clk-dummy nvmem_qfprom dwc3-msm
-pinctrl-sm8150 pinctrl-sm6150 qcom_iommu_util socinfo icc-bcm-voter crypto-qti rpmh-regulator clk-rpmh dispcc-sm6150 debugcc-sm6150
-ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs gcc-sm8150 dispcc-sm8250 gcc-sc8180x gcc-sm6150
+pinctrl-msm secure_buffer qcom_aoss qcom_rpmh qcom-pdc clk-dummy nvmem_qfprom dwc3-msm gpucc-sm6150 gpucc-sm8150 camcc-sm8150 camcc-sc8180x camcc-sm6150
+pinctrl-sm8150 pinctrl-sm6150 qcom_iommu_util socinfo icc-bcm-voter crypto-qti rpmh-regulator clk-rpmh dispcc-sm6150 debugcc-sm6150 mem_buf_dev
+ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs gcc-sm8150 dispcc-sm8250 gcc-sc8180x gcc-sm6150 qcom_dma_heaps
 ufs_qcom qnoc-sm8150 qnoc-sc8180x-auto qnoc-sm6150 phy-qcom-ufs-qmp-v4 phy-qcom-ufs-qmp-v3-660
 
 endef
 
 # Default modules - second set
 define ES_MOD_ORDER_2
-reboot-mode qcom_cpu_vendor_hooks llcc-qcom mem_buf_dev qcom_wdt_core phy-generic phy-msm-ssusb-qmp usb_f_diag sdhci-msm-scaling
-usb_f_cdev usb_f_qdss qcom-pon qcom_dma_heaps qcom-spmi-pmic msm_gpi mem_buf_msgq qrtr msm_qmp qcom-rpmh-regulator cqhci
+reboot-mode qcom_cpu_vendor_hooks llcc-qcom qcom_wdt_core phy-generic phy-msm-ssusb-qmp usb_f_diag sdhci-msm-scaling
+usb_f_cdev usb_f_qdss qcom-pon qcom-spmi-pmic msm_gpi mem_buf_msgq qrtr msm_qmp qcom-rpmh-regulator cqhci
 sdhci-msm qcom-dload-mode pinctrl-sdmshrike mem_buf qcom_soc_wdt
 
 endef
@@ -3800,8 +3800,6 @@ endef
 
 # MM AIS modules
 define ES_MOD_ORDER_AIS
-camcc-sm8150 camcc-sc8180x camcc-sm6150
-gpucc-sm8150 gpucc-sm6150
 ais
 
 endef
@@ -3810,7 +3808,7 @@ endef
 define ES_MOD_ORDER_RV
 qcom_llcc_pmu
 qcom-pmu-lib
-dcvs_fp msm_performance nvmem_qfprom
+dcvs_fp msm_performance nvmem_qfprom mdt_loader
 qcom-dcvs
 msm_kgsl
 

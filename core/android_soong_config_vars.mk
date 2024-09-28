@@ -34,10 +34,7 @@ $(call add_soong_config_var,ANDROID,BOARD_SUPPORTS_RAMDISK_EARLY_INIT)
 $(call add_soong_config_var,ANDROID,TARGET_ANDROID_BELOW_V15)
 
 $(call add_soong_config_var,ANDROID,IS_ANDROID_VER_U)
-
-ifneq (,$(filter VanillaIceCream V 35, $(PLATFORM_VNDK_VERSION)))
 $(call soong_config_set,ANDROID,IS_ANDROID_VER_U,false)
-endif
 
 $(call add_soong_config_var,ANDROID,PLATFORM_SEPOLICY_COMPAT_VERSIONS)
 $(call add_soong_config_var,ANDROID,PRODUCT_INSTALL_DEBUG_POLICY_TO_SYSTEM_EXT)
