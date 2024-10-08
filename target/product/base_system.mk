@@ -114,7 +114,6 @@ PRODUCT_PACKAGES += \
     ime \
     ims-common \
     incident \
-    incidentd \
     incident_helper \
     incident-helper-cmd \
     init.environ.rc \
@@ -294,7 +293,8 @@ ifneq ($(TARGET_HAS_QTI_OPTIMIZATIONS), true)
 PRODUCT_PACKAGES += \
     com.android.neuralnetworks \
     CtsShimPrebuilt \
-    CtsShimPrivPrebuilt
+    CtsShimPrivPrebuilt \
+    incidentd
 endif #TARGET_HAS_QTI_OPTIMIZATIONS
 
 ifneq ($(TARGET_HAS_LOW_RAM), true)
