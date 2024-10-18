@@ -3562,9 +3562,12 @@ endef
 define ES_MOD_ORDER_AU
 smp2p stub_dlkm_legacy snd_event_dlkm_legacy qcom_smd qcom_glink qcom_ramdump qcom_pil_info smp2p_sleepstate qmi_helpers mdt_loader
 qrtr-smd qcom_glink_spss rproc_qcom_common qcom_glink_smem pdr_interface
-q6_notifier_dlkm_legacy qcom_sysmon
-qcom_q6v5 qcom_spss apr_dlkm
-adsp_loader_dlkm_legacy q6_dlkm_legacy qcom_q6v5_pas
+qcom_sysmon
+qcom_q6v5 qcom_spss
+qcom_q6v5_pas
+q6_notifier_dlkm_legacy
+apr_dlkm
+adsp_loader_dlkm_legacy q6_dlkm_legacy
 platform_dlkm
 native_dlkm machine_dlkm_legacy
 
