@@ -3637,6 +3637,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/system/lib64/libbase.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libbinder.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/apex/com.android.runtime/lib64/bionic/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.runtime/lib64/bionic/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libhidlbase.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libhidltransport.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libhwbinder.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
@@ -3696,12 +3697,16 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/apex/com.android.i18n/lib64/libandroidicu.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/apex/com.android.i18n/lib64/libicuuc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/apex/com.android.i18n/lib64/libicui18n.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libandroidicu.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libicuuc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libicui18n.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libjson.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_cci.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_common_so.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_csi.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_encdec.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/apex/com.android.runtime/lib64/bionic/libdl_android.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.runtime/lib64/bionic/libdl_android.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libais* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libc2d30_bltlib.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
