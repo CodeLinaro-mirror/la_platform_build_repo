@@ -204,7 +204,6 @@ PRODUCT_PACKAGES += \
     libstdc++ \
     libsysutils \
     libui \
-    libuprobestats_client \
     libusbhost \
     libutils \
     libvintf_jni \
@@ -317,6 +316,7 @@ ifeq ($(RELEASE_UPROBESTATS_MODULE),true)
 else
     PRODUCT_PACKAGES += \
         uprobestats \
+        libuprobestats_client \
 
 endif
 
