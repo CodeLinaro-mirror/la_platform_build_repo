@@ -10,10 +10,10 @@ cc_test {
         "libbase",
     ],
     data: [
-        "package.map",
-        "flag.map",
-        "flag.val",
-        "flag.info",
+        "data/v1/package.map",
+        "data/v1/flag.map",
+        "data/v1/flag.val",
+        "data/v1/flag.info",
     ],
     test_suites: [
         "device-tests",
@@ -30,16 +30,18 @@ android_test {
     static_libs: [
         "androidx.test.runner",
         "junit",
+        "aconfig_storage_file_java",
     ],
     test_config: "AndroidStorageJaveTest.xml",
-    certificate: "platform",
+    sdk_version: "test_current",
     data: [
-        "package.map",
-        "flag.map",
-        "flag.val",
-        "flag.info",
+        "data/v1/package.map",
+        "data/v1/flag.map",
+        "data/v1/flag.val",
+        "data/v1/flag.info",
     ],
     test_suites: [
         "general-tests",
     ],
+    jarjar_rules: "jarjar.txt",
 }
