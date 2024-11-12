@@ -1,25 +1,59 @@
 package {package_name};
+{{ -if not is_test_mode }}
 {{ if not library_exported- }}
 // TODO(b/303773055): Remove the annotation after access issue is resolved.
 import android.compat.annotation.UnsupportedAppUsage;
 {{ -endif }}
-{{ -if not is_test_mode }}
+
 {{ -if runtime_lookup_required }}
 import android.provider.DeviceConfig;
 import android.provider.DeviceConfig.Properties;
-{{ endif }}
+
+{{ -if not library_exported }}
+import android.aconfig.storage.StorageInternalReader;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+{{ -endif }}
+
+{{ -endif }}
 /** @hide */
 public final class FeatureFlagsImpl implements FeatureFlags \{
 {{ -if runtime_lookup_required }}
+{{ -if not library_exported }}
+    private static final boolean isReadFromNew = Files.exists(Paths.get("/metadata/aconfig/boot/enable_only_new_storage"));
+    private static volatile boolean isCached = false;
+{{ -endif }}
 {{ -for namespace_with_flags in namespace_flags }}
-    private static boolean {namespace_with_flags.namespace}_is_cached = false;
+    private static volatile boolean {namespace_with_flags.namespace}_is_cached = false;
 {{ -endfor- }}
 
 {{ for flag in flag_elements }}
-{{- if flag.is_read_write }}
+{{ -if flag.is_read_write }}
     private static boolean {flag.method_name} = {flag.default_value};
 {{ -endif }}
 {{ -endfor }}
+
+{{ if not library_exported }}
+    private void init() \{
+        StorageInternalReader reader = null;
+        boolean foundPackage = true;
+        try \{
+            reader = new StorageInternalReader("{container}", "{package_name}");
+        } catch (Exception e) \{
+            foundPackage = false;
+        }
+        {{ for namespace_with_flags in namespace_flags }}
+        {{ -for flag in namespace_with_flags.flags }}
+        {{ if flag.is_read_write }}
+            {flag.method_name} = foundPackage ? reader.getBooleanFlagValue({flag.flag_offset}) : {flag.default_value};
+        {{ endif }}
+        {{ -endfor }}
+        {{ -endfor }}
+        isCached = true;
+    }
+{{ endif }}
+
+
 {{ for namespace_with_flags in namespace_flags }}
     private void load_overrides_{namespace_with_flags.namespace}() \{
         try \{
@@ -27,7 +61,7 @@ public final class FeatureFlagsImpl implements FeatureFlags \{
 {{ -for flag in namespace_with_flags.flags }}
 {{ -if flag.is_read_write }}
             {flag.method_name} =
-                properties.getBoolean("{flag.device_config_flag}", {flag.default_value});
+                properties.getBoolean(Flags.FLAG_{flag.flag_name_constant_suffix}, {flag.default_value});
 {{ -endif }}
 {{ -endfor }}
         } catch (NullPointerException e) \{
@@ -43,6 +77,7 @@ public final class FeatureFlagsImpl implements FeatureFlags \{
         {namespace_with_flags.namespace}_is_cached = true;
     }
 {{ endfor- }}
+
 {{ -endif }}{#- end of runtime_lookup_required #}
 {{ -for flag in flag_elements }}
     @Override
@@ -51,26 +86,37 @@ public final class FeatureFlagsImpl implements FeatureFlags \{
     @UnsupportedAppUsage
 {{ -endif }}
     public boolean {flag.method_name}() \{
+{{ -if not library_exported }}
 {{ -if flag.is_read_write }}
-        if (!{flag.device_config_namespace}_is_cached) \{
-            load_overrides_{flag.device_config_namespace}();
+        if (isReadFromNew) \{
+            if (!isCached) \{
+                init();
+            }
+        } else \{
+            if (!{flag.device_config_namespace}_is_cached) \{
+                load_overrides_{flag.device_config_namespace}();
+            }
         }
         return {flag.method_name};
 {{ -else }}
         return {flag.default_value};
 {{ -endif }}
+{{ else }}
+        if (!{flag.device_config_namespace}_is_cached) \{
+            load_overrides_{flag.device_config_namespace}();
+        }
+        return {flag.method_name};
+{{ -endif }}
     }
 {{ endfor }}
 }
-{{ else }}
-{#- Generate only stub if in test mode #}
+{{ else }} {#- Generate only stub if in test mode #}
 /** @hide */
 public final class FeatureFlagsImpl implements FeatureFlags \{
 {{ for flag in flag_elements }}
     @Override
 {{ -if not library_exported }}
     @com.android.aconfig.annotations.AconfigFlagAccessor
-    @UnsupportedAppUsage
 {{ -endif }}
     public boolean {flag.method_name}() \{
         throw new UnsupportedOperationException(

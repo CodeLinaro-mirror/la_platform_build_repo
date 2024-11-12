@@ -19,7 +19,7 @@ source $(pwd)/../../shell_utils.sh
 require_top
 
 # Ensure cogsetup (out/ will be symlink outside the repo)
-. ${TOP}/build/make/cogsetup.sh
+setup_cog_env_if_needed
 
 case $(uname -s) in
     Linux)
@@ -32,6 +32,7 @@ case $(uname -s) in
       ;;
 esac
 
+export BUILD_ENV_SEQUENCE_NUMBER=13
 export ANDROID_BUILD_TOP=$TOP
 export OUT_DIR=${OUT_DIR}
 exec "${PREBUILTS_GO_ROOT}/bin/go" "run" "ide_query" "$@"

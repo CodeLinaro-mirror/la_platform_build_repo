@@ -30,9 +30,11 @@ fn read_partition_paths() -> Vec<PathBuf> {
         .collect()
 }
 
-/// Determine all paths that contain an aconfig protobuf file.
+/// Determines all paths that contain an aconfig protobuf file,
+/// filtering out nonexistent partition protobuf files.
 pub fn parsed_flags_proto_paths() -> Result<Vec<PathBuf>> {
-    let mut result: Vec<PathBuf> = read_partition_paths();
+    let mut result: Vec<PathBuf> =
+        read_partition_paths().into_iter().filter(|s| s.exists()).collect();
 
     for dir in fs::read_dir("/apex")? {
         let dir = dir?;
@@ -60,13 +62,12 @@ mod tests {
 
     #[test]
     fn test_read_partition_paths() {
-        assert_eq!(read_partition_paths().len(), 4);
+        assert_eq!(read_partition_paths().len(), 3);
 
         assert_eq!(
             read_partition_paths(),
             vec![
                 PathBuf::from("/system/etc/aconfig_flags.pb"),
-                PathBuf::from("/system_ext/etc/aconfig_flags.pb"),
                 PathBuf::from("/product/etc/aconfig_flags.pb"),
                 PathBuf::from("/vendor/etc/aconfig_flags.pb")
             ]

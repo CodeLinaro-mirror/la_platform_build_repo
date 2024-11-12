@@ -16,7 +16,7 @@
 
 //! flag value update module defines the flag value file write to mapped bytes
 
-use aconfig_storage_file::{AconfigStorageError, FlagValueHeader, FILE_VERSION};
+use aconfig_storage_file::{AconfigStorageError, FlagValueHeader, MAX_SUPPORTED_FILE_VERSION};
 use anyhow::anyhow;
 
 /// Set flag value
@@ -24,13 +24,13 @@ pub fn update_boolean_flag_value(
     buf: &mut [u8],
     flag_index: u32,
     flag_value: bool,
-) -> Result<(), AconfigStorageError> {
+) -> Result<usize, AconfigStorageError> {
     let interpreted_header = FlagValueHeader::from_bytes(buf)?;
-    if interpreted_header.version > FILE_VERSION {
+    if interpreted_header.version > MAX_SUPPORTED_FILE_VERSION {
         return Err(AconfigStorageError::HigherStorageFileVersion(anyhow!(
             "Cannot write to storage file with a higher version of {} with lib version {}",
             interpreted_header.version,
-            FILE_VERSION
+            MAX_SUPPORTED_FILE_VERSION
         )));
     }
 
@@ -43,7 +43,7 @@ pub fn update_boolean_flag_value(
     }
 
     buf[head] = u8::from(flag_value).to_le_bytes()[0];
-    Ok(())
+    Ok(head)
 }
 
 #[cfg(test)]
@@ -84,15 +84,15 @@ mod tests {
     // this test point locks down query error when file has a higher version
     fn test_higher_version_storage_file() {
         let mut value_list = create_test_flag_value_list();
-        value_list.header.version = FILE_VERSION + 1;
+        value_list.header.version = MAX_SUPPORTED_FILE_VERSION + 1;
         let mut flag_value = value_list.into_bytes();
         let error = update_boolean_flag_value(&mut flag_value[..], 4, true).unwrap_err();
         assert_eq!(
             format!("{:?}", error),
             format!(
                 "HigherStorageFileVersion(Cannot write to storage file with a higher version of {} with lib version {})",
-                FILE_VERSION + 1,
-                FILE_VERSION
+                MAX_SUPPORTED_FILE_VERSION + 1,
+                MAX_SUPPORTED_FILE_VERSION
             )
         );
     }
