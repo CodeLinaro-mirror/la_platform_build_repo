@@ -17,7 +17,6 @@
 # Base modules and settings for the system partition.
 PRODUCT_PACKAGES += \
     abx \
-    aconfigd \
     aconfigd-system \
     adbd_system_api \
     aflags \
@@ -250,6 +249,7 @@ PRODUCT_PACKAGES += \
     pintool \
     platform.xml \
     pm \
+    prefetch \
     preinstalled-packages-asl-files.xml \
     preinstalled-packages-platform.xml \
     preinstalled-packages-strict-signature.xml \
@@ -354,8 +354,7 @@ endif
 # Check if the build supports Profiling module
 ifeq ($(RELEASE_PACKAGE_PROFILING_MODULE),true)
     PRODUCT_PACKAGES += \
-       com.android.profiling \
-       trace_redactor
+       com.android.profiling
 endif
 
 ifeq ($(RELEASE_USE_WEBVIEW_BOOTSTRAP_MODULE),true)
