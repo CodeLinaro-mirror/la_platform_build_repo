@@ -502,8 +502,8 @@ function lunch()
     fi
 
     if [ ! -n "$release" ]; then
-        echo "Release not specified, defaulting to 'trunk' build"
-        release=trunk
+        echo "Release not specified, defaulting to 'bp2a' build"
+        release=bp2a
     fi
 
     if [[ -z "$product" ]] || [[ -z "$release" ]] || [[ -z "$variant" ]]
