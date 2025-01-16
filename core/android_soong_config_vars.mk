@@ -130,10 +130,6 @@ ifdef TARGET_BOOTS_16K
 $(call soong_config_set_bool,ANDROID,target_boots_16k,$(filter true,$(TARGET_BOOTS_16K)))
 endif
 
-ifdef PRODUCT_MEMCG_V2_FORCE_ENABLED
-$(call add_soong_config_var_value,ANDROID,memcg_v2_force_enabled,$(PRODUCT_MEMCG_V2_FORCE_ENABLED))
-endif
-
 ifdef PRODUCT_CGROUP_V2_SYS_APP_ISOLATION_ENABLED
 $(call add_soong_config_var_value,ANDROID,cgroup_v2_sys_app_isolation,$(PRODUCT_CGROUP_V2_SYS_APP_ISOLATION_ENABLED))
 else
@@ -199,6 +195,14 @@ $(call add_soong_config_var_value,ANDROID,include_nonpublic_framework_api,false)
 else
 $(call add_soong_config_var_value,ANDROID,include_nonpublic_framework_api,true)
 endif
+
+# Add nfc build flag to soong
+ifneq ($(RELEASE_PACKAGE_NFC_STACK),NfcNci)
+  $(call soong_config_set,bootclasspath,nfc_apex_bootclasspath_fragment,true)
+endif
+
+# Add uwb build flag to soong
+$(call soong_config_set,bootclasspath,release_ranging_stack,$(RELEASE_RANGING_STACK))
 
 # Add crashrecovery build flag to soong
 $(call soong_config_set,ANDROID,release_crashrecovery_module,$(RELEASE_CRASHRECOVERY_MODULE))
