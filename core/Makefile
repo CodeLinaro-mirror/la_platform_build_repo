@@ -3522,10 +3522,10 @@ ES_DEFAULT_LKMS := \
 
 # Default modules - first set; Last set auto-generated modules_end.order
 define ES_MOD_ORDER
-spmi-pmic-arb qcom_hwspinlock qcom-cpufreq-hw rtc-pm8xxx qnoc-qos gh_msgq debug_symbol smem pinctrl-slpi proxy-consumer nvmem_qcom-spmi-sdam msm_dma_iommu_mapping iommu-logger icc-debug debug-regulator cmd-db
-gh_rm_drv minidump qti-fixed-regulator gdsc-regulator
+bootmarker_proxy spmi-pmic-arb qcom_hwspinlock qcom-cpufreq-hw qcom_cpu_vendor_hooks rtc-pm8xxx qnoc-qos gh_msgq debug_symbol smem pinctrl-slpi proxy-consumer nvmem_qcom-spmi-sdam msm_dma_iommu_mapping iommu-logger icc-debug debug-regulator cmd-db
+gh_rm_drv minidump qti-fixed-regulator gdsc-regulator llcc-qcom
 qcom-scm qcom_ipc_logging clk-qcom
-pinctrl-msm secure_buffer qcom_aoss qcom_rpmh qcom-pdc clk-dummy nvmem_qfprom dwc3-msm gpucc-sm8150 gpucc-sm6150 camcc-sm8150 camcc-sc8180x camcc-sm6150
+pinctrl-msm secure_buffer qcom_aoss qcom_rpmh qcom-pdc clk-dummy nvmem_qfprom dwc3-msm msm_gpi gpucc-sm8150 gpucc-sm6150 camcc-sm8150 camcc-sc8180x camcc-sm6150
 pinctrl-sm8150 pinctrl-sm6150 qcom_iommu_util socinfo icc-bcm-voter crypto-qti rpmh-regulator clk-rpmh dispcc-sm6150 debugcc-sm6150 mem_buf_dev
 ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs gcc-sm8150 dispcc-sm8250 gcc-sc8180x gcc-sm6150 qcom_dma_heaps
 ufs_qcom qnoc-sm8150 qnoc-sc8180x-auto qnoc-sm6150 phy-qcom-ufs-qmp-v4 phy-qcom-ufs-qmp-v3-660
@@ -3534,9 +3534,23 @@ endef
 
 # Default modules - second set
 define ES_MOD_ORDER_2
-reboot-mode qcom_cpu_vendor_hooks llcc-qcom qcom_wdt_core phy-generic phy-msm-ssusb-qmp usb_f_diag sdhci-msm-scaling
+reboot-mode llcc-qcom qcom_wdt_core phy-generic phy-msm-ssusb-qmp usb_f_diag sdhci-msm-scaling
 usb_f_cdev usb_f_qdss qcom-pon qcom-spmi-pmic msm_gpi mem_buf_msgq qrtr msm_qmp qcom-rpmh-regulator cqhci
 sdhci-msm qcom-dload-mode pinctrl-sdmshrike mem_buf qcom_soc_wdt
+
+endef
+
+# Set of initial Modules (especially for Optimizations)
+define ES_MOD_ORDER_IM
+qcom_cpu_vendor_hooks
+socinfo
+qcom_dma_heaps
+msm_geni_serial
+spidev
+spi-msm-geni
+i2c-msm-geni
+silent_boot
+silent-mode-hw-monitoring
 
 endef
 
@@ -3635,6 +3649,8 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ;\
   $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_2}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order", grep "$(fl).ko" "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_FILE)" 2>&1 >/dev/null && if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
   sed -e '$(call es_mod_list,${ES_MOD_ORDER}${ES_MOD_ORDER_2})' "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" | sed 's/.ko//' > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end.order" ;\
+  echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_im.order" ;\
+  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_IM}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_im.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_im.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
   echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ;\
   $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_DI}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
   echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_vi.order" ;\
