@@ -3,7 +3,7 @@ package {
 }
 
 rust_defaults {
-    name: "record-finalized-flags-defaults",
+    name: "printflags.defaults",
     edition: "2021",
     clippy_lints: "android",
     lints: "android",
@@ -11,18 +11,21 @@ rust_defaults {
     rustlibs: [
         "libaconfig_protos",
         "libanyhow",
-        "libclap",
+        "libprotobuf",
         "libregex",
     ],
 }
 
-rust_binary_host {
-    name: "record-finalized-flags",
-    defaults: ["record-finalized-flags-defaults"],
+rust_binary {
+    name: "printflags",
+    defaults: ["printflags.defaults"],
+    apex_available: [
+        "//apex_available:platform",
+    ],
 }
 
 rust_test_host {
-    name: "record-finalized-flags-test",
-    defaults: ["record-finalized-flags-defaults"],
+    name: "printflags.test",
+    defaults: ["printflags.defaults"],
     test_suites: ["general-tests"],
 }
