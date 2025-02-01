@@ -241,6 +241,7 @@ PRODUCT_PACKAGES += \
     PackageInstaller \
     package-shareduid-allowlist.xml \
     passwd_system \
+    pbtombstone \
     perfetto \
     perfetto-extras \
     ping \
@@ -524,6 +525,7 @@ PRODUCT_PACKAGES_DEBUG := \
     logtagd.rc \
     ot-cli-ftd \
     ot-ctl \
+    overlay_remounter \
     procrank \
     profcollectd \
     profcollectctl \
