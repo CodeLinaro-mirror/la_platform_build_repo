@@ -241,6 +241,7 @@ PRODUCT_PACKAGES += \
     PackageInstaller \
     package-shareduid-allowlist.xml \
     passwd_system \
+    pbtombstone \
     perfetto \
     perfetto-extras \
     ping \
@@ -252,6 +253,7 @@ PRODUCT_PACKAGES += \
     preinstalled-packages-asl-files.xml \
     preinstalled-packages-platform.xml \
     preinstalled-packages-strict-signature.xml \
+    printflags \
     privapp-permissions-platform.xml \
     prng_seeder \
     recovery-persist \
