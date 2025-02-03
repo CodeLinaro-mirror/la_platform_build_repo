@@ -3911,17 +3911,12 @@ endef
 
 # MM Audio modules
 define ES_MOD_ORDER_AU
-qmi_helpers
-smp2p_sleepstate
-qcom_pil_info
-qcom_ramdump
-qcom_glink qcom_smd smp2p pdr_interface
-qcom_glink_smem qcom_glink_spss
-rproc_qcom_common
+smp2p stub_dlkm_legacy snd_event_dlkm_legacy qcom_smd qcom_glink qcom_ramdump qcom_pil_info smp2p_sleepstate qmi_helpers mdt_loader
+qrtr-smd qcom_glink_spss rproc_qcom_common qcom_glink_smem pdr_interface
 qcom_sysmon
-qcom_q6v5
-qrtr-smd qcom_q6v5_pas qcom_spss
-snd_event_dlkm_legacy q6_notifier_dlkm_legacy stub_dlkm_legacy
+qcom_q6v5 qcom_spss
+qcom_q6v5_pas
+q6_notifier_dlkm_legacy
 apr_dlkm
 adsp_loader_dlkm_legacy q6_dlkm_legacy
 platform_dlkm
