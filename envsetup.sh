@@ -536,7 +536,9 @@ function _lunch_meat()
         return 1
     fi
     export TARGET_PRODUCT=$(_get_build_var_cached TARGET_PRODUCT)
+    export TARGET_BOARD_PLATFORM=$(_get_build_var_cached TARGET_BOARD_PLATFORM)
     export TARGET_BUILD_VARIANT=$(_get_build_var_cached TARGET_BUILD_VARIANT)
+    export PLATFORM_VERSION=$(_get_build_var_cached PLATFORM_VERSION)
     export TARGET_RELEASE=$release
     # Note this is the string "release", not the value of the variable.
     export TARGET_BUILD_TYPE=release
