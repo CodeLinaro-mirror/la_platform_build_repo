@@ -83,6 +83,8 @@ $(shell mkdir -p $(EMPTY_DIRECTORY) && rm -rf $(EMPTY_DIRECTORY)/*)
 -include test/cts-root/tools/build/config.mk
 # WVTS-specific config.
 -include test/wvts/tools/build/config.mk
+# DTS-specific config.
+-include test/dts/tools/build/config.mk
 
 
 # Clean rules
@@ -275,11 +277,24 @@ FULL_BUILD := true
 # Include all of the makefiles in the system
 #
 
-subdir_makefiles := $(SOONG_OUT_DIR)/installs-$(TARGET_PRODUCT)$(COVERAGE_SUFFIX).mk $(SOONG_ANDROID_MK)
+subdir_makefiles := \
+    $(SOONG_OUT_DIR)/installs-$(TARGET_PRODUCT)$(COVERAGE_SUFFIX).mk \
+    $(SOONG_ANDROID_MK) \
+    build/make/target/board/android-info.mk
 
 # Android.mk files are only used on Linux builds, Mac only supports Android.bp
 ifeq ($(HOST_OS),linux)
-  subdir_makefiles += $(file <$(OUT_DIR)/.module_paths/Android.mk.list)
+  ifeq ($(PRODUCT_IGNORE_ALL_ANDROIDMK),true)
+    allowed_androidmk_files :=
+    ifdef PRODUCT_ANDROIDMK_ALLOWLIST_FILE
+      -include $(PRODUCT_ANDROIDMK_ALLOWLIST_FILE)
+    endif
+    allowed_androidmk_files += $(PRODUCT_ALLOWED_ANDROIDMK_FILES)
+    subdir_makefiles += $(filter $(allowed_androidmk_files),$(file <$(OUT_DIR)/.module_paths/Android.mk.list))
+    allowed_androidmk_files :=
+  else
+    subdir_makefiles += $(file <$(OUT_DIR)/.module_paths/Android.mk.list)
+  endif
 endif
 
 subdir_makefiles += $(SOONG_OUT_DIR)/late-$(TARGET_PRODUCT)$(COVERAGE_SUFFIX).mk
@@ -290,7 +305,7 @@ subdir_makefiles_total := $(words int $(subdir_makefiles) post finish)
 $(foreach mk,$(subdir_makefiles),$(info [$(call inc_and_print,subdir_makefiles_inc)/$(subdir_makefiles_total)] including $(mk) ...)$(eval include $(mk)))
 
 # Build bootloader.img/radio.img, and unpack the partitions.
--include vendor/google/build/tasks/tools/update_bootloader_radio_image.mk
+-include vendor/google_devices/$(TARGET_SOC)/prebuilts/misc_bins/update_bootloader_radio_image.mk
 
 # For an unbundled image, we can skip blueprint_tools because unbundled image
 # aims to remove a large number framework projects from the manifest, the
@@ -982,9 +997,7 @@ endef
 # variables being set.
 define auto-included-modules
   $(foreach vndk_ver,$(PRODUCT_EXTRA_VNDK_VERSIONS),com.android.vndk.v$(vndk_ver)) \
-  $(filter-out $(LLNDK_MOVED_TO_APEX_LIBRARIES),$(LLNDK_LIBRARIES)) \
   llndk.libraries.txt \
-  $(if $(DEVICE_MANIFEST_FILE),vendor_manifest.xml) \
   $(if $(DEVICE_MANIFEST_SKUS),$(foreach sku, $(DEVICE_MANIFEST_SKUS),vendor_manifest_$(sku).xml)) \
   $(if $(ODM_MANIFEST_FILES),odm_manifest.xml) \
   $(if $(ODM_MANIFEST_SKUS),$(foreach sku, $(ODM_MANIFEST_SKUS),odm_manifest_$(sku).xml)) \
@@ -1386,6 +1399,7 @@ droidcore-unbundled: $(filter $(HOST_OUT_ROOT)/%,$(modules_to_install)) \
     $(INSTALLED_RAMDISK_TARGET) \
     $(INSTALLED_BOOTIMAGE_TARGET) \
     $(INSTALLED_INIT_BOOT_IMAGE_TARGET) \
+    $(INSTALLED_DTBOIMAGE_TARGET) \
     $(INSTALLED_RADIOIMAGE_TARGET) \
     $(INSTALLED_DEBUG_RAMDISK_TARGET) \
     $(INSTALLED_DEBUG_BOOTIMAGE_TARGET) \
@@ -1745,10 +1759,6 @@ dump-files:
 	@echo $(sort $(patsubst $(PRODUCT_OUT)/%,%,$(filter $(PRODUCT_OUT)/%,$(modules_to_install)))) | tr -s ' ' '\n'
 	@echo Successfully dumped product target file list.
 
-.PHONY: nothing
-nothing:
-	@echo Successfully read the makefiles.
-
 .PHONY: tidy_only
 tidy_only:
 	@echo Successfully make tidy_only.
@@ -1906,14 +1916,15 @@ $(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make-metadata.csv:
 	  $(eval _is_system_other_odex_marker := $(if $(findstring $f,$(INSTALLED_SYSTEM_OTHER_ODEX_MARKER)),Y)) \
 	  $(eval _is_kernel_modules_blocklist := $(if $(findstring $f,$(ALL_KERNEL_MODULES_BLOCKLIST)),Y)) \
 	  $(eval _is_fsverity_build_manifest_apk := $(if $(findstring $f,$(ALL_FSVERITY_BUILD_MANIFEST_APK)),Y)) \
-	  $(eval _is_linker_config := $(if $(findstring $f,$(SYSTEM_LINKER_CONFIG) $(vendor_linker_config_file)),Y)) \
+	  $(eval _is_linker_config := $(if $(findstring $f,$(SYSTEM_LINKER_CONFIG) $(vendor_linker_config_file) $(product_linker_config_file)),Y)) \
 	  $(eval _is_partition_compat_symlink := $(if $(findstring $f,$(PARTITION_COMPAT_SYMLINKS)),Y)) \
 	  $(eval _is_flags_file := $(if $(findstring $f, $(ALL_FLAGS_FILES)),Y)) \
 	  $(eval _is_rootdir_symlink := $(if $(findstring $f, $(ALL_ROOTDIR_SYMLINKS)),Y)) \
 	  $(eval _is_platform_generated := $(_is_build_prop)$(_is_notice_file)$(_is_product_system_other_avbkey)$(_is_event_log_tags_file)$(_is_system_other_odex_marker)$(_is_kernel_modules_blocklist)$(_is_fsverity_build_manifest_apk)$(_is_linker_config)$(_is_partition_compat_symlink)$(_is_flags_file)$(_is_rootdir_symlink)) \
 	  $(eval _static_libs := $(if $(_is_soong_module),,$(ALL_INSTALLED_FILES.$f.STATIC_LIBRARIES))) \
 	  $(eval _whole_static_libs := $(if $(_is_soong_module),,$(ALL_INSTALLED_FILES.$f.WHOLE_STATIC_LIBRARIES))) \
-	  $(eval _license_text := $(if $(filter $(_build_output_path),$(ALL_NON_MODULES)),$(ALL_NON_MODULES.$(_build_output_path).NOTICES))) \
+	  $(eval _license_text := $(if $(filter $(_build_output_path),$(ALL_NON_MODULES)),$(ALL_NON_MODULES.$(_build_output_path).NOTICES),\
+	                          $(if $(_is_partition_compat_symlink),build/soong/licenses/LICENSE))) \
 	  echo '$(_build_output_path),$(_module_path),$(_is_soong_module),$(_is_prebuilt_make_module),$(_product_copy_files),$(_kernel_module_copy_files),$(_is_platform_generated),$(_static_libs),$(_whole_static_libs),$(_license_text)' >> $@; \
 	)
 
