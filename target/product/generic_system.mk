@@ -34,11 +34,6 @@ PRODUCT_PACKAGES += \
     PartnerBookmarksProvider \
     Tag \
 
-ifeq ($(RELEASE_AVATAR_PICKER_APP),true)
-  PRODUCT_PACKAGES += \
-    AvatarPicker
-endif
-
 ifneq ($(TARGET_NO_TELEPHONY), true)
 PRODUCT_PACKAGES += \
     preinstalled-packages-platform-generic-system.xml \
