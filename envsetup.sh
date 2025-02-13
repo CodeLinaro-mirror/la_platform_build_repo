@@ -502,8 +502,8 @@ function lunch()
     fi
 
     if [ ! -n "$release" ]; then
-        echo "Release not specified, defaulting to 'next' build"
-        release=ap3a
+        release=ap4a
+        echo "Release not specified, defaulting to '$release' build"
     fi
 
     if [[ -z "$product" ]] || [[ -z "$release" ]] || [[ -z "$variant" ]]
