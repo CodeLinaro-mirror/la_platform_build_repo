@@ -90,10 +90,26 @@ PRODUCT_APEX_BOOT_JARS := \
     com.android.virt:framework-virtualization \
     com.android.wifi:framework-wifi \
 
-# When we release crashrecovery module
+# When crashrecovery module is ready use apex jar
+# else put the platform jar in system
 ifeq ($(RELEASE_CRASHRECOVERY_MODULE),true)
-  PRODUCT_APEX_BOOT_JARS += \
+    PRODUCT_APEX_BOOT_JARS += \
         com.android.crashrecovery:framework-crashrecovery \
+
+else
+    PRODUCT_BOOT_JARS += \
+        framework-platformcrashrecovery \
+
+endif
+
+# When we release ondeviceintelligence in NeuralNetworks module
+ifeq ($(RELEASE_ONDEVICE_INTELLIGENCE_MODULE),true)
+    PRODUCT_APEX_BOOT_JARS += \
+    com.android.neuralnetworks:framework-ondeviceintelligence \
+
+else
+    PRODUCT_BOOT_JARS += \
+        framework-ondeviceintelligence-platform \
 
 endif
 
@@ -120,6 +136,17 @@ ifneq (,$(RELEASE_RANGING_STACK))
     $(call soong_config_set,bootclasspath,release_ranging_stack,true)
 endif
 
+# Check if VCN should be built into the tethering module or not
+ifeq ($(RELEASE_MOVE_VCN_TO_MAINLINE),true)
+    PRODUCT_APEX_BOOT_JARS += \
+        com.android.tethering:framework-connectivity-b \
+
+else
+    PRODUCT_BOOT_JARS += \
+        framework-connectivity-b \
+
+endif
+
 # List of system_server classpath jars delivered via apex.
 # Keep the list sorted by module names and then library names.
 # Note: For modules available in Q, DO NOT add new entries here.
@@ -139,6 +166,13 @@ PRODUCT_APEX_SYSTEM_SERVER_JARS := \
 ifeq ($(RELEASE_CRASHRECOVERY_MODULE),true)
   PRODUCT_APEX_SYSTEM_SERVER_JARS += \
         com.android.crashrecovery:service-crashrecovery \
+
+endif
+
+# When we release ondeviceintelligence in NeuralNetworks module
+ifeq ($(RELEASE_ONDEVICE_INTELLIGENCE_MODULE),true)
+    PRODUCT_APEX_SYSTEM_SERVER_JARS += \
+        com.android.neuralnetworks:service-ondeviceintelligence
 
 endif
 
