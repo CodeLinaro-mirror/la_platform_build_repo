@@ -839,16 +839,6 @@ endif
 
 
 # -----------------------------------------------------------------
-# build system stats
-BUILD_SYSTEM_STATS := $(PRODUCT_OUT)/build_system_stats.txt
-$(BUILD_SYSTEM_STATS):
-	@rm -f $@
-	@$(foreach s,$(STATS.MODULE_TYPE),echo "modules_type_make,$(s),$(words $(STATS.MODULE_TYPE.$(s)))" >>$@;)
-	@$(foreach s,$(STATS.SOONG_MODULE_TYPE),echo "modules_type_soong,$(s),$(STATS.SOONG_MODULE_TYPE.$(s))" >>$@;)
-$(call declare-1p-target,$(BUILD_SYSTEM_STATS),build)
-$(call dist-for-goals,droidcore-unbundled,$(BUILD_SYSTEM_STATS))
-
-# -----------------------------------------------------------------
 # build /product/etc/security/avb/system_other.avbpubkey if needed
 ifdef BUILDING_SYSTEM_OTHER_IMAGE
 ifeq ($(BOARD_AVB_ENABLE),true)
@@ -8102,7 +8092,7 @@ $(foreach partition,$(call to-upper,$(BOARD_AVB_VBMETA_CUSTOM_PARTITIONS)), \
 allimages_zip := $(PRODUCT_OUT)/all_images.zip
 $(allimages_zip): PRIVATE_SOONG_ZIP_ARGUMENTS := $(allimages_soong_zip_args)
 $(allimages_zip): $(SOONG_ZIP) $(allimages_deps)
-	$(SOONG_ZIP) -o $@ --sort_entries $(PRIVATE_SOONG_ZIP_ARGUMENTS)
+	$(SOONG_ZIP) -o $@ $(PRIVATE_SOONG_ZIP_ARGUMENTS)
 
 .PHONY: soong_only_diff_test
 soong_only_diff_test: PRIVATE_ALLIMAGES_ZIP := $(allimages_zip)
