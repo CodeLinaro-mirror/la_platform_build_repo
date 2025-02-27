@@ -1223,55 +1223,6 @@ endif
 endif # BOARD_PREBUILT_DTBOIMAGE_16KB
 
 
-ifneq ($(BOARD_KERNEL_PATH_16K),)
-BUILT_KERNEL_16K_TARGET := $(PRODUCT_OUT)/kernel_16k
-
-$(eval $(call copy-one-file,$(BOARD_KERNEL_PATH_16K),$(BUILT_KERNEL_16K_TARGET)))
-
-# Copies BOARD_KERNEL_PATH_16K to output directory as is
-kernel_16k: $(BUILT_KERNEL_16K_TARGET)
-.PHONY: kernel_16k
-
-BUILT_BOOTIMAGE_16K_TARGET := $(PRODUCT_OUT)/boot_16k.img
-
-BOARD_KERNEL_16K_BOOTIMAGE_PARTITION_SIZE := $(BOARD_BOOTIMAGE_PARTITION_SIZE)
-
-$(BUILT_BOOTIMAGE_16K_TARGET): $(MKBOOTIMG) $(AVBTOOL) $(INTERNAL_BOOTIMAGE_FILES) $(BOARD_AVB_BOOT_KEY_PATH) $(BUILT_KERNEL_16K_TARGET)
-	$(call pretty,"Target boot 16k image: $@")
-	$(call build_boot_from_kernel_avb_enabled,$@,$(BUILT_KERNEL_16K_TARGET))
-
-
-bootimage_16k: $(BUILT_BOOTIMAGE_16K_TARGET)
-.PHONY: bootimage_16k
-
-BUILT_BOOT_OTA_PACKAGE_16K := $(PRODUCT_OUT)/boot_ota_16k.zip
-$(BUILT_BOOT_OTA_PACKAGE_16K):  $(OTA_FROM_RAW_IMG) \
-                                $(BUILT_BOOTIMAGE_16K_TARGET) \
-                                $(INSTALLED_BOOTIMAGE_TARGET) \
-                                $(DEFAULT_SYSTEM_DEV_CERTIFICATE).pk8 \
-                                $(INSTALLED_DTBOIMAGE_16KB_TARGET) \
-                                $(INSTALLED_DTBOIMAGE_TARGET)
-	$(OTA_FROM_RAW_IMG) --package_key $(DEFAULT_SYSTEM_DEV_CERTIFICATE) \
-                      --max_timestamp `cat $(BUILD_DATETIME_FILE)` \
-                      --path $(HOST_OUT) \
-                      --partition_name $(if $(and $(INSTALLED_DTBOIMAGE_TARGET),\
-                          $(INSTALLED_DTBOIMAGE_16KB_TARGET)),\
-                        boot$(comma)dtbo,\
-                        boot) \
-                      --output $@ \
-                      $(if $(BOARD_16K_OTA_USE_INCREMENTAL),\
-                        $(INSTALLED_BOOTIMAGE_TARGET):$(BUILT_BOOTIMAGE_16K_TARGET),\
-                        $(BUILT_BOOTIMAGE_16K_TARGET)\
-                      )\
-                      $(if $(and $(INSTALLED_DTBOIMAGE_TARGET),$(INSTALLED_DTBOIMAGE_16KB_TARGET)),\
-                        $(INSTALLED_DTBOIMAGE_16KB_TARGET))
-
-boototapackage_16k: $(BUILT_BOOT_OTA_PACKAGE_16K)
-.PHONY: boototapackage_16k
-
-endif
-
-
 ramdisk_intermediates :=$= $(call intermediates-dir-for,PACKAGING,ramdisk)
 $(eval $(call write-partition-file-list,$(ramdisk_intermediates)/file_list.txt,$(TARGET_RAMDISK_OUT),$(INTERNAL_RAMDISK_FILES)))
 
@@ -1508,6 +1459,55 @@ endif # BOARD_PREBUILT_BOOTIMAGE
 endif # my_installed_prebuilt_gki_apex not defined
 
 ifneq ($(BOARD_KERNEL_PATH_16K),)
+
+BUILT_KERNEL_16K_TARGET := $(PRODUCT_OUT)/kernel_16k
+
+$(eval $(call copy-one-file,$(BOARD_KERNEL_PATH_16K),$(BUILT_KERNEL_16K_TARGET)))
+
+# Copies BOARD_KERNEL_PATH_16K to output directory as is
+kernel_16k: $(BUILT_KERNEL_16K_TARGET)
+.PHONY: kernel_16k
+
+BUILT_BOOTIMAGE_16K_TARGET := $(PRODUCT_OUT)/boot_16k.img
+
+BOARD_KERNEL_16K_BOOTIMAGE_PARTITION_SIZE := $(BOARD_BOOTIMAGE_PARTITION_SIZE)
+
+$(BUILT_BOOTIMAGE_16K_TARGET): $(MKBOOTIMG) $(AVBTOOL) $(INTERNAL_BOOTIMAGE_FILES) $(BOARD_AVB_BOOT_KEY_PATH) $(BUILT_KERNEL_16K_TARGET)
+	$(call pretty,"Target boot 16k image: $@")
+	$(call build_boot_from_kernel_avb_enabled,$@,$(BUILT_KERNEL_16K_TARGET))
+
+
+bootimage_16k: $(BUILT_BOOTIMAGE_16K_TARGET)
+.PHONY: bootimage_16k
+
+BUILT_BOOT_OTA_PACKAGE_16K := $(PRODUCT_OUT)/boot_ota_16k.zip
+$(BUILT_BOOT_OTA_PACKAGE_16K): PRIVATE_BOOTIMAGE_TARGET := $(INSTALLED_BOOTIMAGE_TARGET)
+$(BUILT_BOOT_OTA_PACKAGE_16K): PRIVATE_BOOTIMAGE_16KB_TARGET := $(BUILT_BOOTIMAGE_16K_TARGET)
+$(BUILT_BOOT_OTA_PACKAGE_16K):  $(OTA_FROM_RAW_IMG) \
+                                $(DEFAULT_SYSTEM_DEV_CERTIFICATE).pk8 \
+                                $(INSTALLED_BOOTIMAGE_TARGET) \
+                                $(BUILT_BOOTIMAGE_16K_TARGET) \
+                                $(INSTALLED_DTBOIMAGE_16KB_TARGET) \
+                                $(INSTALLED_DTBOIMAGE_TARGET)
+	$(OTA_FROM_RAW_IMG) --package_key $(DEFAULT_SYSTEM_DEV_CERTIFICATE) \
+                      --max_timestamp `cat $(BUILD_DATETIME_FILE)` \
+                      --path $(HOST_OUT) \
+                      --partition_name $(if $(and $(INSTALLED_DTBOIMAGE_TARGET),\
+                          $(INSTALLED_DTBOIMAGE_16KB_TARGET)),\
+                        boot$(comma)dtbo,\
+                        boot) \
+                      --output $@ \
+                      $(if $(BOARD_16K_OTA_USE_INCREMENTAL),\
+                        $(PRIVATE_BOOTIMAGE_TARGET):$(PRIVATE_BOOTIMAGE_16KB_TARGET),\
+                        $(PRIVATE_BOOTIMAGE_16KB_TARGET)\
+                      )\
+                      $(if $(and $(INSTALLED_DTBOIMAGE_TARGET),$(INSTALLED_DTBOIMAGE_16KB_TARGET)),\
+                        $(INSTALLED_DTBOIMAGE_16KB_TARGET))
+
+boototapackage_16k: $(BUILT_BOOT_OTA_PACKAGE_16K)
+.PHONY: boototapackage_16k
+
+
 BUILT_BOOT_OTA_PACKAGE_4K := $(PRODUCT_OUT)/boot_ota_4k.zip
 $(BUILT_BOOT_OTA_PACKAGE_4K): $(OTA_FROM_RAW_IMG) \
                               $(INSTALLED_BOOTIMAGE_TARGET) \
@@ -1536,11 +1536,26 @@ boototapackage_4k: $(BUILT_BOOT_OTA_PACKAGE_4K)
 ifeq ($(BOARD_16K_OTA_MOVE_VENDOR),true)
 $(eval $(call copy-one-file,$(BUILT_BOOT_OTA_PACKAGE_4K),$(TARGET_OUT_VENDOR)/boot_otas/boot_ota_4k.zip))
 $(eval $(call copy-one-file,$(BUILT_BOOT_OTA_PACKAGE_16K),$(TARGET_OUT_VENDOR)/boot_otas/boot_ota_16k.zip))
+
 ALL_DEFAULT_INSTALLED_MODULES += $(TARGET_OUT_VENDOR)/boot_otas/boot_ota_4k.zip
 ALL_DEFAULT_INSTALLED_MODULES += $(TARGET_OUT_VENDOR)/boot_otas/boot_ota_16k.zip
+
+ifneq ($(BOARD_VENDOR_KERNEL_MODULES_2ND_STAGE_16KB_MODE),)
+# Add the modules that need to be loaded in the Second Boot Stage
+# to /vendor_dlkm/lib/modules/16k-mode
+VENDOR_DLKM_16K_MODE_DIR := lib/modules/16k-mode
+$(foreach module,$(BOARD_VENDOR_KERNEL_MODULES_2ND_STAGE_16KB_MODE), \
+    $(eval $(call copy-one-file,$(TARGET_KERNEL_DIR_16K)/$(module),\
+                                $(TARGET_OUT_VENDOR_DLKM)/$(VENDOR_DLKM_16K_MODE_DIR)/$(module))))
+
+ALL_DEFAULT_INSTALLED_MODULES += $(foreach module,$(BOARD_VENDOR_KERNEL_MODULES_2ND_STAGE_16KB_MODE),\
+    $(TARGET_OUT_VENDOR_DLKM)/$(VENDOR_DLKM_16K_MODE_DIR)/$(module))
+endif # BOARD_VENDOR_KERNEL_MODULES_2ND_STAGE_16KB_MODE not empty
+
 else
 $(eval $(call copy-one-file,$(BUILT_BOOT_OTA_PACKAGE_4K),$(TARGET_OUT)/boot_otas/boot_ota_4k.zip))
 $(eval $(call copy-one-file,$(BUILT_BOOT_OTA_PACKAGE_16K),$(TARGET_OUT)/boot_otas/boot_ota_16k.zip))
+
 ALL_DEFAULT_INSTALLED_MODULES += $(TARGET_OUT)/boot_otas/boot_ota_4k.zip
 ALL_DEFAULT_INSTALLED_MODULES += $(TARGET_OUT)/boot_otas/boot_ota_16k.zip
 endif # BOARD_16K_OTA_MOVE_VENDOR == true
@@ -1797,6 +1812,7 @@ INTERNAL_VENDOR_KERNEL_RAMDISK_FILES := $(filter $(TARGET_VENDOR_KERNEL_RAMDISK_
 INTERNAL_VENDOR_KERNEL_RAMDISK_TARGET := $(call intermediates-dir-for,PACKAGING,vendor_kernel_boot)/vendor_kernel_ramdisk.cpio$(RAMDISK_EXT)
 
 $(INTERNAL_VENDOR_KERNEL_RAMDISK_TARGET): $(MKBOOTFS) $(INTERNAL_VENDOR_KERNEL_RAMDISK_FILES) | $(COMPRESSION_COMMAND_DEPS)
+	$(hide) : $(words $(INTERNAL_VENDOR_KERNEL_RAMDISK_FILES))
 	$(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_VENDOR_KERNEL_RAMDISK_OUT) | $(COMPRESSION_COMMAND) > $@
 
 INSTALLED_VENDOR_KERNEL_RAMDISK_TARGET := $(PRODUCT_OUT)/vendor_kernel_ramdisk.img
@@ -3594,7 +3610,6 @@ ifeq ($(USE_SOONG_DEFINED_SYSTEM_IMAGE),true)
 ifeq ($(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE),)
 $(error PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE must be set if USE_SOONG_DEFINED_SYSTEM_IMAGE is true)
 endif
-SOONG_DEFINED_SYSTEM_IMAGE_PATH := $(call intermediates-dir-for,ETC,$(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE))/$(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE)
 SOONG_DEFINED_SYSTEM_IMAGE_BASE := $(dir $(ALL_MODULES.$(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE).FILESYSTEM_FILELIST))
 $(BUILT_SYSTEMIMAGE): $(FULL_SYSTEMIMAGE_DEPS) $(INSTALLED_FILES_FILE) $(systemimage_intermediates)/file_list.txt $(SOONG_DEFINED_SYSTEM_IMAGE_PATH)
 $(eval $(call copy-one-file, $(SOONG_DEFINED_SYSTEM_IMAGE_PATH), $(BUILT_SYSTEMIMAGE)))
@@ -7310,29 +7325,6 @@ ifeq (true,$(CLANG_COVERAGE))
   $(call dist-for-goals,droidcore-unbundled apps_only,$(LLVM_COVERAGE_TOOLS_ZIP))
 endif
 
-# -----------------------------------------------------------------
-# A zip of the Android Apps. Not keeping full path so that we don't
-# include product names when distributing
-#
-name := $(TARGET_PRODUCT)
-ifeq ($(TARGET_BUILD_TYPE),debug)
-  name := $(name)_debug
-endif
-name := $(name)-apps
-
-APPS_ZIP := $(PRODUCT_OUT)/$(name).zip
-$(APPS_ZIP): $(FULL_SYSTEMIMAGE_DEPS)
-	@echo "Package apps: $@"
-	$(hide) rm -rf $@
-	$(hide) mkdir -p $(dir $@)
-	$(hide) apps_to_zip=`find $(TARGET_OUT_APPS) $(TARGET_OUT_APPS_PRIVILEGED) -mindepth 2 -maxdepth 3 -name "*.apk"`; \
-	if [ -z "$$apps_to_zip" ]; then \
-	    echo "No apps to zip up. Generating empty apps archive." ; \
-	    a=$$(mktemp /tmp/XXXXXXX) && touch $$a && zip $@ $$a && zip -d $@ $$a; \
-	else \
-	    zip -qjX $@ $$apps_to_zip; \
-	fi
-
 ifeq (true,$(EMMA_INSTRUMENT))
 #------------------------------------------------------------------
 # An archive of classes for use in generating code-coverage reports
@@ -7863,6 +7855,7 @@ $(INTERNAL_SDK_TARGET): $(deps)
 	        -I $(HOST_OUT) \
 	        -I $(TARGET_COMMON_OUT_ROOT) \
 	        -v "PLATFORM_NAME=$(PRIVATE_PLATFORM_NAME)" \
+	        -v "PLATFORM_SDK_API_VERSION=$(PLATFORM_SDK_VERSION_FULL)" \
 	        -v "OUT_DIR=$(OUT_DIR)" \
 	        -v "HOST_OUT=$(HOST_OUT)" \
 	        -v "TARGET_ARCH=$(TARGET_ARCH)" \
@@ -8064,6 +8057,46 @@ $(call dist-for-goals,dist_files,$(PACKED_MIGRATION_IMAGE_ARCHIVE_TARGET))
 pack-migration-image: $(PACK_MIGRATION_IMAGE_TARGET)
 
 endif # ANDROID_DESKTOP_MIGRATION_IMAGE
+
+ifdef SOONG_ONLY_ALL_IMAGES_ZIP
+
+allimages_soong_zip_args :=
+allimages_deps :=
+
+define include_image
+$(if $(1), \
+  $(eval allimages_soong_zip_args += -e $(notdir $(1)) -f $(1)) \
+  $(eval allimages_deps += $(1)))
+endef
+
+$(call include_image,$(INSTALLED_SUPERIMAGE_TARGET))
+$(call include_image,$(INSTALLED_BOOTIMAGE_TARGET))
+$(call include_image,$(INSTALLED_INIT_BOOT_IMAGE_TARGET))
+$(call include_image,$(INSTALLED_VENDOR_BOOTIMAGE_TARGET))
+$(call include_image,$(INSTALLED_USERDATAIMAGE_TARGET))
+$(call include_image,$(INSTALLED_RECOVERYIMAGE_TARGET))
+$(call include_image,$(INSTALLED_VBMETAIMAGE_TARGET))
+$(call include_image,$(INSTALLED_VBMETA_SYSTEMIMAGE_TARGET))
+$(call include_image,$(INSTALLED_VBMETA_VENDORIMAGE_TARGET))
+$(foreach partition,$(call to-upper,$(BOARD_AVB_VBMETA_CUSTOM_PARTITIONS)), \
+  $(call include_image,$(INSTALLED_VBMETA_$(partition)IMAGE_TARGET)))
+
+allimages_zip := $(PRODUCT_OUT)/all_images.zip
+$(allimages_zip): PRIVATE_SOONG_ZIP_ARGUMENTS := $(allimages_soong_zip_args)
+$(allimages_zip): $(SOONG_ZIP) $(allimages_deps)
+	$(SOONG_ZIP) -o $@ --sort_entries $(PRIVATE_SOONG_ZIP_ARGUMENTS)
+
+.PHONY: soong_only_diff_test
+soong_only_diff_test: PRIVATE_ALLIMAGES_ZIP := $(allimages_zip)
+soong_only_diff_test: $(allimages_zip) $(SOONG_ONLY_ALL_IMAGES_ZIP)
+	diff $(PRIVATE_ALLIMAGES_ZIP) $(SOONG_ONLY_ALL_IMAGES_ZIP)
+
+allimages_soong_zip_args :=
+allimages_deps :=
+allimages_zip :=
+include_image :=
+
+endif # ifdef SOONG_ONLY_ALL_IMAGES_ZIP
 
 # -----------------------------------------------------------------
 # OS Licensing

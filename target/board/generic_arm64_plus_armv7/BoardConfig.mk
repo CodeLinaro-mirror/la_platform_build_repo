@@ -1,4 +1,4 @@
-# Copyright (C) 2018 The Android Open Source Project
+# Copyright (C) 2025 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-BUILD_BROKEN_NINJA_USES_ENV_VARS := SDCLANG_AE_CONFIG SDCLANG_CONFIG SDCLANG_CONFIG_AOSP SDCLANG_SA_ENABLED
 
 # arm64 emulator specific definitions
 TARGET_ARCH := arm64
@@ -24,14 +23,13 @@ TARGET_2ND_ARCH := arm
 TARGET_2ND_CPU_ABI := armeabi-v7a
 TARGET_2ND_CPU_ABI2 := armeabi
 
-ifneq ($(TARGET_BUILD_APPS)$(filter sdk,$(MAKECMDGOALS)),)
 # DO NOT USE
 # DO NOT USE
 #
 # This architecture / CPU variant must NOT be used for any 64 bit
 # platform builds. It is the lowest common denominator required
 # to build an unbundled application or cts for all supported 32 and 64 bit
-# platforms. It now recommended to use generic_arm64_plus_armv7 to achieve this.
+# platforms.
 #
 # If you're building a 64 bit platform (and not an application) the
 # ARM-v8 specification allows you to assume all the features available in an
@@ -48,10 +46,6 @@ TARGET_2ND_ARCH_VARIANT := armv7-a-neon
 TARGET_2ND_CPU_VARIANT := generic
 # DO NOT USE
 # DO NOT USE
-else
-TARGET_2ND_ARCH_VARIANT := armv8-a
-TARGET_2ND_CPU_VARIANT := generic
-endif
 
 # Include 64-bit mediaserver to support 64-bit only devices
 TARGET_DYNAMIC_64_32_MEDIASERVER := true
@@ -59,20 +53,3 @@ TARGET_DYNAMIC_64_32_MEDIASERVER := true
 TARGET_DYNAMIC_64_32_DRMSERVER := true
 
 include build/make/target/board/BoardConfigGsiCommon.mk
-
-# Some vendors still haven't cleaned up all device specific directories under
-# root!
-
-# TODO(b/111434759, b/111287060) SoC specific hacks
-BOARD_ROOT_EXTRA_SYMLINKS += /vendor/lib/dsp:/dsp
-BOARD_ROOT_EXTRA_SYMLINKS += /mnt/vendor/persist:/persist
-BOARD_ROOT_EXTRA_SYMLINKS += /vendor/firmware_mnt:/firmware
-# for Android.bp
-TARGET_ADD_ROOT_EXTRA_VENDOR_SYMLINKS := true
-
-# TODO(b/36764215): remove this setting when the generic system image
-# no longer has QCOM-specific directories under /.
-BOARD_SEPOLICY_DIRS += build/make/target/board/generic_arm64/sepolicy
-
-# TODO(b/150232543): Delete the following line.
-BUILD_BROKEN_USES_BUILD_COPY_HEADERS := true

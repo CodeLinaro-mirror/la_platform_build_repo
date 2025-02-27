@@ -511,6 +511,9 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, ProductVirtualAbCompressionFactor, $(PRODUCT_VIRTUAL_AB_COMPRESSION_FACTOR))
   $(call add_json_str, ProductVirtualAbCowVersion, $(PRODUCT_VIRTUAL_AB_COW_VERSION))
   $(call add_json_bool, AbOtaUpdater, $(filter true,$(AB_OTA_UPDATER)))
+  $(call add_json_list, AbOtaPartitions, $(AB_OTA_PARTITIONS))
+  $(call add_json_list, AbOtaKeys, $(PRODUCT_OTA_PUBLIC_KEYS))
+  $(call add_json_list, AbOtaPostInstallConfig, $(AB_OTA_POSTINSTALL_CONFIG))
 
   # Avb (android verified boot) stuff
   $(call add_json_bool, BoardAvbEnable, $(filter true,$(BOARD_AVB_ENABLE)))
@@ -588,6 +591,8 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, ProductFsCasefold, $(PRODUCT_FS_CASEFOLD))
   $(call add_json_str, ProductQuotaProjid, $(PRODUCT_QUOTA_PROJID))
   $(call add_json_str, ProductFsCompression, $(PRODUCT_FS_COMPRESSION))
+
+  $(call add_json_str, ReleaseToolsExtensionDir, $(firstword $(TARGET_RELEASETOOLS_EXTENSIONS) $($(TARGET_DEVICE_DIR)/../common)))
 
 $(call end_json_map)
 
