@@ -157,8 +157,6 @@ $(call add_soong_config_var_value,ANDROID,release_binder_death_recipient_weak_fr
 
 $(call add_soong_config_var_value,ANDROID,release_libpower_no_lock_binder_txn,$(RELEASE_LIBPOWER_NO_LOCK_BINDER_TXN))
 
-$(call add_soong_config_var_value,ANDROID,release_package_libandroid_runtime_punch_holes,$(RELEASE_PACKAGE_LIBANDROID_RUNTIME_PUNCH_HOLES))
-
 $(call add_soong_config_var_value,ANDROID,release_selinux_data_data_ignore,$(RELEASE_SELINUX_DATA_DATA_IGNORE))
 ifneq (,$(filter eng userdebug,$(TARGET_BUILD_VARIANT)))
     # write appcompat system properties on userdebug and eng builds
