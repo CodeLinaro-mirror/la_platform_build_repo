@@ -19,12 +19,10 @@ package android.aconfig.storage;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.util.Objects;
 
 public class ByteBufferReader {
 
     private ByteBuffer mByteBuffer;
-    private int mPosition;
 
     public ByteBufferReader(ByteBuffer byteBuffer) {
         this.mByteBuffer = byteBuffer;
@@ -32,19 +30,19 @@ public class ByteBufferReader {
     }
 
     public int readByte() {
-        return Byte.toUnsignedInt(mByteBuffer.get(nextGetIndex(1)));
+        return Byte.toUnsignedInt(mByteBuffer.get());
     }
 
     public int readShort() {
-        return Short.toUnsignedInt(mByteBuffer.getShort(nextGetIndex(2)));
+        return Short.toUnsignedInt(mByteBuffer.getShort());
     }
 
     public int readInt() {
-        return this.mByteBuffer.getInt(nextGetIndex(4));
+        return this.mByteBuffer.getInt();
     }
 
     public long readLong() {
-        return this.mByteBuffer.getLong(nextGetIndex(8));
+        return this.mByteBuffer.getLong();
     }
 
     public String readString() {
@@ -54,7 +52,7 @@ public class ByteBufferReader {
                     "String length exceeds maximum allowed size (1024 bytes): " + length);
         }
         byte[] bytes = new byte[length];
-        getArray(nextGetIndex(length), bytes, 0, length);
+        mByteBuffer.get(bytes, 0, length);
         return new String(bytes, StandardCharsets.UTF_8);
     }
 
@@ -63,26 +61,10 @@ public class ByteBufferReader {
     }
 
     public void position(int newPosition) {
-        mPosition = newPosition;
+        mByteBuffer.position(newPosition);
     }
 
     public int position() {
-        return mPosition;
-    }
-
-    private int nextGetIndex(int nb) {
-        int p = mPosition;
-        mPosition += nb;
-        return p;
-    }
-
-    private void getArray(int index, byte[] dst, int offset, int length) {
-        Objects.checkFromIndexSize(index, length, mByteBuffer.limit());
-        Objects.checkFromIndexSize(offset, length, dst.length);
-
-        int end = offset + length;
-        for (int i = offset, j = index; i < end; i++, j++) {
-            dst[i] = mByteBuffer.get(j);
-        }
+        return mByteBuffer.position();
     }
 }

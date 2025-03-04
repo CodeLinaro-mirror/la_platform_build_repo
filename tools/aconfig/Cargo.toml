@@ -8,8 +8,7 @@ members = [
     "aconfig_storage_read_api",
     "aconfig_storage_write_api",
     "aflags",
-    "printflags",
-    "convert_finalized_flags"
+    "printflags"
 ]
 
 resolver = "2"
