@@ -768,10 +768,7 @@ endif
 # $5 partition tag
 # $6 output file
 define _apkcerts_write_line
-$(hide) echo -n 'name="$(1).apk" certificate="$2" private_key="$3"' >> $6
-$(if $(4), $(hide) echo -n ' compressed="$4"' >> $6)
-$(if $(5), $(hide) echo -n ' partition="$5"' >> $6)
-$(hide) echo '' >> $6
+$(hide) echo 'name="$(1).apk" certificate="$2" private_key="$3"$(if $(4), compressed="$4")$(if $(5), partition="$5")' >> $6
 
 endef
 
@@ -7965,6 +7962,18 @@ IMAGES := $(INSTALLED_BOOTIMAGE_TARGET) \
 	$(INSTALLED_VENDOR_BOOTIMAGE_TARGET) \
 	$(INSTALLED_VBMETAIMAGE_TARGET) \
 	$(INSTALLED_USERDATAIMAGE_TARGET)
+
+# -----------------------------------------------------------------
+# Desktop generated firmware filesystem.
+TARGET_PRODUCT_FW_IMAGE_PACKAGE := prebuilt-$(TARGET_PRODUCT)-firmware-image
+GENERATED_FW_IMAGE := $(PRODUCT_OUT)/product/etc/$(TARGET_PRODUCT)-firmware.img
+
+generated_fw_image_found := $(strip $(foreach pp,$(PRODUCT_PACKAGES),\
+	$(if $(findstring $(TARGET_PRODUCT_FW_IMAGE_PACKAGE),$(pp)),$(pp))))
+
+ifneq (,$(generated_fw_image_found))
+$(call dist-for-goals,dist_files,$(GENERATED_FW_IMAGE))
+endif
 
 # -----------------------------------------------------------------
 # Desktop pack image hook.
