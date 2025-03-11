@@ -612,13 +612,13 @@ function _lunch_usage()
         echo "Note that the previous interactive menu and list of hard-coded"
         echo "list of curated targets has been removed. If you would like the"
         echo "list of products, release configs for a particular product, or"
-        echo "variants, run list_products, list_release_configs, list_variants"
+        echo "variants, run list_products list_releases or list_variants"
         echo "respectively."
         echo
     ) 1>&2
 }
 
-function lunch2()
+function lunch()
 {
     if [[ $# -eq 1 && $1 = "--help" ]]; then
         _lunch_usage

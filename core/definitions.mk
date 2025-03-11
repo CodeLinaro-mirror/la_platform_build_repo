@@ -90,9 +90,6 @@ ALL_INIT_RC_INSTALLED_PAIRS :=
 # All installed vintf manifest fragments for a partition at
 ALL_VINTF_MANIFEST_FRAGMENTS_LIST:=
 
-# All tests that should be skipped in presubmit check.
-ALL_DISABLED_PRESUBMIT_TESTS :=
-
 # All compatibility suites mentioned in LOCAL_COMPATIBILITY_SUITE
 ALL_COMPATIBILITY_SUITES :=
 
@@ -3292,7 +3289,7 @@ $(check_non_elf_file_timestamp): $(1) $(LLVM_READOBJ)
 	$(hide) mkdir -p "$$(dir $$@)"
 	$(hide) rm -f "$$@"
 	$(hide) \
-	    if $(LLVM_READOBJ) -h "$$<" >/dev/null 2>&1; then \
+	    if $(LLVM_READOBJ) -h "$$<" 2>/dev/null | grep -q "^Format: elf"; then \
 	        $(call echo-error,$(2),$(3)); \
 	        $(call echo-error,$(2),found ELF file: $$<); \
 	        false; \

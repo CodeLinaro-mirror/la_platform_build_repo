@@ -35,7 +35,7 @@ SOONG_UI_EXE_REL_PATH = 'build/soong/soong_ui.bash'
 LOG_PATH = 'logs/build_test_suites.log'
 # Currently, this prevents the removal of those tags when they exist. In the future we likely
 # want the script to supply 'dist directly
-REQUIRED_BUILD_TARGETS = frozenset(['dist', 'droid'])
+REQUIRED_BUILD_TARGETS = frozenset(['dist', 'droid', 'checkbuild'])
 
 
 class Error(Exception):
@@ -84,43 +84,16 @@ class BuildPlanner:
     packaging_commands_getters = []
     # In order to roll optimizations out differently between test suites and
     # device builds, we have separate flags.
-    if (
-        'test_suites_zip_test_discovery'
+    enable_discovery = (('test_suites_zip_test_discovery'
         in self.build_context.enabled_build_features
         and not self.args.device_build
     ) or (
         'device_zip_test_discovery'
         in self.build_context.enabled_build_features
         and self.args.device_build
-    ):
-      preliminary_build_targets = self._collect_preliminary_build_targets()
-    else:
-      preliminary_build_targets = self._legacy_collect_preliminary_build_targets()
-
-      # Keep reporting metrics when test discovery is disabled.
-      # To be removed once test discovery is fully rolled out.
-      optimization_rationale = ''
-      test_discovery_zip_regexes = set()
-      try:
-        test_discovery_zip_regexes = self._get_test_discovery_zip_regexes()
-        logging.info(f'Discovered test discovery regexes: {test_discovery_zip_regexes}')
-      except test_discovery_agent.TestDiscoveryError as e:
-        optimization_rationale = e.message
-        logging.warning(f'Unable to perform test discovery: {optimization_rationale}')
-
-      for target in self.args.extra_targets:
-        if optimization_rationale:
-          get_metrics_agent().report_unoptimized_target(target, optimization_rationale)
-          continue
-        try:
-          regex = r'\b(%s.*)\b' % re.escape(target)
-          if any(re.search(regex, opt) for opt in test_discovery_zip_regexes):
-            get_metrics_agent().report_unoptimized_target(target, 'Test artifact used.')
-            continue
-          get_metrics_agent().report_optimized_target(target)
-        except Exception as e:
-          logging.error(f'unable to parse test discovery output: {repr(e)}')
-          get_metrics_agent().report_unoptimized_target(target, f'Error in parsing test discovery output for {target}: {repr(e)}')
+    )) and not self.args.test_discovery_info_mode
+    logging.info(f'Discovery mode is enabled= {enable_discovery}')
+    preliminary_build_targets = self._collect_preliminary_build_targets(enable_discovery)
 
     for target in preliminary_build_targets:
       target_optimizer_getter = self.target_optimizations.get(target, None)
@@ -138,7 +111,7 @@ class BuildPlanner:
 
     return BuildPlan(build_targets, packaging_commands_getters)
 
-  def _collect_preliminary_build_targets(self):
+  def _collect_preliminary_build_targets(self, enable_discovery: bool):
     build_targets = set()
     try:
       test_discovery_zip_regexes = self._get_test_discovery_zip_regexes()
@@ -154,6 +127,11 @@ class BuildPlanner:
     for target in self.args.extra_targets:
       if target in REQUIRED_BUILD_TARGETS:
         build_targets.add(target)
+        get_metrics_agent().report_unoptimized_target(target, 'Required build target.')
+        continue
+      # If nothing is discovered without error, that means nothing is needed.
+      if not test_discovery_zip_regexes:
+        get_metrics_agent().report_optimized_target(target)
         continue
 
       regex = r'\b(%s.*)\b' % re.escape(target)
@@ -162,13 +140,18 @@ class BuildPlanner:
           if re.search(regex, opt):
             get_metrics_agent().report_unoptimized_target(target, 'Test artifact used.')
             build_targets.add(target)
-            continue
+            # proceed to next target evaluation
+            break
           get_metrics_agent().report_optimized_target(target)
         except Exception as e:
           # In case of exception report as unoptimized
           build_targets.add(target)
           get_metrics_agent().report_unoptimized_target(target, f'Error in parsing test discovery output for {target}: {repr(e)}')
           logging.error(f'unable to parse test discovery output: {repr(e)}')
+          break
+    # If discovery is not enabled, return the original list
+    if not enable_discovery:
+      return self._legacy_collect_preliminary_build_targets()
 
     return build_targets
 
@@ -269,6 +252,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
       action='store_true',
       help='Flag to indicate running a device build.',
   )
+  argparser.add_argument(
+      '--test_discovery_info_mode',
+      action='store_true',
+      help='Flag to enable running test discovery in info only mode.',
+  )
 
   return argparser.parse_args(argv)
 
@@ -310,7 +298,7 @@ def execute_build_plan(build_plan: BuildPlan):
   build_command.append(get_top().joinpath(SOONG_UI_EXE_REL_PATH))
   build_command.append('--make-mode')
   build_command.extend(build_plan.build_targets)
-
+  logging.info(f'Running build command: {build_command}')
   try:
     run_command(build_command)
   except subprocess.CalledProcessError as e:
