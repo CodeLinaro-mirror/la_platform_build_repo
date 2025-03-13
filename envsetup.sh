@@ -502,8 +502,8 @@ function lunch()
     fi
 
     if [ ! -n "$release" ]; then
-        echo "Release not specified, defaulting to 'trunk_food' build"
-        release=trunk_food
+        echo "Release not specified, defaulting to 'trunk_staging' build"
+        release=trunk_staging
     fi
 
     if [[ -z "$product" ]] || [[ -z "$release" ]] || [[ -z "$variant" ]]
