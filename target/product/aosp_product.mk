@@ -28,12 +28,14 @@ PRODUCT_PRODUCT_PROPERTIES += \
     ro.com.android.dataroaming?=true \
 
 # More AOSP packages
+ifneq ($(TARGET_HAS_QTI_OPTIMIZATIONS), true)
 PRODUCT_PACKAGES += \
     initial-package-stopped-states-aosp.xml \
     messaging \
     PhotoTable \
     preinstalled-packages-platform-aosp-product.xml \
-    WallpaperPicker \
+    WallpaperPicker
+endif #TARGET_HAS_QTI_OPTIMIZATIONS
 
 # Telephony:
 #   Provide a APN configuration to GSI product
