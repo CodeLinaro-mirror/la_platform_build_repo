@@ -618,7 +618,7 @@ function _lunch_usage()
     ) 1>&2
 }
 
-function lunch()
+function lunch2()
 {
     if [[ $# -eq 1 && $1 = "--help" ]]; then
         _lunch_usage
