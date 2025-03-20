@@ -224,7 +224,7 @@ class GeneralTestsOptimizerTest(fake_filesystem_unittest.TestCase):
     if not build_context:
       build_context = self._create_build_context()
     return optimized_targets.GeneralTestsOptimizer(
-        'general-tests', build_context, None
+        'general-tests', build_context, None, []
     )
 
   def _create_build_context(

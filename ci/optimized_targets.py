@@ -42,10 +42,12 @@ class OptimizedBuildTarget(ABC):
       target: str,
       build_context: BuildContext,
       args: argparse.Namespace,
+      test_infos
   ):
     self.target = target
     self.build_context = build_context
     self.args = args
+    self.test_infos = test_infos
 
   def get_build_targets(self) -> set[str]:
     features = self.build_context.enabled_build_features
