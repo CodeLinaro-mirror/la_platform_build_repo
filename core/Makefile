@@ -84,21 +84,6 @@ ifneq ($(BUILDING_VENDOR_KERNEL_BOOT_IMAGE),)
 endif
 
 
-###########################################################
-# Get the module names suitable for ALL_MODULES.* variables that are installed
-# for a given partition
-#
-# $(1): Partition
-###########################################################
-define register-names-for-partition
-$(sort $(foreach m,$(product_MODULES),\
-	$(if $(filter $(PRODUCT_OUT)/$(strip $(1))/%, $(ALL_MODULES.$(m).INSTALLED)), \
-		$(m)
-	) \
-))
-endef
-
-
 # Release & Aconfig Flags
 # -----------------------------------------------------------------
 include $(BUILD_SYSTEM)/packaging/flags.mk
@@ -790,7 +775,13 @@ name := $(name)-apkcerts
 intermediates := \
 	$(call intermediates-dir-for,PACKAGING,apkcerts)
 APKCERTS_FILE := $(intermediates)/$(name).txt
-all_apkcerts_files := $(sort $(foreach p,$(PACKAGES),$(PACKAGES.$(p).APKCERTS_FILE)))
+ifeq ($(RELEASE_APKCERTS_INSTALL_ONLY), true)
+  all_apkcerts_packages := $(filter $(call product-installed-modules,$(INTERNAL_PRODUCT)),$(PACKAGES))
+else
+  all_apkcerts_packages := $(PACKAGES)
+endif
+all_apkcerts_files := $(sort $(foreach p,$(all_apkcerts_packages),$(PACKAGES.$(p).APKCERTS_FILE)))
+
 $(APKCERTS_FILE): $(all_apkcerts_files)
 # We don't need to really build all the modules.
 # TODO: rebuild APKCERTS_FILE if any app change its cert.
@@ -798,7 +789,7 @@ $(APKCERTS_FILE):
 	@echo APK certs list: $@
 	@mkdir -p $(dir $@)
 	@rm -f $@
-	$(foreach p,$(sort $(PACKAGES)),\
+	$(foreach p,$(sort $(all_apkcerts_packages)),\
 	  $(if $(PACKAGES.$(p).APKCERTS_FILE),\
 	    $(call _apkcerts_merge,$(PACKAGES.$(p).APKCERTS_FILE), $@),\
 	    $(if $(PACKAGES.$(p).EXTERNAL_KEY),\
@@ -1926,15 +1917,6 @@ kernel_notice_file := $(TARGET_OUT_NOTICE_FILES)/src/kernel.txt
 # need no associated notice file on the device UI.
 exclude_target_dirs := apex
 
-# TODO(b/69865032): Make PRODUCT_NOTICE_SPLIT the default behavior.
-ifneq ($(PRODUCT_NOTICE_SPLIT),true)
-#target_notice_file_html := $(TARGET_OUT_INTERMEDIATES)/NOTICE.html
-target_notice_file_html_gz := $(TARGET_OUT_INTERMEDIATES)/NOTICE.html.gz
-installed_notice_html_or_xml_gz := $(TARGET_OUT)/etc/NOTICE.html.gz
-
-$(call declare-0p-target,$(target_notice_file_html_gz))
-$(call declare-0p-target,$(installed_notice_html_or_xml_gz))
-else
 # target_notice_file_xml := $(TARGET_OUT_INTERMEDIATES)/NOTICE.xml
 target_notice_file_xml_gz := $(TARGET_OUT_INTERMEDIATES)/NOTICE.xml.gz
 installed_notice_html_or_xml_gz := $(TARGET_OUT)/etc/NOTICE.xml.gz
@@ -2053,8 +2035,6 @@ license_modules_vendor += $(license_modules_rehomed)
 system_xml_directories := xml_system
 system_notice_file_message := "Notices for files contained in the system filesystem image in this directory:"
 endif
-
-endif # PRODUCT_NOTICE_SPLIT
 
 ALL_DEFAULT_INSTALLED_MODULES += $(installed_notice_html_or_xml_gz)
 
@@ -5230,7 +5210,9 @@ APEX_INFO_FILE := $(APEX_OUT)/apex-info-list.xml
 # apexd_host scans/activates APEX files and writes /apex/apex-info-list.xml
 # Note that `@echo $(PRIVATE_APEX_FILES)` line is added to trigger the rule when the APEX list is changed.
 $(APEX_INFO_FILE): PRIVATE_APEX_FILES := $(apex_files)
-$(APEX_INFO_FILE): $(HOST_OUT_EXECUTABLES)/apexd_host $(apex_files)
+$(APEX_INFO_FILE): $(HOST_OUT_EXECUTABLES)/apexd_host \
+    $(HOST_OUT_EXECUTABLES)/deapexer $(HOST_OUT_EXECUTABLES)/debugfs $(HOST_OUT_EXECUTABLES)/fsck.erofs \
+    $(apex_files)
 	@echo "Extracting apexes..."
 	@echo $(PRIVATE_APEX_FILES) > /dev/null
 	@rm -rf $(APEX_OUT)
@@ -5345,7 +5327,7 @@ my_decompress_tools := \
     lz4:$(HOST_OUT_EXECUTABLES)/lz4 \
 
 
-# BOARD_KERNEL_CONFIG_FILE and BOARD_KERNEL_VERSION can be used to override the values extracted
+# BOARD_KERNEL_VERSION can be used to override the values extracted
 # from INSTALLED_KERNEL_TARGET.
 ifdef BOARD_KERNEL_VERSION
 $(BUILT_KERNEL_VERSION_FILE): PRIVATE_DECOMPRESS_TOOLS := $(my_decompress_tools)
@@ -5357,15 +5339,8 @@ $(BUILT_KERNEL_VERSION_FILE): $(EXTRACT_KERNEL) $(firstword $(INSTALLED_KERNEL_T
     echo "Specified kernel version '$(BOARD_KERNEL_VERSION)' does not match actual kernel version '$$KERNEL_RELEASE' " ; exit 1; fi;
 	echo '$(BOARD_KERNEL_VERSION)' > $@
 
-ifdef BOARD_KERNEL_CONFIG_FILE
-$(BUILT_KERNEL_CONFIGS_FILE): $(BOARD_KERNEL_CONFIG_FILE)
-	cp $< $@
-
-$(call declare-license-metadata,$(BUILT_KERNEL_CONFIGS_FILE),SPDX-license-identifier-GPL-2.0-only,restricted,$(BUILD_SYSTEM)/LINUX_KERNEL_COPYING,"Kernel",kernel)
 $(call declare-license-metadata,$(BUILT_KERNEL_VERSION_FILE),SPDX-license-identifier-GPL-2.0-only,restricted,$(BUILD_SYSTEM)/LINUX_KERNEL_COPYING,"Kernel",kernel)
 
-my_board_extracted_kernel := true
-endif # BOARD_KERNEL_CONFIG_FILE
 endif # BOARD_KERNEL_VERSION
 
 
@@ -5876,7 +5851,10 @@ endif
 endif # BOARD_AVB_ENABLE
 ifneq (,$(strip $(BOARD_CUSTOMIMAGES_PARTITION_LIST)))
 	$(hide) $(foreach partition,$(BOARD_CUSTOMIMAGES_PARTITION_LIST), \
-	  echo "flash $(partition)" >> $@;)
+		$(if $(BOARD_$(call to-upper,$(partition))_IMAGE_NO_FLASHALL),, \
+	      echo "flash $(partition)" >> $@; \
+		) \
+	)
 endif
 	$(hide) echo "reboot fastboot" >> $@
 	$(hide) echo "update-super" >> $@
@@ -7169,22 +7147,6 @@ $(APPCOMPAT_ZIP): $(SOONG_ZIP)
 	$(hide) find $(PRODUCT_OUT)/appcompat | sort >$(PRIVATE_LIST_FILE)
 	$(hide) $(SOONG_ZIP) -d -o $@ -C $(PRODUCT_OUT)/appcompat -l $(PRIVATE_LIST_FILE)
 
-# The mac build doesn't build dex2oat, so create the zip file only if the build OS is linux.
-ifeq ($(BUILD_OS),linux)
-ifneq ($(DEX2OAT),)
-dexpreopt_tools_deps := $(DEXPREOPT_GEN_DEPS) $(DEXPREOPT_GEN)
-dexpreopt_tools_deps += $(HOST_OUT_EXECUTABLES)/dexdump
-dexpreopt_tools_deps += $(HOST_OUT_EXECUTABLES)/oatdump
-DEXPREOPT_TOOLS_ZIP := $(PRODUCT_OUT)/dexpreopt_tools.zip
-$(DEXPREOPT_TOOLS_ZIP): $(dexpreopt_tools_deps)
-$(DEXPREOPT_TOOLS_ZIP): PRIVATE_DEXPREOPT_TOOLS_DEPS := $(dexpreopt_tools_deps)
-$(DEXPREOPT_TOOLS_ZIP): $(SOONG_ZIP)
-	$(hide) mkdir -p $(dir $@)
-	$(hide) $(SOONG_ZIP) -d -o $@ -j $(addprefix -f ,$(PRIVATE_DEXPREOPT_TOOLS_DEPS)) -f $$(realpath $(DEX2OAT))
-$(call declare-1p-target,$(DEXPREOPT_TOOLS_ZIP),)
-endif # DEX2OAT is set
-endif # BUILD_OS == linux
-
 DEXPREOPT_CONFIG_ZIP := $(PRODUCT_OUT)/dexpreopt_config.zip
 
 $(DEXPREOPT_CONFIG_ZIP): $(INSTALLED_SYSTEMIMAGE_TARGET) \
@@ -7347,6 +7309,72 @@ ifeq (,$(TARGET_BUILD_UNBUNDLED))
   _proguard_dict_zip_modules := $(call product-installed-modules,$(INTERNAL_PRODUCT))
 else
   _proguard_dict_zip_modules := $(unbundled_build_modules)
+endif
+
+# Filter out list to avoid uncessary proguard related file generation
+ifeq (,$(TARGET_BUILD_UNBUNDLED))
+filter_out_proguard_dict_zip_modules :=
+# product.img
+ifndef BUILDING_PRODUCT_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/product/%
+endif
+# system.img
+ifndef BUILDING_SYSTEM_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/system/%
+endif
+# system_dlkm.img
+ifndef BUILDING_SYSTEM_DLKM_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/system_dlkm/%
+endif
+# system_ext.img
+ifndef BUILDING_SYSTEM_EXT_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/system_ext/%
+endif
+# system_other.img
+ifndef BUILDING_SYSTEM_OTHER_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/system_other/%
+endif
+# odm.img
+ifndef BUILDING_ODM_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/odm/%
+endif
+# odm_dlkm.img
+ifndef BUILDING_ODM_DLKM_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/odm_dlkm/%
+endif
+# vendor.img
+ifndef BUILDING_VENDOR_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/vendor/%
+endif
+# vendor_dlkm.img
+ifndef BUILDING_VENDOR_DLKM_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/vendor_dlkm/%
+endif
+# cache.img
+ifndef BUILDING_CACHE_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/cache/%
+endif
+# ramdisk.img
+ifndef BUILDING_RAMDISK_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/ramdisk/%
+endif
+# recovery.img
+ifndef INSTALLED_RECOVERYIMAGE_TARGET
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/recovery/%
+endif
+# userdata.img
+ifndef BUILDING_USERDATA_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/data/%
+endif
+
+# Check the installed files of each module and return the module name
+# or return empty if none of the files remain to be installed
+define filter-out-proguard-modules
+$(if $(filter-out $(filter_out_proguard_dict_zip_modules),$(call module-installed-files,$(1))),$(1))
+endef
+
+# Filter out proguard dict zip modules those are not installed at the built image
+_proguard_dict_zip_modules := $(foreach m,$(_proguard_dict_zip_modules),$(strip $(call filter-out-proguard-modules,$(m))))
 endif
 
 # The path to the zip file containing proguard dictionaries.

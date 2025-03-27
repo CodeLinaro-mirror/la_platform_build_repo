@@ -61,7 +61,6 @@ python_test_host {
     version: {
         py3: {
             embedded_launcher: true,
-            enabled: true,
         },
     },
 }

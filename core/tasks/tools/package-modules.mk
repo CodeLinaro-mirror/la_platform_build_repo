@@ -95,7 +95,7 @@ endif
 
 $(my_package_zip): PRIVATE_COPY_PAIRS := $(my_copy_pairs)
 $(my_package_zip): PRIVATE_PICKUP_FILES := $(my_pickup_files)
-$(my_package_zip) : $(my_built_modules)
+$(my_package_zip) : $(my_built_modules) $(SOONG_ZIP)
 	@echo "Package $@"
 	@rm -rf $(dir $@) && mkdir -p $(dir $@)
 	$(foreach p, $(PRIVATE_COPY_PAIRS),\
@@ -104,7 +104,7 @@ $(my_package_zip) : $(my_built_modules)
 	  cp -Rf $(word 1,$(pair)) $(word 2,$(pair)) && ) true
 	$(hide) $(foreach f, $(PRIVATE_PICKUP_FILES),\
 	  cp -RfL $(f) $(dir $@) && ) true
-	$(hide) cd $(dir $@) && zip -rqX $(notdir $@) *
+	$(hide) $(SOONG_ZIP) -o $@ -C $(dir $@) -D $(dir $@)
 
 my_makefile :=
 my_staging_dir :=

@@ -253,7 +253,6 @@ PRODUCT_PACKAGES += \
     preinstalled-packages-asl-files.xml \
     preinstalled-packages-platform.xml \
     preinstalled-packages-strict-signature.xml \
-    printflags \
     privapp-permissions-platform.xml \
     prng_seeder \
     recovery-persist \
@@ -385,6 +384,9 @@ endif
 ifeq ($(RELEASE_MEMORY_MANAGEMENT_DAEMON),true)
   PRODUCT_PACKAGES += \
         mm_daemon
+else
+  PRODUCT_PACKAGES += \
+        init-mmd-prop.rc
 endif
 
 # VINTF data for system image
@@ -580,3 +582,6 @@ $(call soong_config_set, bionic, large_system_property_node, $(RELEASE_LARGE_SYS
 $(call soong_config_set, Aconfig, read_from_new_storage, $(RELEASE_READ_FROM_NEW_STORAGE))
 $(call soong_config_set, SettingsLib, legacy_avatar_picker_app_enabled, $(if $(RELEASE_AVATAR_PICKER_APP),,true))
 $(call soong_config_set, appsearch, enable_isolated_storage, $(RELEASE_APPSEARCH_ENABLE_ISOLATED_STORAGE))
+
+# Enable AppSearch Isolated Storage per BUILD flag
+PRODUCT_PRODUCT_PROPERTIES += appsearch.feature.enable_isolated_storage=$(RELEASE_APPSEARCH_ENABLE_ISOLATED_STORAGE)
