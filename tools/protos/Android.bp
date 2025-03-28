@@ -20,7 +20,7 @@ python_library_host {
     name: "metadata_file_proto_py",
     version: {
         py3: {
-            embedded_launcher: true,
+            enabled: true,
         },
     },
     srcs: [
