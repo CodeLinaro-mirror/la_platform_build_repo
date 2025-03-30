@@ -548,8 +548,18 @@ function lunch()
     # Handle the legacy format
     local legacy=$(echo $1 | grep "-")
     if [[ $# -eq 1 && -n $legacy ]]; then
-        IFS="-" read -r product release variant <<< "$1"
-        if [[ -z "$product" ]] || [[ -z "$release" ]] || [[ -z "$variant" ]]; then
+        # Count the number of hyphens in the input
+        hyphen_count=$(echo "$1" | awk -F"-" '{print NF-1}')
+        # Split the input string based on the number of hyphens
+        if [[ $hyphen_count -eq 1 ]]; then
+            IFS="-" read -r product variant <<< "$1"
+            # Set default release
+            release="bp2a"
+            echo "Release not specified, defaulting to $release build"
+        elif [[ $hyphen_count -eq 2 ]]; then
+            IFS="-" read -r product release variant <<< "$1"
+        fi
+    if [[ -z "$product" ]] || [[ -z "$release" ]] || [[ -z "$variant" ]]; then
             echo "Invalid lunch combo: $1" 1>&2
             echo "Valid combos must be of the form <product>-<release>-<variant> when using" 1>&2
             echo "the legacy format.  Run 'lunch --help' for usage." 1>&2
