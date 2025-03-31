@@ -45,11 +45,6 @@ BUILD_HOSTNAME_FILE := $(SOONG_OUT_DIR)/build_hostname.txt
 $(KATI_obsolete_var BUILD_HOSTNAME,Use BUILD_HOSTNAME_FROM_FILE instead)
 $(KATI_obsolete_var FILE_NAME_TAG,https://android.googlesource.com/platform/build/+/master/Changes.md#FILE_NAME_TAG)
 
-$(BUILD_NUMBER_FILE):
-	# empty rule to prevent dangling rule error for a file that is written by soong_ui
-$(BUILD_HOSTNAME_FILE):
-	# empty rule to prevent dangling rule error for a file that is written by soong_ui
-
 .KATI_RESTAT: $(BUILD_NUMBER_FILE)
 .KATI_RESTAT: $(BUILD_HOSTNAME_FILE)
 
@@ -277,7 +272,10 @@ FULL_BUILD := true
 # Include all of the makefiles in the system
 #
 
-subdir_makefiles := $(SOONG_OUT_DIR)/installs-$(TARGET_PRODUCT)$(COVERAGE_SUFFIX).mk $(SOONG_ANDROID_MK)
+subdir_makefiles := \
+    $(SOONG_OUT_DIR)/installs-$(TARGET_PRODUCT)$(COVERAGE_SUFFIX).mk \
+    $(SOONG_ANDROID_MK) \
+    build/make/target/board/android-info.mk
 
 # Android.mk files are only used on Linux builds, Mac only supports Android.bp
 ifeq ($(HOST_OS),linux)
@@ -302,7 +300,7 @@ subdir_makefiles_total := $(words int $(subdir_makefiles) post finish)
 $(foreach mk,$(subdir_makefiles),$(info [$(call inc_and_print,subdir_makefiles_inc)/$(subdir_makefiles_total)] including $(mk) ...)$(eval include $(mk)))
 
 # Build bootloader.img/radio.img, and unpack the partitions.
--include vendor/google/build/tasks/tools/update_bootloader_radio_image.mk
+-include vendor/google_devices/$(TARGET_SOC)/prebuilts/misc_bins/update_bootloader_radio_image.mk
 
 # For an unbundled image, we can skip blueprint_tools because unbundled image
 # aims to remove a large number framework projects from the manifest, the
@@ -1197,8 +1195,9 @@ endif
 ifneq ($(TARGET_BUILD_APPS),)
   # If this build is just for apps, only build apps and not the full system by default.
   ifneq ($(filter all,$(TARGET_BUILD_APPS)),)
-    # If they used the magic goal "all" then build all apps in the source tree.
-    unbundled_build_modules := $(foreach m,$(sort $(ALL_MODULES)),$(if $(filter APPS,$(ALL_MODULES.$(m).CLASS)),$(m)))
+    # The magic goal "all" used to build all apps in the source tree. This was deprecated
+    # so that we can know all TARGET_BUILD_APPS apps are built with soong for soong-only builds.
+    $(error TARGET_BUILD_APPS=all is deprecated)
   else
     unbundled_build_modules := $(sort $(TARGET_BUILD_APPS))
   endif
@@ -1468,7 +1467,6 @@ droidcore: droidcore-unbundled
 # dist_files only for putting your library into the dist directory with a full build.
 .PHONY: dist_files
 
-$(call dist-for-goals, dist_files, $(SOONG_OUT_DIR)/module_bp_java_deps.json)
 $(call dist-for-goals, dist_files, $(PRODUCT_OUT)/module-info.json)
 
 .PHONY: apps_only
@@ -1622,7 +1620,6 @@ else ifeq ($(TARGET_BUILD_UNBUNDLED),$(TARGET_BUILD_UNBUNDLED_IMAGE))
 
   ifneq ($(ANDROID_BUILD_EMBEDDED),true)
     $(call dist-for-goals-with-filenametag, droidcore, \
-      $(APPS_ZIP) \
       $(INTERNAL_EMULATOR_PACKAGE_TARGET) \
     )
   endif
@@ -1668,24 +1665,6 @@ else ifeq ($(TARGET_BUILD_UNBUNDLED),$(TARGET_BUILD_UNBUNDLED_IMAGE))
   ifeq ($(EMMA_INSTRUMENT),true)
     $(call dist-for-goals, dist_files, $(JACOCO_REPORT_CLASSES_ALL))
   endif
-
-  # Put XML formatted API files in the dist dir.
-  $(TARGET_OUT_COMMON_INTERMEDIATES)/api.xml: $(call java-lib-files,$(ANDROID_PUBLIC_STUBS)) $(APICHECK)
-  $(TARGET_OUT_COMMON_INTERMEDIATES)/system-api.xml: $(call java-lib-files,$(ANDROID_SYSTEM_STUBS)) $(APICHECK)
-  $(TARGET_OUT_COMMON_INTERMEDIATES)/module-lib-api.xml: $(call java-lib-files,$(ANDROID_MODULE_LIB_STUBS)) $(APICHECK)
-  $(TARGET_OUT_COMMON_INTERMEDIATES)/system-server-api.xml: $(call java-lib-files,$(ANDROID_SYSTEM_SERVER_STUBS)) $(APICHECK)
-  $(TARGET_OUT_COMMON_INTERMEDIATES)/test-api.xml: $(call java-lib-files,$(ANDROID_TEST_STUBS)) $(APICHECK)
-
-  api_xmls := $(addprefix $(TARGET_OUT_COMMON_INTERMEDIATES)/,api.xml system-api.xml module-lib-api.xml system-server-api.xml test-api.xml)
-  $(api_xmls):
-	$(hide) echo "Converting API file to XML: $@"
-	$(hide) mkdir -p $(dir $@)
-	$(hide) $(APICHECK_COMMAND) jar-to-jdiff $< $@
-
-  $(foreach xml,$(sort $(api_xmls)),$(call declare-1p-target,$(xml),))
-
-  $(call dist-for-goals, dist_files, $(api_xmls))
-  api_xmls :=
 
   ifdef CLANG_COVERAGE
     $(foreach f,$(SOONG_NDK_API_XML), \
@@ -1755,10 +1734,6 @@ dump-files:
 	@echo "Target files for $(TARGET_PRODUCT)-$(TARGET_BUILD_VARIANT) ($(INTERNAL_PRODUCT)):"
 	@echo $(sort $(patsubst $(PRODUCT_OUT)/%,%,$(filter $(PRODUCT_OUT)/%,$(modules_to_install)))) | tr -s ' ' '\n'
 	@echo Successfully dumped product target file list.
-
-.PHONY: nothing
-nothing:
-	@echo Successfully read the makefiles.
 
 .PHONY: tidy_only
 tidy_only:
@@ -1917,14 +1892,15 @@ $(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make-metadata.csv:
 	  $(eval _is_system_other_odex_marker := $(if $(findstring $f,$(INSTALLED_SYSTEM_OTHER_ODEX_MARKER)),Y)) \
 	  $(eval _is_kernel_modules_blocklist := $(if $(findstring $f,$(ALL_KERNEL_MODULES_BLOCKLIST)),Y)) \
 	  $(eval _is_fsverity_build_manifest_apk := $(if $(findstring $f,$(ALL_FSVERITY_BUILD_MANIFEST_APK)),Y)) \
-	  $(eval _is_linker_config := $(if $(findstring $f,$(SYSTEM_LINKER_CONFIG) $(vendor_linker_config_file)),Y)) \
+	  $(eval _is_linker_config := $(if $(findstring $f,$(SYSTEM_LINKER_CONFIG) $(vendor_linker_config_file) $(product_linker_config_file)),Y)) \
 	  $(eval _is_partition_compat_symlink := $(if $(findstring $f,$(PARTITION_COMPAT_SYMLINKS)),Y)) \
 	  $(eval _is_flags_file := $(if $(findstring $f, $(ALL_FLAGS_FILES)),Y)) \
 	  $(eval _is_rootdir_symlink := $(if $(findstring $f, $(ALL_ROOTDIR_SYMLINKS)),Y)) \
 	  $(eval _is_platform_generated := $(_is_build_prop)$(_is_notice_file)$(_is_product_system_other_avbkey)$(_is_event_log_tags_file)$(_is_system_other_odex_marker)$(_is_kernel_modules_blocklist)$(_is_fsverity_build_manifest_apk)$(_is_linker_config)$(_is_partition_compat_symlink)$(_is_flags_file)$(_is_rootdir_symlink)) \
 	  $(eval _static_libs := $(if $(_is_soong_module),,$(ALL_INSTALLED_FILES.$f.STATIC_LIBRARIES))) \
 	  $(eval _whole_static_libs := $(if $(_is_soong_module),,$(ALL_INSTALLED_FILES.$f.WHOLE_STATIC_LIBRARIES))) \
-	  $(eval _license_text := $(if $(filter $(_build_output_path),$(ALL_NON_MODULES)),$(ALL_NON_MODULES.$(_build_output_path).NOTICES))) \
+	  $(eval _license_text := $(if $(filter $(_build_output_path),$(ALL_NON_MODULES)),$(ALL_NON_MODULES.$(_build_output_path).NOTICES),\
+	                          $(if $(_is_partition_compat_symlink),build/soong/licenses/LICENSE))) \
 	  echo '$(_build_output_path),$(_module_path),$(_is_soong_module),$(_is_prebuilt_make_module),$(_product_copy_files),$(_kernel_module_copy_files),$(_is_platform_generated),$(_static_libs),$(_whole_static_libs),$(_license_text)' >> $@; \
 	)
 

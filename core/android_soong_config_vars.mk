@@ -48,9 +48,16 @@ $(call soong_config_set_bool,ANDROID,RELEASE_BOARD_API_LEVEL_FROZEN,$(RELEASE_BO
 $(call add_soong_config_var,ANDROID,TARGET_DYNAMIC_64_32_DRMSERVER)
 $(call add_soong_config_var,ANDROID,TARGET_ENABLE_MEDIADRM_64)
 $(call add_soong_config_var,ANDROID,TARGET_DYNAMIC_64_32_MEDIASERVER)
+$(call soong_config_set_bool,ANDROID,TARGET_SUPPORTS_32_BIT_APPS,$(if $(filter true,$(TARGET_SUPPORTS_32_BIT_APPS)),true,false))
+$(call soong_config_set_bool,ANDROID,TARGET_SUPPORTS_64_BIT_APPS,$(if $(filter true,$(TARGET_SUPPORTS_64_BIT_APPS)),true,false))
 $(call add_soong_config_var,ANDROID,BOARD_GENFS_LABELS_VERSION)
+$(call soong_config_set_bool,ANDROID,PRODUCT_FSVERITY_GENERATE_METADATA,$(if $(filter true,$(PRODUCT_FSVERITY_GENERATE_METADATA)),true,false))
 
 $(call add_soong_config_var,ANDROID,ADDITIONAL_M4DEFS,$(if $(BOARD_SEPOLICY_M4DEFS),$(addprefix -D,$(BOARD_SEPOLICY_M4DEFS))))
+$(call add_soong_config_var,ANDROID,TARGET_ADD_ROOT_EXTRA_VENDOR_SYMLINKS)
+
+# For BUILDING_GSI
+$(call soong_config_set_bool,gsi,building_gsi,$(if $(filter true,$(BUILDING_GSI)),true,false))
 
 # For bootable/recovery
 RECOVERY_API_VERSION := 3
@@ -87,10 +94,11 @@ endif
 $(call soong_config_set_bool,art_module,art_build_host_debug,$(if $(filter false,$(ART_BUILD_HOST_DEBUG)),false,true))
 
 # For chre
-$(call soong_config_set_bool,chre,chre_daemon_lama_enabled,$(if $(filter true,$(CHRE_DAEMON_LPMA_ENABLED)),true,false))
+$(call soong_config_set_bool,chre,chre_daemon_lpma_enabled,$(if $(filter true,$(CHRE_DAEMON_LPMA_ENABLED)),true,false))
 $(call soong_config_set_bool,chre,chre_dedicated_transport_channel_enabled,$(if $(filter true,$(CHRE_DEDICATED_TRANSPORT_CHANNEL_ENABLED)),true,false))
 $(call soong_config_set_bool,chre,chre_log_atom_extension_enabled,$(if $(filter true,$(CHRE_LOG_ATOM_EXTENSION_ENABLED)),true,false))
 $(call soong_config_set_bool,chre,building_vendor_image,$(if $(filter true,$(BUILDING_VENDOR_IMAGE)),true,false))
+$(call soong_config_set_bool,chre,chre_usf_daemon_enabled,$(if $(filter true,$(CHRE_USF_DAEMON_ENABLED)),true,false))
 
 ifdef TARGET_BOARD_AUTO
   $(call add_soong_config_var_value, ANDROID, target_board_auto, $(TARGET_BOARD_AUTO))
@@ -133,12 +141,10 @@ ifdef TARGET_BOOTS_16K
 $(call soong_config_set_bool,ANDROID,target_boots_16k,$(filter true,$(TARGET_BOOTS_16K)))
 endif
 
-ifdef PRODUCT_MEMCG_V2_FORCE_ENABLED
-$(call add_soong_config_var_value,ANDROID,memcg_v2_force_enabled,$(PRODUCT_MEMCG_V2_FORCE_ENABLED))
-endif
-
 ifdef PRODUCT_CGROUP_V2_SYS_APP_ISOLATION_ENABLED
 $(call add_soong_config_var_value,ANDROID,cgroup_v2_sys_app_isolation,$(PRODUCT_CGROUP_V2_SYS_APP_ISOLATION_ENABLED))
+else
+$(call add_soong_config_var_value,ANDROID,cgroup_v2_sys_app_isolation,true)
 endif
 
 $(call add_soong_config_var_value,ANDROID,release_avf_allow_preinstalled_apps,$(RELEASE_AVF_ALLOW_PREINSTALLED_APPS))
@@ -200,6 +206,14 @@ $(call add_soong_config_var_value,ANDROID,include_nonpublic_framework_api,false)
 else
 $(call add_soong_config_var_value,ANDROID,include_nonpublic_framework_api,true)
 endif
+
+# Add nfc build flag to soong
+ifneq ($(RELEASE_PACKAGE_NFC_STACK),NfcNci)
+  $(call soong_config_set,bootclasspath,nfc_apex_bootclasspath_fragment,true)
+endif
+
+# Add uwb build flag to soong
+$(call soong_config_set,bootclasspath,release_ranging_stack,$(RELEASE_RANGING_STACK))
 
 # Add crashrecovery build flag to soong
 $(call soong_config_set,ANDROID,release_crashrecovery_module,$(RELEASE_CRASHRECOVERY_MODULE))
@@ -322,6 +336,22 @@ $(call soong_config_set_bool,google_graphics,board_uses_hwc_services,$(if $(filt
 # Variables for controlling android.hardware.composer.hwc3-service.pixel
 $(call soong_config_set,google_graphics,board_hwc_version,$(BOARD_HWC_VERSION))
 
+# Flag ExcludeExtractApk is to support "extract_apk" property for the following conditions.
+ifneq ($(WITH_DEXPREOPT),true)
+  $(call soong_config_set_bool,PrebuiltGmsCore,ExcludeExtractApk,true)
+endif
+ifeq ($(DONT_DEXPREOPT_PREBUILTS),true)
+  $(call soong_config_set_bool,PrebuiltGmsCore,ExcludeExtractApk,true)
+endif
+ifeq ($(WITH_DEXPREOPT_BOOT_IMG_AND_SYSTEM_SERVER_ONLY),true)
+  $(call soong_config_set_bool,PrebuiltGmsCore,ExcludeExtractApk,true)
+endif
+
 # Variables for extra branches
 # TODO(b/383238397): Use bootstrap_go_package to enable extra flags.
 -include vendor/google/build/extra_soong_config_vars.mk
+
+# Variable for CI test packages
+ifneq ($(filter arm x86 true,$(TARGET_ARCH) $(TARGET_2ND_ARCH) $(TARGET_ENABLE_MEDIADRM_64)),)
+  $(call soong_config_set_bool,ci_tests,uses_widevine_tests, true)
+endif

@@ -52,7 +52,7 @@ PRODUCT_PACKAGES += \
     com.android.adbd \
     com.android.adservices \
     com.android.appsearch \
-    com.android.btservices \
+    com.android.bt \
     com.android.configinfrastructure \
     com.android.conscrypt \
     com.android.devicelock \
@@ -241,6 +241,7 @@ PRODUCT_PACKAGES += \
     PackageInstaller \
     package-shareduid-allowlist.xml \
     passwd_system \
+    pbtombstone \
     perfetto \
     perfetto-extras \
     ping \
@@ -500,6 +501,7 @@ PRODUCT_VENDOR_PROPERTIES += ro.zygote?=zygote32
 
 PRODUCT_SYSTEM_PROPERTIES += debug.atrace.tags.enableflags=0
 PRODUCT_SYSTEM_PROPERTIES += persist.traced.enable=1
+PRODUCT_SYSTEM_PROPERTIES += ro.surface_flinger.game_default_frame_rate_override=60
 
 # Include kernel configs.
 PRODUCT_PACKAGES += \
@@ -523,6 +525,7 @@ PRODUCT_PACKAGES_DEBUG := \
     logtagd.rc \
     ot-cli-ftd \
     ot-ctl \
+    overlay_remounter \
     procrank \
     profcollectd \
     profcollectctl \
@@ -577,3 +580,4 @@ $(call inherit-product,$(SRC_TARGET_DIR)/product/updatable_apex.mk)
 $(call soong_config_set, bionic, large_system_property_node, $(RELEASE_LARGE_SYSTEM_PROPERTY_NODE))
 $(call soong_config_set, Aconfig, read_from_new_storage, $(RELEASE_READ_FROM_NEW_STORAGE))
 $(call soong_config_set, SettingsLib, legacy_avatar_picker_app_enabled, $(if $(RELEASE_AVATAR_PICKER_APP),,true))
+$(call soong_config_set, appsearch, enable_isolated_storage, $(RELEASE_APPSEARCH_ENABLE_ISOLATED_STORAGE))

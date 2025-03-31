@@ -38,6 +38,7 @@ $(call add_json_bool, DisplayBuildNumber,                $(filter true,$(DISPLAY
 $(call add_json_str,  Platform_display_version_name,     $(PLATFORM_DISPLAY_VERSION))
 $(call add_json_str,  Platform_version_name,             $(PLATFORM_VERSION))
 $(call add_json_val,  Platform_sdk_version,              $(PLATFORM_SDK_VERSION))
+$(call add_json_val,  Platform_sdk_version_full,         $(PLATFORM_SDK_VERSION_FULL))
 $(call add_json_str,  Platform_sdk_codename,             $(PLATFORM_VERSION_CODENAME))
 $(call add_json_bool, Platform_sdk_final,                $(filter REL,$(PLATFORM_VERSION_CODENAME)))
 $(call add_json_val,  Platform_sdk_extension_version,    $(PLATFORM_SDK_EXTENSION_VERSION))
@@ -196,6 +197,8 @@ $(call add_json_str,  OemPath,                           $(TARGET_COPY_OUT_OEM))
 $(call add_json_bool, MinimizeJavaDebugInfo,             $(filter true,$(PRODUCT_MINIMIZE_JAVA_DEBUG_INFO)))
 $(call add_json_str,  RecoveryPath,                      $(TARGET_COPY_OUT_RECOVERY))
 $(call add_json_bool, BuildingRecoveryImage,             $(BUILDING_RECOVERY_IMAGE))
+$(call add_json_str,  UserdataPath,                      $(TARGET_COPY_OUT_DATA))
+$(call add_json_bool, BuildingUserdataImage,             $(BUILDING_USERDATA_IMAGE))
 
 $(call add_json_bool, UseGoma,                           $(filter-out false,$(USE_GOMA)))
 $(call add_json_bool, UseRBE,                            $(filter-out false,$(USE_RBE)))
@@ -251,6 +254,8 @@ $(call add_json_list, TargetFSConfigGen,                 $(TARGET_FS_CONFIG_GEN)
 # installed files between make and soong, regardless of the USE_SOONG_DEFINED_SYSTEM_IMAGE setting.
 $(call add_json_bool, UseSoongSystemImage,               $(filter true,$(USE_SOONG_DEFINED_SYSTEM_IMAGE)))
 $(call add_json_str,  ProductSoongDefinedSystemImage,    $(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE))
+
+$(call add_json_bool, UseSoongNoticeXML, $(filter true,$(PRODUCT_USE_SOONG_NOTICE_XML)))
 
 $(call add_json_map, VendorVars)
 $(foreach namespace,$(sort $(SOONG_CONFIG_NAMESPACES)),\
@@ -358,8 +363,6 @@ $(call add_json_list, ProductPropFiles, $(TARGET_PRODUCT_PROP))
 $(call add_json_list, OdmPropFiles, $(TARGET_ODM_PROP))
 $(call add_json_list, VendorPropFiles, $(TARGET_VENDOR_PROP))
 
-$(call add_json_str, ExtraAllowedDepsTxt, $(EXTRA_ALLOWED_DEPS_TXT))
-
 # Do not set ArtTargetIncludeDebugBuild into any value if PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD is not set,
 # to have the same behavior from runtime_libart.mk.
 ifneq ($(PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD),)
@@ -370,6 +373,7 @@ _config_enable_uffd_gc := \
   $(firstword $(OVERRIDE_ENABLE_UFFD_GC) $(PRODUCT_ENABLE_UFFD_GC) default)
 $(call add_json_str, EnableUffdGc, $(_config_enable_uffd_gc))
 _config_enable_uffd_gc :=
+$(call add_json_str, BoardKernelVersion, $(BOARD_KERNEL_VERSION))
 
 $(call add_json_list, DeviceFrameworkCompatibilityMatrixFile, $(DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE))
 $(call add_json_list, DeviceProductCompatibilityMatrixFile, $(DEVICE_PRODUCT_COMPATIBILITY_MATRIX_FILE))
@@ -382,9 +386,10 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str,  ProductDirectory,    $(dir $(INTERNAL_PRODUCT)))
 
   $(call add_json_map,PartitionQualifiedVariables)
-  $(foreach image_type,INIT_BOOT BOOT VENDOR_BOOT SYSTEM VENDOR CACHE USERDATA PRODUCT SYSTEM_EXT OEM ODM VENDOR_DLKM ODM_DLKM SYSTEM_DLKM, \
+  $(foreach image_type,INIT_BOOT BOOT VENDOR_BOOT SYSTEM VENDOR CACHE USERDATA PRODUCT SYSTEM_EXT OEM ODM VENDOR_DLKM ODM_DLKM SYSTEM_DLKM VBMETA VBMETA_SYSTEM VBMETA_SYSTEM_DLKM VBMETA_VENDOR_DLKM, \
     $(call add_json_map,$(call to-lower,$(image_type))) \
     $(call add_json_bool, BuildingImage, $(filter true,$(BUILDING_$(image_type)_IMAGE))) \
+    $(call add_json_bool, PrebuiltImage, $(filter true,$(BOARD_PREBUILT_$(image_type)IMAGE))) \
     $(call add_json_str, BoardErofsCompressor, $(BOARD_$(image_type)IMAGE_EROFS_COMPRESSOR)) \
     $(call add_json_str, BoardErofsCompressHints, $(BOARD_$(image_type)IMAGE_EROFS_COMPRESS_HINTS)) \
     $(call add_json_str, BoardErofsPclusterSize, $(BOARD_$(image_type)IMAGE_EROFS_PCLUSTER_SIZE)) \
@@ -440,6 +445,7 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, BoardPrebuiltBootimage, $(BOARD_PREBUILT_BOOT_IMAGE))
   $(call add_json_str, BoardPrebuiltInitBootimage, $(BOARD_PREBUILT_INIT_BOOT_IMAGE))
   $(call add_json_str, BoardBootimagePartitionSize, $(BOARD_BOOTIMAGE_PARTITION_SIZE))
+  $(call add_json_str, BoardVendorBootimagePartitionSize, $(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
   $(call add_json_str, BoardInitBootimagePartitionSize, $(BOARD_INIT_BOOT_IMAGE_PARTITION_SIZE))
   $(call add_json_str, BoardBootHeaderVersion, $(BOARD_BOOT_HEADER_VERSION))
   $(call add_json_str, TargetKernelPath, $(TARGET_KERNEL_PATH))
@@ -455,6 +461,8 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_list, InternalKernelCmdline, $(INTERNAL_KERNEL_CMDLINE))
   $(call add_json_list, InternalBootconfig, $(INTERNAL_BOOTCONFIG))
   $(call add_json_str, InternalBootconfigFile, $(INTERNAL_BOOTCONFIG_FILE))
+
+  $(call add_json_bool, BuildingSystemOtherImage, $(BUILDING_SYSTEM_OTHER_IMAGE))
 
   # super image stuff
   $(call add_json_bool, ProductUseDynamicPartitions, $(filter true,$(PRODUCT_USE_DYNAMIC_PARTITIONS)))
@@ -473,7 +481,14 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
     $(call end_json_map)
   $(call add_json_bool, ProductVirtualAbOta, $(filter true,$(PRODUCT_VIRTUAL_AB_OTA)))
   $(call add_json_bool, ProductVirtualAbOtaRetrofit, $(filter true,$(PRODUCT_VIRTUAL_AB_OTA_RETROFIT)))
+  $(call add_json_bool, ProductVirtualAbCompression, $(filter true,$(PRODUCT_VIRTUAL_AB_COMPRESSION)))
+  $(call add_json_str, ProductVirtualAbCompressionMethod, $(PRODUCT_VIRTUAL_AB_COMPRESSION_METHOD))
+  $(call add_json_str, ProductVirtualAbCompressionFactor, $(PRODUCT_VIRTUAL_AB_COMPRESSION_FACTOR))
+  $(call add_json_str, ProductVirtualAbCowVersion, $(PRODUCT_VIRTUAL_AB_COW_VERSION))
   $(call add_json_bool, AbOtaUpdater, $(filter true,$(AB_OTA_UPDATER)))
+  $(call add_json_list, AbOtaPartitions, $(AB_OTA_PARTITIONS))
+  $(call add_json_list, AbOtaKeys, $(PRODUCT_OTA_PUBLIC_KEYS))
+  $(call add_json_list, AbOtaPostInstallConfig, $(AB_OTA_POSTINSTALL_CONFIG))
 
   # Avb (android verified boot) stuff
   $(call add_json_bool, BoardAvbEnable, $(filter true,$(BOARD_AVB_ENABLE)))
@@ -544,6 +559,15 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
     $(call add_json_str, brightness_normal_percent, $(TARGET_RECOVERY_UI_BRIGHTNESS_NORMAL))
     $(call add_json_str, brightness_dimmed_percent, $(TARGET_RECOVERY_UI_BRIGHTNESS_DIMMED))
   $(call end_json_map)
+
+  $(call add_json_str, PrebuiltBootloader, $(BOARD_PREBUILT_BOOTLOADER))
+
+  # Used to generate userdata partition
+  $(call add_json_str, ProductFsCasefold, $(PRODUCT_FS_CASEFOLD))
+  $(call add_json_str, ProductQuotaProjid, $(PRODUCT_QUOTA_PROJID))
+  $(call add_json_str, ProductFsCompression, $(PRODUCT_FS_COMPRESSION))
+
+  $(call add_json_str, ReleaseToolsExtensionDir, $(firstword $(TARGET_RELEASETOOLS_EXTENSIONS) $($(TARGET_DEVICE_DIR)/../common)))
 
 $(call end_json_map)
 

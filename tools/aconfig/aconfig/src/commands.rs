@@ -23,7 +23,7 @@ use std::io::Read;
 use std::path::PathBuf;
 
 use crate::codegen::cpp::generate_cpp_code;
-use crate::codegen::java::generate_java_code;
+use crate::codegen::java::{generate_java_code, JavaCodegenConfig};
 use crate::codegen::rust::generate_rust_code;
 use crate::codegen::CodegenMode;
 use crate::dump::{DumpFormat, DumpPredicate};
@@ -219,33 +219,32 @@ pub fn create_java_lib(
     codegen_mode: CodegenMode,
     allow_instrumentation: bool,
     new_exported: bool,
+    single_exported_file: bool,
+    check_api_level: bool,
 ) -> Result<Vec<OutputFile>> {
     let parsed_flags = input.try_parse_flags()?;
-    let modified_parsed_flags = modify_parsed_flags_based_on_mode(parsed_flags, codegen_mode)?;
+    let modified_parsed_flags =
+        modify_parsed_flags_based_on_mode(parsed_flags.clone(), codegen_mode)?;
     let Some(package) = find_unique_package(&modified_parsed_flags) else {
         bail!("no parsed flags, or the parsed flags use different packages");
     };
     let package = package.to_string();
-    let mut flag_names =
-        modified_parsed_flags.iter().map(|pf| pf.name().to_string()).collect::<Vec<_>>();
+    let mut flag_names = extract_flag_names(parsed_flags)?;
     let package_fingerprint = compute_flags_fingerprint(&mut flag_names);
     let flag_ids = assign_flag_ids(&package, modified_parsed_flags.iter())?;
-    generate_java_code(
-        &package,
-        modified_parsed_flags.into_iter(),
+    let config = JavaCodegenConfig {
         codegen_mode,
         flag_ids,
         allow_instrumentation,
         package_fingerprint,
         new_exported,
-    )
+        single_exported_file,
+        check_api_level,
+    };
+    generate_java_code(&package, modified_parsed_flags.into_iter(), config)
 }
 
-pub fn create_cpp_lib(
-    mut input: Input,
-    codegen_mode: CodegenMode,
-    allow_instrumentation: bool,
-) -> Result<Vec<OutputFile>> {
+pub fn create_cpp_lib(mut input: Input, codegen_mode: CodegenMode) -> Result<Vec<OutputFile>> {
     // TODO(327420679): Enable export mode for native flag library
     ensure!(
         codegen_mode != CodegenMode::Exported,
@@ -258,20 +257,10 @@ pub fn create_cpp_lib(
     };
     let package = package.to_string();
     let flag_ids = assign_flag_ids(&package, modified_parsed_flags.iter())?;
-    generate_cpp_code(
-        &package,
-        modified_parsed_flags.into_iter(),
-        codegen_mode,
-        flag_ids,
-        allow_instrumentation,
-    )
+    generate_cpp_code(&package, modified_parsed_flags.into_iter(), codegen_mode, flag_ids)
 }
 
-pub fn create_rust_lib(
-    mut input: Input,
-    codegen_mode: CodegenMode,
-    allow_instrumentation: bool,
-) -> Result<OutputFile> {
+pub fn create_rust_lib(mut input: Input, codegen_mode: CodegenMode) -> Result<OutputFile> {
     // // TODO(327420679): Enable export mode for native flag library
     ensure!(
         codegen_mode != CodegenMode::Exported,
@@ -284,13 +273,7 @@ pub fn create_rust_lib(
     };
     let package = package.to_string();
     let flag_ids = assign_flag_ids(&package, modified_parsed_flags.iter())?;
-    generate_rust_code(
-        &package,
-        flag_ids,
-        modified_parsed_flags.into_iter(),
-        codegen_mode,
-        allow_instrumentation,
-    )
+    generate_rust_code(&package, flag_ids, modified_parsed_flags.into_iter(), codegen_mode)
 }
 
 pub fn create_storage(
@@ -436,14 +419,7 @@ where
             return Err(anyhow::anyhow!("the number of flags in a package cannot exceed 65535"));
         }
 
-        // Exclude system/vendor/product flags that are RO+disabled.
-        let should_filter_container = pf.container == Some("vendor".to_string())
-            || pf.container == Some("system".to_string())
-            || pf.container == Some("product".to_string());
-        if !(should_filter_container
-            && pf.state == Some(ProtoFlagState::DISABLED.into())
-            && pf.permission == Some(ProtoFlagPermission::READ_ONLY.into()))
-        {
+        if should_include_flag(pf) {
             flag_ids.insert(pf.name().to_string(), flag_idx as u16);
             flag_idx += 1;
         }
@@ -451,10 +427,8 @@ where
     Ok(flag_ids)
 }
 
-#[allow(dead_code)] // TODO: b/316357686 - Use fingerprint in codegen to
-                    // protect hardcoded offset reads.
-                    // Creates a fingerprint of the flag names (which requires sorting the vector).
-                    // Fingerprint is used by both codegen and storage files.
+// Creates a fingerprint of the flag names (which requires sorting the vector).
+// Fingerprint is used by both codegen and storage files.
 pub fn compute_flags_fingerprint(flag_names: &mut Vec<String>) -> u64 {
     flag_names.sort();
 
@@ -465,11 +439,9 @@ pub fn compute_flags_fingerprint(flag_names: &mut Vec<String>) -> u64 {
     hasher.finish()
 }
 
-#[allow(dead_code)] // TODO: b/316357686 - Use fingerprint in codegen to
-                    // protect hardcoded offset reads.
-                    // Converts ProtoParsedFlags into a vector of strings containing all of the flag
-                    // names. Helper fn for creating fingerprint for codegen files. Flags must all
-                    // belong to the same package.
+// Converts ProtoParsedFlags into a vector of strings containing all of the flag
+// names. Helper fn for creating fingerprint for codegen files. Flags must all
+// belong to the same package.
 fn extract_flag_names(flags: ProtoParsedFlags) -> Result<Vec<String>> {
     let separated_flags: Vec<ProtoParsedFlag> = flags.parsed_flag.into_iter().collect::<Vec<_>>();
 
@@ -478,7 +450,23 @@ fn extract_flag_names(flags: ProtoParsedFlags) -> Result<Vec<String>> {
         bail!("No parsed flags, or the parsed flags use different packages.");
     };
 
-    Ok(separated_flags.into_iter().map(|flag| flag.name.unwrap()).collect::<Vec<_>>())
+    Ok(separated_flags
+        .into_iter()
+        .filter(should_include_flag)
+        .map(|flag| flag.name.unwrap())
+        .collect::<Vec<_>>())
+}
+
+// Exclude system/vendor/product flags that are RO+disabled.
+pub fn should_include_flag(pf: &ProtoParsedFlag) -> bool {
+    let should_filter_container = pf.container == Some("vendor".to_string())
+        || pf.container == Some("system".to_string())
+        || pf.container == Some("product".to_string());
+
+    let disabled_ro = pf.state == Some(ProtoFlagState::DISABLED.into())
+        && pf.permission == Some(ProtoFlagPermission::READ_ONLY.into());
+
+    !should_filter_container || !disabled_ro
 }
 
 #[cfg(test)]
@@ -489,7 +477,7 @@ mod tests {
     #[test]
     fn test_offset_fingerprint() {
         let parsed_flags = crate::test::parse_test_flags();
-        let expected_fingerprint: u64 = 5801144784618221668;
+        let expected_fingerprint: u64 = 11551379960324242360;
 
         let mut extracted_flags = extract_flag_names(parsed_flags).unwrap();
         let hash_result = compute_flags_fingerprint(&mut extracted_flags);
@@ -509,6 +497,7 @@ mod tests {
             .parsed_flag
             .clone()
             .into_iter()
+            .filter(should_include_flag)
             .map(|flag| flag.name.unwrap())
             .map(String::from)
             .collect::<Vec<_>>();
