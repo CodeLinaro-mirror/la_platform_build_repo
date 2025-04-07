@@ -3753,7 +3753,18 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.settings.sa8650.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/libcamxtintlessalgo.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libqcx* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
-  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.sensor* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.sensor.max96712_ar0231.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.sensor.max96712_ar0231isp.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.sensormodule.max96712_ar0231isp_00.bin $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.sensormodule.max96712_ar0231isp_01.bin $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.sensormodule.max96712_ar0231isp_02.bin $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.sensormodule.max96712_ar0231isp_03.bin $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.sensormodule.max96712_ar0231isp_04.bin $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.sensormodule.max96712_ar0231isp_05.bin $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.sensormodule.max96712_ar0231isp_06.bin $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.sensormodule.max96712_ar0231isp_07.bin $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.sensormodule.max96712_ar0231isp_08.bin $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.sensormodule.qti_tpg0.bin $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/com.qti.tuned.* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/libcom.qti.node.dummydepth.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/camera/components/com.qti.camx.chiiqutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
