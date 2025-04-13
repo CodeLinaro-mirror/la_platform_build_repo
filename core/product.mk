@@ -230,9 +230,6 @@ _product_single_value_vars += PRODUCT_SYSTEM_DLKM_BASE_FS_PATH
 # The first API level this product shipped with
 _product_single_value_vars += PRODUCT_SHIPPING_API_LEVEL
 
-# The first vendor API level this product shipped with
-_product_single_value_vars += PRODUCT_SHIPPING_VENDOR_API_LEVEL
-
 _product_list_vars += VENDOR_PRODUCT_RESTRICT_VENDOR_FILES
 _product_list_vars += VENDOR_EXCEPTION_MODULES
 _product_list_vars += VENDOR_EXCEPTION_PATHS
@@ -390,9 +387,6 @@ _product_single_value_vars += PRODUCT_VIRTUAL_AB_OTA
 
 # If set, device uses virtual A/B Compression.
 _product_single_value_vars += PRODUCT_VIRTUAL_AB_COMPRESSION
-
-# If set, device retrofits virtual A/B.
-_product_single_value_vars += PRODUCT_VIRTUAL_AB_OTA_RETROFIT
 
 # If set, forcefully generate a non-A/B update package.
 # Note: A device configuration should inherit from virtual_ab_ota_plus_non_ab.mk
