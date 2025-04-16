@@ -3683,21 +3683,24 @@ $(foreach suite, $(LOCAL_COMPATIBILITY_SUITE), \
   $(eval COMPATIBILITY.$(suite).ARCH_DIRS.$(my_register_name) := $(my_compat_module_arch_dir_$(suite).$(my_register_name))) \
   $(eval COMPATIBILITY.$(suite).API_MAP_FILES += $$(my_compat_api_map_$(suite))) \
   $(eval COMPATIBILITY.$(suite).SOONG_INSTALLED_COMPATIBILITY_SUPPORT_FILES += $(LOCAL_SOONG_INSTALLED_COMPATIBILITY_SUPPORT_FILES)) \
-  $(eval ALL_COMPATIBILITY_DIST_FILES += $$(my_compat_dist_$(suite))) \
+  $(if $(LOCAL_IS_SOONG_MODULE),, \
+    $(eval ALL_COMPATIBILITY_DIST_FILES += $$(my_compat_dist_$(suite)))) \
   $(eval COMPATIBILITY.$(suite).MODULES += $$(my_register_name))) \
 $(eval $(my_all_targets) : \
   $(sort $(foreach suite,$(LOCAL_COMPATIBILITY_SUITE), \
     $(foreach f,$(my_compat_dist_$(suite)), $(call word-colon,2,$(f))))) \
-  $(call copy-many-xml-files-checked, \
-    $(sort $(foreach suite,$(LOCAL_COMPATIBILITY_SUITE),$(my_compat_dist_config_$(suite))))))
+  $(if $(LOCAL_IS_SOONG_MODULE), \
+    $(sort $(foreach p,$(foreach suite,$(LOCAL_COMPATIBILITY_SUITE),$(my_compat_dist_config_$(suite))),$(call word-colon,2,$(p)))), \
+    $(call copy-many-xml-files-checked, \
+      $(sort $(foreach suite,$(LOCAL_COMPATIBILITY_SUITE),$(my_compat_dist_config_$(suite)))))))
 endef
 
 # Define symbols.zip and symbols-mapping.textproto build rule per test suite
 #
 # $(1): Name of the test suite to create the zip and mapping build rules
 define create-suite-symbols-map
-_suite_symbols_zip := $$(subst -tests-,-tests_-,$$(PRODUCT_OUT)/$(1)-symbols.zip)
-_suite_symbols_mapping := $$(subst -tests-,-tests_-,$$(PRODUCT_OUT)/$(1)-symbols-mapping.textproto)
+_suite_symbols_zip := $$(PRODUCT_OUT)/$(1)-symbols.zip
+_suite_symbols_mapping := $$(PRODUCT_OUT)/$(1)-symbols-mapping.textproto
 _suite_modules_symbols_files := $$(foreach m,$$(COMPATIBILITY.$(1).MODULES),$$(ALL_MODULES.$$(m).SYMBOLIC_OUTPUT_PATH))
 _suite_modules_mapping_files := $$(foreach m,$$(COMPATIBILITY.$(1).MODULES),$$(ALL_MODULES.$$(m).ELF_SYMBOL_MAPPING_PATH))
 
