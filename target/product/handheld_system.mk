@@ -62,6 +62,7 @@ PRODUCT_PACKAGES += \
     PacProcessor \
     preinstalled-packages-platform-handheld-system.xml \
     PrintRecommendationService \
+    PrivateSpace \
     ProxyHandler \
     screenrecord \
     SharedStorageBackup \

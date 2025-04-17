@@ -29,6 +29,7 @@ Exit code is 0 if successful and non-zero if any failures.
 from __future__ import print_function
 
 import logging
+import os
 import sys
 
 import common
@@ -108,15 +109,12 @@ class DeviceType(object):
 # Dynamic partition feature flags
 class Dap(object):
   NONE = 0
-  RDAP = 1
-  DAP = 2
+  DAP = 1
 
   @staticmethod
   def Get(info_dict):
     if info_dict.get("use_dynamic_partitions") != "true":
       return Dap.NONE
-    if info_dict.get("dynamic_partition_retrofit") == "true":
-      return Dap.RDAP
     return Dap.DAP
 
 
@@ -178,13 +176,6 @@ class DynamicPartitionSizeChecker(object):
     if dap == Dap.NONE:
       raise RuntimeError("check_partition_sizes should only be executed on "
                          "builds with dynamic partitions enabled")
-
-    # Retrofit dynamic partitions: 1 slot per "super", 2 "super"s on the device
-    if dap == Dap.RDAP:
-      if slot != DeviceType.AB:
-        raise RuntimeError("Device with retrofit dynamic partitions must use "
-                           "regular (non-Virtual) A/B")
-      return 1
 
     # Launch DAP: 1 super on the device
     assert dap == Dap.DAP
@@ -253,10 +244,6 @@ class DynamicPartitionSizeChecker(object):
       max_size = Expression(
           "BOARD_SUPER_PARTITION_SIZE{}".format(size_limit_suffix),
           int(info_dict["super_partition_size"]) // num_slots)
-      # Retrofit DAP will build metadata as part of super image.
-      if Dap.Get(info_dict) == Dap.RDAP:
-        sum_size.CheckLe(max_size)
-        return
 
       sum_size.CheckLt(max_size)
       # Display a warning if group size + 1M >= super size
@@ -270,8 +257,6 @@ class DynamicPartitionSizeChecker(object):
 
   def Run(self):
     self._CheckAllPartitionSizes()
-    if self.info_dict.get("dynamic_partition_retrofit") == "true":
-      self._CheckSuperPartitionSize()
 
 
 def CheckPartitionSizes(inp):
