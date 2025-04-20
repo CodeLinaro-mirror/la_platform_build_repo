@@ -381,8 +381,8 @@ class Runner():
         self._reports.append(report)
 
         # Preroll builds
-        for i in range(benchmark.preroll):
-            if not self._options.ApplyOnly():
+        if not self._options.ApplyOnly():
+            for i in range(benchmark.preroll):
                 ns = self._run_build(lunch, benchmark_log_dir.joinpath(f"pre_{i}"), benchmark)
                 report.preroll_duration_ns.append(ns)
 
@@ -592,9 +592,9 @@ benchmarks:
             self._error("--dist-one requires exactly one --benchmark.")
 
         # --apply-only forces --iterations=1
-        if self.apply_only:
-            self.iterations = 1
-            if self.dist_one:
+        if self._args.apply_only:
+            self._args.iterations = 1
+            if self._args.dist_one:
               self._error("--dist-one cannot be used with --apply-only.")
 
         if self._had_error:

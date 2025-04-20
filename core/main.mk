@@ -673,6 +673,8 @@ endef
 # flatten the shared library dependencies.
 define update-host-shared-libs-deps-for-suites
 $(foreach suite,general-tests device-tests vts tvts art-host-tests host-unit-tests camera-hal-tests,\
+  $(eval COMPATIBILITY.$(suite).SYMLINKS :=)\
+  $(eval COMPATIBILITY.$(suite).HOST_SHARED_LIBRARY.FILES :=)\
   $(foreach m,$(COMPATIBILITY.$(suite).MODULES),\
     $(eval my_deps := $(call get-all-shared-libs-deps,$(m)))\
     $(foreach dep,$(my_deps),\
@@ -685,15 +687,13 @@ $(foreach suite,general-tests device-tests vts tvts art-host-tests host-unit-tes
         $(if $(strip $(patsubst %x86,,$(COMPATIBILITY.$(suite).ARCH_DIRS.$(m)))), \
           $(if $(strip $(patsubst %x86_64,,$(COMPATIBILITY.$(suite).ARCH_DIRS.$(m)))),$(eval prefix := ../..),),) \
         $(eval link_target := $(prefix)/$(lastword $(subst /, ,$(dir $(f))))/$(notdir $(f)))\
-        $(eval symlink := $(COMPATIBILITY.$(suite).ARCH_DIRS.$(m))/shared_libs/$(notdir $(f)))\
-        $(eval COMPATIBILITY.$(suite).SYMLINKS := \
-          $$(COMPATIBILITY.$(suite).SYMLINKS) $(f):$(link_target):$(symlink))\
+        $(foreach arch_dir,$(COMPATIBILITY.$(suite).ARCH_DIRS.$(m)),\
+          $(eval symlink := $(arch_dir)/shared_libs/$(notdir $(f)))\
+          $(eval COMPATIBILITY.$(suite).SYMLINKS += $(f):$(link_target):$(symlink)))\
         $(if $(strip $(ALL_TARGETS.$(target).META_LIC)),,$(call declare-copy-target-license-metadata,$(target),$(f)))\
-        $(eval COMPATIBILITY.$(suite).HOST_SHARED_LIBRARY.FILES := \
-          $$(COMPATIBILITY.$(suite).HOST_SHARED_LIBRARY.FILES) $(f):$(target))\
-        $(eval COMPATIBILITY.$(suite).HOST_SHARED_LIBRARY.FILES := \
-          $(sort $(COMPATIBILITY.$(suite).HOST_SHARED_LIBRARY.FILES))))))\
-  $(eval COMPATIBILITY.$(suite).SYMLINKS := $(sort $(COMPATIBILITY.$(suite).SYMLINKS))))
+        $(eval COMPATIBILITY.$(suite).HOST_SHARED_LIBRARY.FILES += $(f):$(target)))))\
+  $(eval COMPATIBILITY.$(suite).SYMLINKS := $(sort $(COMPATIBILITY.$(suite).SYMLINKS)))\
+  $(eval COMPATIBILITY.$(suite).HOST_SHARED_LIBRARY.FILES := $(sort $(COMPATIBILITY.$(suite).HOST_SHARED_LIBRARY.FILES))))
 endef
 
 $(call resolve-shared-libs-depes,TARGET_)
@@ -1885,6 +1885,7 @@ $(foreach f,$(ALL_FLAGS_FILES),\
 $(foreach f,$(ALL_ROOTDIR_SYMLINKS),\
 	$(eval _is_rootdir_symlink.$(f):=Y) \
 )
+$(foreach m,$(ALL_NON_MODULES),$(eval _is_non_module.$(m):=Y))
 
 $(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make-metadata.csv:
 	rm -f $@
@@ -1912,7 +1913,7 @@ $(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make-metadata.csv:
 	  $(eval _is_platform_generated := $(if $(_is_soong_module),,$(_is_build_prop)$(_is_notice_file)$(_is_product_system_other_avbkey)$(_is_event_log_tags_file)$(_is_system_other_odex_marker)$(_is_kernel_modules_blocklist)$(_is_fsverity_build_manifest_apk)$(_is_linker_config)$(_is_partition_compat_symlink)$(_is_flags_file)$(_is_rootdir_symlink))) \
 	  $(eval _static_libs := $(if $(_is_soong_module),,$(ALL_INSTALLED_FILES.$f.STATIC_LIBRARIES))) \
 	  $(eval _whole_static_libs := $(if $(_is_soong_module),,$(ALL_INSTALLED_FILES.$f.WHOLE_STATIC_LIBRARIES))) \
-	  $(eval _license_text := $(if $(filter $(_build_output_path),$(ALL_NON_MODULES)),$(ALL_NON_MODULES.$(_build_output_path).NOTICES),\
+	  $(eval _license_text := $(if $(_is_non_module.$(_build_output_path)),$(ALL_NON_MODULES.$(_build_output_path).NOTICES),\
 	                          $(if $(_is_partition_compat_symlink),build/soong/licenses/LICENSE))) \
 	  echo '$(_build_output_path),$(_module_path),$(_is_soong_module),$(_is_prebuilt_make_module),$(_product_copy_files),$(_kernel_module_copy_files),$(_is_platform_generated),$(_static_libs),$(_whole_static_libs),$(_license_text)' >> $@; \
 	)

@@ -177,6 +177,8 @@ $(KATI_obsolete_var BUILDING_PVMFW_IMAGE,BUILDING_PVMFW_IMAGE is no longer used)
 $(KATI_obsolete_var BOARD_BUILD_SYSTEM_ROOT_IMAGE)
 $(KATI_obsolete_var FS_GET_STATS)
 $(KATI_obsolete_var BUILD_BROKEN_USES_SOONG_PYTHON2_MODULES)
+$(KATI_obsolete_var BOARD_SYSTEM_EXT_PREBUILT_DIR,Use BOARD_SYSTEM_EXT_SEPOLICY_PREBUILT_DIRS instead)
+$(KATI_obsolete_var BOARD_PRODUCT_PREBUILT_DIR,Use BOARD_PRODUCT_SEPOLICY_PREBUILT_DIRS instead)
 
 # Used to force goals to build.  Only use for conditionally defined goals.
 .PHONY: FORCE
@@ -688,12 +690,6 @@ BISON_DATA :=$=
 YASM := prebuilts/misc/$(BUILD_OS)-$(HOST_PREBUILT_ARCH)/yasm/yasm
 
 DOXYGEN:= doxygen
-ifeq ($(HOST_OS),linux)
-BREAKPAD_DUMP_SYMS := $(HOST_OUT_EXECUTABLES)/dump_syms
-else
-# For non-supported hosts, do not generate breakpad symbols.
-BREAKPAD_GENERATE_SYMBOLS := false
-endif
 GZIP := prebuilts/build-tools/path/$(BUILD_OS)-$(HOST_PREBUILT_ARCH)/gzip
 PROTOC := $(HOST_OUT_EXECUTABLES)/aprotoc$(HOST_EXECUTABLE_SUFFIX)
 NANOPB_SRCS := $(HOST_OUT_EXECUTABLES)/protoc-gen-nanopb

@@ -131,6 +131,7 @@ android_filesystem_defaults {
         "Camera2",
         "Dialer",
         "LatinIME",
+        "messaging",
         "apns-full-conf.xml",
         "frameworks-base-overlays",
     ],
@@ -165,7 +166,10 @@ android_system_image {
         // init-second-stage to load debug policy from system_ext.
         // This option is only meant to be set by compliance GSI targets.
         "system_ext_userdebug_plat_sepolicy.cil",
-    ],
+    ] + select(soong_config_variable("gsi", "import_usb_debugging_test_app"), {
+        true: ["UsbDisableDebugger"],
+        default: [],
+    }),
 }
 
 // system.img for aosp_{arch} targets
@@ -197,7 +201,6 @@ android_system_image {
 
         // more AOSP packages
         "initial-package-stopped-states-aosp.xml",
-        "messaging",
         "PhotoTable",
         "preinstalled-packages-platform-aosp-product.xml",
         "ThemePicker",
