@@ -138,7 +138,7 @@ my_tidy_checks := $(subst $(space),,$(my_tidy_checks))
 # If clang-tidy is being used, don't use the RBE pool (as clang-tidy runs in
 # the same action, and is not remoted)
 my_pool :=
-ifeq (,$(strip $(my_cc))$(strip $(my_cxx))$(strip $(my_tidy_checks)))
+ifeq (,$(strip $(my_cc))$(strip $(my_cxx))$(strip $(my_tidy_checks))$(strip $(LOCAL_SDCLANG)))
   my_pool := $(GOMA_OR_RBE_POOL)
 endif
 
@@ -411,6 +411,17 @@ my_clang := $(strip $(LOCAL_CLANG_$($(my_prefix)$(LOCAL_2ND_ARCH_VAR_PREFIX)ARCH
 endif
 ifeq ($(my_clang),false)
     $(call pretty-error,LOCAL_CLANG false is no longer supported)
+endif
+
+my_sdclang := $(strip $(LOCAL_SDCLANG))
+ifeq ($(SDCLANG),true)
+    ifeq ($(my_sdclang),)
+        my_sdclang := true
+    endif
+endif
+
+ifeq ($(FORCE_SDCLANG_OFF),true)
+    my_sdclang := false
 endif
 
 ifeq ($(LOCAL_C_STD),)
@@ -1598,6 +1609,18 @@ ifeq ($(my_use_clang_lld),true)
 else
   my_target_global_ldflags := $($(LOCAL_2ND_ARCH_VAR_PREFIX)CLANG_$(my_prefix)GLOBAL_LDFLAGS)
 endif # my_use_clang_lld
+
+ifeq ($(my_sdclang),true)
+    ifeq ($(strip $(my_cc)),)
+        my_cc := $(SDCLANG_PATH)/clang
+    endif
+    ifeq ($(strip $(my_cxx)),)
+        my_cxx := $(SDCLANG_PATH)/clang++
+    endif
+    ifeq ($(strip $(my_cxx_link)),)
+        my_cxx_link := $(SDCLANG_PATH)/clang++
+    endif
+endif
 
 my_target_triple := $($(LOCAL_2ND_ARCH_VAR_PREFIX)CLANG_$(my_prefix)TRIPLE)
 ifndef LOCAL_IS_HOST_MODULE

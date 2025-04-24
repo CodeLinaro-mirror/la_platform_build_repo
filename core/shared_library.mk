@@ -24,6 +24,11 @@ endif
 endif
 endif # my_module_multilib == both
 
+ifneq ($(FORCE_SDCLANG_OFF),true)
+ifeq ($(LOCAL_SDCLANG),true)
+include $(SDCLANG_FLAG_DEFS)
+endif
+endif
 
 LOCAL_2ND_ARCH_VAR_PREFIX :=
 include $(BUILD_SYSTEM)/module_arch_supported.mk
@@ -51,7 +56,22 @@ LOCAL_2ND_ARCH_VAR_PREFIX :=
 
 endif # TARGET_2ND_ARCH
 
+ifneq ($(FORCE_SDCLANG_OFF),true)
+ifeq ($(LOCAL_SDCLANG),true)
+ifeq ($(LOCAL_SDCLANG_LTO),true)
+include $(SDCLANG_LTO_DEFS)
+endif
+endif
+endif
+
 my_module_arch_supported :=
+LOCAL_SRC_FILES :=
+LOCAL_STATIC_LIBRARIES :=
+LOCAL_WHOLE_STATIC_LIBRARIES :=
+LOCAL_EXPORT_C_INCLUDES :=
+LOCAL_CFLAGS :=
+LOCAL_ABI_CHECKER :=
+LOCAL_C_INCLUDES :=
 
 ###########################################################
 ## Copy headers to the install tree
