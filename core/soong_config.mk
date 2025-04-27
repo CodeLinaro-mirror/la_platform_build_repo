@@ -391,7 +391,7 @@ $(call add_json_bool, DisableSoongConfigTrace, $(filter true,$(DISABLE_SOONG_CON
 # Do not set ArtTargetIncludeDebugBuild into any value if PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD is not set,
 # to have the same behavior from runtime_libart.mk.
 ifneq ($(PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD),)
-$(call add_json_bool, ArtTargetIncludeDebugBuild, $(PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD))
+$(call add_json_bool, ArtTargetIncludeDebugBuild, $(filter true,$(PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD)))
 endif
 
 _config_enable_uffd_gc := \
@@ -634,6 +634,8 @@ $(foreach suite,$(sort $(patsubst COMPATIBILITY_TESTCASES_OUT_%,%,$(filter-out C
 $(call end_json_map)
 
 $(call add_json_list, ProductHostPackages, $(PRODUCT_HOST_PACKAGES))
+
+$(call add_json_bool, EnforceSELinuxTrebleLabeling, $(filter true,$(PRODUCT_ENFORCE_SELINUX_TREBLE_LABELING)))
 
 $(call json_end)
 

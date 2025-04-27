@@ -20,11 +20,12 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use tinytemplate::TinyTemplate;
 
-use aconfig_protos::{ProtoFlagPermission, ProtoFlagState, ProtoParsedFlag};
+use aconfig_protos::{
+    ParsedFlagExt, ProtoFlagPermission, ProtoFlagState, ProtoFlagStorageBackend, ProtoParsedFlag,
+};
 
-use crate::codegen;
-use crate::codegen::CodegenMode;
-use crate::commands::{should_include_flag, OutputFile};
+use crate::codegen::{self, get_flag_offset_in_storage_file, CodegenMode};
+use crate::commands::OutputFile;
 
 pub fn generate_cpp_code<I>(
     package: &str,
@@ -36,9 +37,9 @@ where
     I: Iterator<Item = ProtoParsedFlag>,
 {
     let mut readwrite_count = 0;
-    let class_elements: Vec<ClassElement> = parsed_flags_iter
+    let class_elements = parsed_flags_iter
         .map(|pf| create_class_element(package, &pf, flag_ids.clone(), &mut readwrite_count))
-        .collect();
+        .collect::<Result<Vec<ClassElement>>>()?;
     let readwrite = readwrite_count > 0;
     let has_fixed_read_only = class_elements.iter().any(|item| item.is_fixed_read_only);
     let header = package.replace('.', "_");
@@ -123,25 +124,13 @@ fn create_class_element(
     pf: &ProtoParsedFlag,
     flag_ids: HashMap<String, u16>,
     rw_count: &mut i32,
-) -> ClassElement {
-    let no_assigned_offset = !should_include_flag(pf);
-
-    let flag_offset = match flag_ids.get(pf.name()) {
-        Some(offset) => offset,
-        None => {
-            // System/vendor/product RO+disabled flags have no offset in storage files.
-            // Assign placeholder value.
-            if no_assigned_offset {
-                &0
-            }
-            // All other flags _must_ have an offset.
-            else {
-                panic!("{}", format!("missing flag offset for {}", pf.name()));
-            }
-        }
-    };
-
-    ClassElement {
+) -> Result<ClassElement> {
+    ensure!(
+        pf.metadata.storage() != ProtoFlagStorageBackend::DEVICE_CONFIG,
+        "device config storage backend cannot be used in native codegen for flag {}",
+        pf.fully_qualified_name()
+    );
+    Ok(ClassElement {
         readwrite_idx: if pf.permission() == ProtoFlagPermission::READ_WRITE {
             let index = *rw_count;
             *rw_count += 1;
@@ -158,12 +147,12 @@ fn create_class_element(
         },
         flag_name: pf.name().to_string(),
         flag_macro: pf.name().to_uppercase(),
-        flag_offset: *flag_offset,
+        flag_offset: get_flag_offset_in_storage_file(&flag_ids, pf)?,
         device_config_namespace: pf.namespace().to_string(),
         device_config_flag: codegen::create_device_config_ident(package, pf.name())
             .expect("values checked at flag parse time"),
         container: pf.container().to_string(),
-    }
+    })
 }
 
 #[cfg(test)]
@@ -174,6 +163,19 @@ mod tests {
 
     const EXPORTED_PROD_HEADER_EXPECTED: &str = r#"
 #pragma once
+
+// Avoid destruction for thread safety.
+// Only enable this with clang.
+#if defined(__clang__)
+#ifndef ACONFIG_NO_DESTROY
+#define ACONFIG_NO_DESTROY [[clang::no_destroy]]
+#endif
+#else
+#warning "not built with clang disable no_destroy"
+#ifndef ACONFIG_NO_DESTROY
+#define ACONFIG_NO_DESTROY
+#endif
+#endif
 
 #ifndef COM_ANDROID_ACONFIG_TEST
 #define COM_ANDROID_ACONFIG_TEST(FLAG) COM_ANDROID_ACONFIG_TEST_##FLAG
@@ -216,7 +218,7 @@ public:
     virtual bool enabled_rw() = 0;
 };
 
-extern std::unique_ptr<flag_provider_interface> provider_;
+ACONFIG_NO_DESTROY extern std::unique_ptr<flag_provider_interface> provider_;
 
 inline bool disabled_ro() {
     return false;
@@ -538,7 +540,7 @@ bool com_android_aconfig_test_enabled_rw();
 #include <android/log.h>
 #define LOG_TAG "aconfig_cpp_codegen"
 #define ALOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
-
+#include <atomic>
 #include <vector>
 
 namespace com::android::aconfig::test {
@@ -547,10 +549,13 @@ namespace com::android::aconfig::test {
         public:
 
             flag_provider()
-                : cache_(4, -1)
+                : cache_(4)
                 , boolean_start_index_()
                 , flag_value_file_(nullptr)
                 , package_exists_in_storage_(true) {
+                for (size_t i = 0 ; i < 4; i++) {
+                    cache_[i] = -1;
+                }
 
                 auto package_map_file = aconfig_storage::get_mapped_file(
                     "system",
@@ -601,7 +606,7 @@ namespace com::android::aconfig::test {
             }
 
             virtual bool disabled_rw() override {
-                if (cache_[0] == -1) {
+                if (cache_[0].load(std::memory_order_relaxed) == -1) {
                     if (!package_exists_in_storage_) {
                         return false;
                     }
@@ -615,13 +620,13 @@ namespace com::android::aconfig::test {
                         return false;
                     }
 
-                    cache_[0] = *value;
+                    cache_[0].store(*value, std::memory_order_relaxed);
                 }
-                return cache_[0];
+                return cache_[0].load(std::memory_order_relaxed);
             }
 
             virtual bool disabled_rw_exported() override {
-                if (cache_[1] == -1) {
+                if (cache_[1].load(std::memory_order_relaxed) == -1) {
                     if (!package_exists_in_storage_) {
                         return false;
                     }
@@ -635,13 +640,13 @@ namespace com::android::aconfig::test {
                         return false;
                     }
 
-                    cache_[1] = *value;
+                    cache_[1].store(*value, std::memory_order_relaxed);
                 }
-                return cache_[1];
+                return cache_[1].load(std::memory_order_relaxed);
             }
 
             virtual bool disabled_rw_in_other_namespace() override {
-                if (cache_[2] == -1) {
+                if (cache_[2].load(std::memory_order_relaxed) == -1) {
                     if (!package_exists_in_storage_) {
                         return false;
                     }
@@ -655,9 +660,9 @@ namespace com::android::aconfig::test {
                         return false;
                     }
 
-                    cache_[2] = *value;
+                    cache_[2].store(*value, std::memory_order_relaxed);
                 }
-                return cache_[2];
+                return cache_[2].load(std::memory_order_relaxed);
             }
 
             virtual bool enabled_fixed_ro() override {
@@ -677,7 +682,7 @@ namespace com::android::aconfig::test {
             }
 
             virtual bool enabled_rw() override {
-                if (cache_[3] == -1) {
+                if (cache_[3].load(std::memory_order_relaxed) == -1) {
                     if (!package_exists_in_storage_) {
                         return true;
                     }
@@ -691,13 +696,13 @@ namespace com::android::aconfig::test {
                         return true;
                     }
 
-                    cache_[3] = *value;
+                    cache_[3].store(*value, std::memory_order_relaxed);
                 }
-                return cache_[3];
+                return cache_[3].load(std::memory_order_relaxed);
             }
 
     private:
-        std::vector<int8_t> cache_ = std::vector<int8_t>(4, -1);
+        std::vector<std::atomic_int8_t> cache_;
 
         uint32_t boolean_start_index_;
 
