@@ -70,16 +70,15 @@ where
     let mut package_index: HashMap<&str, usize> = HashMap::new();
     for parsed_flags in parsed_flags_vec_iter {
         for parsed_flag in parsed_flags.parsed_flag.iter() {
-            let index = *(package_index.entry(parsed_flag.package()).or_insert(packages.len()));
-            if index == packages.len() {
-                packages.push(FlagPackage::new(parsed_flag.package(), index as u32));
-            }
-
-            // Exclude system/vendor/product flags that are RO+disabled.
+            // exclude both platform ro disabled flags as well as flags using device config
             if !should_include_flag(parsed_flag) {
                 continue;
             }
 
+            let index = *(package_index.entry(parsed_flag.package()).or_insert(packages.len()));
+            if index == packages.len() {
+                packages.push(FlagPackage::new(parsed_flag.package(), index as u32));
+            }
             packages[index].insert(parsed_flag);
         }
     }
@@ -137,7 +136,7 @@ mod tests {
     use aconfig_storage_file::DEFAULT_FILE_VERSION;
 
     use super::*;
-    use crate::Input;
+    use crate::commands::Input;
 
     pub fn parse_all_test_flags() -> Vec<ProtoParsedFlags> {
         let aconfig_files = [
@@ -168,7 +167,7 @@ mod tests {
             .map(|(pkg, aconfig_file, aconfig_content, value_file, value_content)| {
                 let bytes = crate::commands::parse_flags(
                     pkg,
-                    Some("system"),
+                    "system",
                     vec![Input {
                         source: format!("tests/{}", aconfig_file).to_string(),
                         reader: Box::new(aconfig_content),

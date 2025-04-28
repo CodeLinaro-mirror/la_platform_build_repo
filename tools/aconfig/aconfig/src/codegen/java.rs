@@ -14,17 +14,18 @@
 * limitations under the License.
 */
 
-use anyhow::Result;
+use anyhow::{ensure, Result};
 use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 use tinytemplate::TinyTemplate;
 
-use crate::codegen;
-use crate::codegen::CodegenMode;
-use crate::commands::{should_include_flag, OutputFile};
-use aconfig_protos::{ProtoFlagPermission, ProtoFlagState, ProtoParsedFlag};
-use convert_finalized_flags::{FinalizedFlag, FinalizedFlagMap};
+use crate::codegen::{self, get_flag_offset_in_storage_file, CodegenMode};
+use crate::commands::OutputFile;
+use aconfig_protos::{
+    ProtoFlagPermission, ProtoFlagState, ProtoFlagStorageBackend, ProtoParsedFlag,
+};
+use convert_finalized_flags::{ApiLevel, FinalizedFlag, FinalizedFlagMap};
 use std::collections::HashMap;
 
 // Arguments to configure codegen for generate_java_code.
@@ -44,11 +45,21 @@ pub fn generate_java_code<I>(
 where
     I: Iterator<Item = ProtoParsedFlag>,
 {
+    let mut use_device_config = false;
+    let mut use_aconfigd = false;
     let flag_elements: Vec<FlagElement> = parsed_flags_iter
         .map(|pf| {
+            use_device_config |= pf.metadata.storage() == ProtoFlagStorageBackend::DEVICE_CONFIG;
+            use_aconfigd |= pf.metadata.storage() == ProtoFlagStorageBackend::ACONFIGD;
+            ensure!(
+                !(use_device_config && use_aconfigd),
+                "Package {} cannot contain both device_config and new storage stored flags",
+                package
+            );
+
             create_flag_element(package, &pf, config.flag_ids.clone(), &config.finalized_flags)
         })
-        .collect();
+        .collect::<Result<Vec<FlagElement>>>()?;
     let namespace_flags = gen_flags_by_namespace(&flag_elements);
     let properties_set: BTreeSet<String> =
         flag_elements.iter().map(|fe| format_property_name(&fe.device_config_namespace)).collect();
@@ -71,6 +82,7 @@ where
         is_platform_container,
         package_fingerprint: format!("0x{:X}L", config.package_fingerprint),
         single_exported_file: config.single_exported_file,
+        use_device_config,
     };
     let mut template = TinyTemplate::new();
     if library_exported && config.single_exported_file {
@@ -148,6 +160,7 @@ struct Context {
     pub is_platform_container: bool,
     pub package_fingerprint: String,
     pub single_exported_file: bool,
+    pub use_device_config: bool,
 }
 
 #[derive(Serialize, Debug)]
@@ -169,61 +182,44 @@ struct FlagElement {
     pub method_name: String,
     pub properties: String,
     pub finalized_sdk_present: bool,
-    pub finalized_sdk_value: i32,
+    pub finalized_sdk_check: String,
 }
 
 fn create_flag_element(
     package: &str,
     pf: &ProtoParsedFlag,
-    flag_offsets: HashMap<String, u16>,
+    flag_ids: HashMap<String, u16>,
     finalized_flags: &FinalizedFlagMap,
-) -> FlagElement {
+) -> Result<FlagElement> {
     let device_config_flag = codegen::create_device_config_ident(package, pf.name())
         .expect("values checked at flag parse time");
 
-    let no_assigned_offset = !should_include_flag(pf);
-
-    let flag_offset = match flag_offsets.get(pf.name()) {
-        Some(offset) => offset,
-        None => {
-            // System/vendor/product RO+disabled flags have no offset in storage files.
-            // Assign placeholder value.
-            if no_assigned_offset {
-                &0
-            }
-            // All other flags _must_ have an offset.
-            else {
-                panic!("{}", format!("missing flag offset for {}", pf.name()));
-            }
-        }
-    };
-
     // An empty map is provided if check_api_level is disabled.
-    let mut finalized_sdk_present: bool = false;
-    let mut finalized_sdk_value: i32 = 0;
-    if !finalized_flags.is_empty() {
+    let (finalized_sdk_present, finalized_sdk_value) = if !finalized_flags.is_empty() {
         let finalized_sdk = finalized_flags.get_finalized_level(&FinalizedFlag {
             flag_name: pf.name().to_string(),
             package_name: package.to_string(),
         });
-        finalized_sdk_present = finalized_sdk.is_some();
-        finalized_sdk_value = finalized_sdk.map(|f| f.0).unwrap_or_default();
-    }
+        (finalized_sdk.is_some(), finalized_sdk.unwrap_or(ApiLevel(0)))
+    } else {
+        (false, ApiLevel(0))
+    };
+    let finalized_sdk_check = finalized_sdk_value.conditional();
 
-    FlagElement {
+    Ok(FlagElement {
         container: pf.container().to_string(),
         default_value: pf.state() == ProtoFlagState::ENABLED,
         device_config_namespace: pf.namespace().to_string(),
         device_config_flag,
         flag_name: pf.name().to_string(),
         flag_name_constant_suffix: pf.name().to_ascii_uppercase(),
-        flag_offset: *flag_offset,
+        flag_offset: get_flag_offset_in_storage_file(&flag_ids, pf)?,
         is_read_write: pf.permission() == ProtoFlagPermission::READ_WRITE,
         method_name: format_java_method_name(pf.name()),
         properties: format_property_name(pf.namespace()),
         finalized_sdk_present,
-        finalized_sdk_value,
-    }
+        finalized_sdk_check,
+    })
 }
 
 fn format_java_method_name(flag_name: &str) -> String {
@@ -903,9 +899,9 @@ mod tests {
                 )
             );
 
-            private Map<String, Integer> mFinalizedFlags = new HashMap<>(
+            private Map<String, Boolean> mFinalizedFlags = new HashMap<>(
                 Map.ofEntries(
-                    Map.entry("", Integer.MAX_VALUE)
+                    Map.entry("", false)
                 )
             );
 
@@ -913,7 +909,7 @@ mod tests {
                 if (!mFinalizedFlags.containsKey(flagName)) {
                     return false;
                 }
-                return Build.VERSION.SDK_INT >= mFinalizedFlags.get(flagName);
+                return mFinalizedFlags.get(flagName);
             }
         }
     "#;
@@ -960,7 +956,7 @@ mod tests {
             assign_flag_ids(crate::test::TEST_PACKAGE, modified_parsed_flags.iter()).unwrap();
         let mut finalized_flags = FinalizedFlagMap::new();
         finalized_flags.insert_if_new(
-            ApiLevel(36),
+            ApiLevel::from_sdk_int(36),
             FinalizedFlag {
                 flag_name: "disabled_rw_exported".to_string(),
                 package_name: "com.android.aconfig.test".to_string(),
@@ -1124,10 +1120,10 @@ mod tests {
                 )
             );
 
-            private Map<String, Integer> mFinalizedFlags = new HashMap<>(
+            private Map<String, Boolean> mFinalizedFlags = new HashMap<>(
                 Map.ofEntries(
-                    Map.entry(Flags.FLAG_DISABLED_RW_EXPORTED, 36),
-                    Map.entry("", Integer.MAX_VALUE)
+                    Map.entry(Flags.FLAG_DISABLED_RW_EXPORTED, Build.VERSION.SDK_INT >= 36 ? true : false),
+                    Map.entry("", false)
                 )
             );
 
@@ -1135,7 +1131,7 @@ mod tests {
                 if (!mFinalizedFlags.containsKey(flagName)) {
                     return false;
                 }
-                return Build.VERSION.SDK_INT >= mFinalizedFlags.get(flagName);
+                return mFinalizedFlags.get(flagName);
             }
         }
     "#;
@@ -1184,7 +1180,7 @@ mod tests {
             assign_flag_ids(crate::test::TEST_PACKAGE, modified_parsed_flags.iter()).unwrap();
         let mut finalized_flags = FinalizedFlagMap::new();
         finalized_flags.insert_if_new(
-            ApiLevel(36),
+            ApiLevel::from_sdk_int(36),
             FinalizedFlag {
                 flag_name: "disabled_rw".to_string(),
                 package_name: "com.android.aconfig.test".to_string(),
@@ -1640,7 +1636,7 @@ mod tests {
             assign_flag_ids(crate::test::TEST_PACKAGE, modified_parsed_flags.iter()).unwrap();
         let mut finalized_flags = FinalizedFlagMap::new();
         finalized_flags.insert_if_new(
-            ApiLevel(36),
+            ApiLevel::from_sdk_int(36),
             FinalizedFlag {
                 flag_name: "disabled_rw_exported".to_string(),
                 package_name: "com.android.aconfig.test".to_string(),
@@ -1729,6 +1725,38 @@ mod tests {
                 &String::from_utf8(file.contents.clone()).unwrap()
             ),
             "ExportedFlags content is not correct"
+        );
+    }
+
+    #[test]
+    fn test_mix_device_config_and_new_storage_flags() {
+        let mut parsed_flags = crate::test::parse_test_flags();
+        parsed_flags.parsed_flag[0].set_permission(ProtoFlagPermission::READ_WRITE);
+        let m = parsed_flags.parsed_flag[0].metadata.as_mut().unwrap();
+        m.set_storage(ProtoFlagStorageBackend::DEVICE_CONFIG);
+        parsed_flags.parsed_flag[1].set_permission(ProtoFlagPermission::READ_WRITE);
+        let m = parsed_flags.parsed_flag[1].metadata.as_mut().unwrap();
+        m.set_storage(ProtoFlagStorageBackend::ACONFIGD);
+
+        let flag_ids =
+            assign_flag_ids(crate::test::TEST_PACKAGE, parsed_flags.parsed_flag.iter()).unwrap();
+
+        let config = JavaCodegenConfig {
+            codegen_mode: CodegenMode::Production,
+            flag_ids,
+            package_fingerprint: 5801144784618221668,
+            single_exported_file: false,
+            finalized_flags: FinalizedFlagMap::new(),
+        };
+        let error = generate_java_code(
+            crate::test::TEST_PACKAGE,
+            parsed_flags.parsed_flag.into_iter(),
+            config,
+        )
+        .unwrap_err();
+        assert_eq!(
+            format!("{:?}", error),
+            "Package com.android.aconfig.test cannot contain both device_config and new storage stored flags",
         );
     }
 
