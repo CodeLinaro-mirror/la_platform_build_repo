@@ -1926,7 +1926,7 @@ target_system_dlkm_notice_file_xml_gz := $(TARGET_OUT_INTERMEDIATES)/NOTICE_SYST
 installed_system_dlkm_notice_xml_gz := $(TARGET_OUT_SYSTEM_DLKM)/etc/NOTICE.xml.gz
 
 ALL_INSTALLED_NOTICE_FILES := \
-  $(installed_notice_html_or_xml_gz) \
+  $(if $(USE_SOONG_DEFINED_SYSTEM_IMAGE),,$(installed_notice_html_or_xml_gz)) \
   $(installed_vendor_notice_xml_gz) \
   $(installed_product_notice_xml_gz) \
   $(installed_system_ext_notice_xml_gz) \
@@ -2013,7 +2013,9 @@ endif
 
 endif # PRODUCT_NOTICE_SPLIT
 
+ifneq ($(USE_SOONG_DEFINED_SYSTEM_IMAGE),true)
 ALL_DEFAULT_INSTALLED_MODULES += $(installed_notice_html_or_xml_gz)
+endif
 
 need_vendor_notice:=false
 ifeq ($(BUILDING_VENDOR_BOOT_IMAGE),true)
@@ -3223,8 +3225,10 @@ endif  # PRODUCT_FSVERITY_GENERATE_METADATA
 # system image
 
 INSTALLED_FILES_OUTSIDE_IMAGES := $(filter-out $(TARGET_OUT)/%, $(INSTALLED_FILES_OUTSIDE_IMAGES))
+ifdef BUILDING_SYSTEM_IMAGE
 INTERNAL_SYSTEMIMAGE_FILES := $(sort $(filter $(TARGET_OUT)/%, \
     $(ALL_DEFAULT_INSTALLED_MODULES)))
+endif
 
 # Create symlink /system/vendor to /vendor if necessary.
 ifdef BOARD_USES_VENDORIMAGE
@@ -3316,6 +3320,8 @@ $(SYSTEM_LINKER_CONFIG): $(INTERNAL_SYSTEMIMAGE_FILES) $(SYSTEM_LINKER_CONFIG_SO
 		--output $@ --value "$(STUB_LIBRARIES)" --system "$(TARGET_OUT)"
 	$(HOST_OUT_EXECUTABLES)/conv_linker_config append --source $@ --output $@ --key requireLibs \
 		--value "$(foreach lib,$(LLNDK_MOVED_TO_APEX_LIBRARIES), $(lib).so)"
+	$(HOST_OUT_EXECUTABLES)/conv_linker_config append --source $@ --output $@ --key provideLibs \
+		--value "$(foreach lib,$(PRODUCT_EXTRA_STUB_LIBRARIES), $(lib).so)"
 
 $(call declare-1p-target,$(SYSTEM_LINKER_CONFIG),)
 $(call declare-license-deps,$(SYSTEM_LINKER_CONFIG),$(INTERNAL_SYSTEMIMAGE_FILES) $(SYSTEM_LINKER_CONFIG_SOURCE))
@@ -3393,10 +3399,10 @@ ifeq ($(USE_SOONG_DEFINED_SYSTEM_IMAGE),true)
 ifeq ($(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE),)
 $(error PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE must be set if USE_SOONG_DEFINED_SYSTEM_IMAGE is true)
 endif
-soong_defined_system_image := $(call intermediates-dir-for,ETC,$(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE))/$(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE)
-$(BUILT_SYSTEMIMAGE): $(INSTALLED_FILES_FILE) $(systemimage_intermediates)/file_list.txt $(soong_defined_system_image)
-$(eval $(call copy-one-file, $(soong_defined_system_image), $(BUILT_SYSTEMIMAGE)))
-soong_defined_system_image :=
+SOONG_DEFINED_SYSTEM_IMAGE_PATH := $(call intermediates-dir-for,ETC,$(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE))/$(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE)
+SOONG_DEFINED_SYSTEM_IMAGE_BASE := $(dir $(ALL_MODULES.$(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE).FILESYSTEM_FILELIST))
+$(BUILT_SYSTEMIMAGE): $(INSTALLED_FILES_FILE) $(systemimage_intermediates)/file_list.txt $(SOONG_DEFINED_SYSTEM_IMAGE_PATH)
+$(eval $(call copy-one-file, $(SOONG_DEFINED_SYSTEM_IMAGE_PATH), $(BUILT_SYSTEMIMAGE)))
 else
 $(BUILT_SYSTEMIMAGE): $(FULL_SYSTEMIMAGE_DEPS) $(INSTALLED_FILES_FILE) $(systemimage_intermediates)/file_list.txt
 	$(call build-systemimage-target,$@)
@@ -3481,10 +3487,10 @@ platform-java:
 # -----------------------------------------------------------------
 # data partition image
 INSTALLED_FILES_OUTSIDE_IMAGES := $(filter-out $(TARGET_OUT_DATA)/%, $(INSTALLED_FILES_OUTSIDE_IMAGES))
+ifdef BUILDING_USERDATA_IMAGE
 INTERNAL_USERDATAIMAGE_FILES := \
     $(filter $(TARGET_OUT_DATA)/%,$(ALL_DEFAULT_INSTALLED_MODULES))
 
-ifdef BUILDING_USERDATA_IMAGE
 userdataimage_intermediates := \
     $(call intermediates-dir-for,PACKAGING,userdata)
 BUILT_USERDATAIMAGE_TARGET := $(PRODUCT_OUT)/userdata.img
@@ -6490,6 +6496,9 @@ $(BUILT_TARGET_FILES_PACKAGE): zip_root := $(intermediates)/$(name)
 $(BUILT_TARGET_FILES_DIR): zip_root := $(intermediates)/$(name)
 $(BUILT_TARGET_FILES_DIR): intermediates := $(intermediates)
 
+ifneq ($(SOONG_DEFINED_SYSTEM_IMAGE_PATH),)
+  $(BUILT_TARGET_FILES_DIR): $(SOONG_DEFINED_SYSTEM_IMAGE_PATH)
+endif
 
 # $(1): Directory to copy
 # $(2): Location to copy it to
@@ -6823,8 +6832,11 @@ $(BUILT_TARGET_FILES_DIR): \
 	    $(INSTALLED_RAMDISK_TARGET) \
 	    $(INSTALLED_DTBIMAGE_TARGET) \
 	    $(INSTALLED_2NDBOOTLOADER_TARGET) \
+	    $(INSTALLED_VENDOR_KERNEL_RAMDISK_TARGET) \
 	    $(BUILT_RAMDISK_16K_TARGET) \
 	    $(BUILT_KERNEL_16K_TARGET) \
+	    $(BUILT_BOOTIMAGE_16K_TARGET) \
+	    $(INSTALLED_DTBOIMAGE_16KB_TARGET) \
 	    $(BOARD_PREBUILT_DTBOIMAGE) \
 	    $(BOARD_PREBUILT_RECOVERY_DTBOIMAGE) \
 	    $(BOARD_RECOVERY_ACPIO) \
@@ -6978,8 +6990,13 @@ endif
 endif # INSTALLED_VENDOR_BOOTIMAGE_TARGET
 ifdef BUILDING_SYSTEM_IMAGE
 	@# Contents of the system image
+ifneq ($(SOONG_DEFINED_SYSTEM_IMAGE_PATH),)
+	$(hide) $(call package_files-copy-root, \
+	    $(SOONG_DEFINED_SYSTEM_IMAGE_BASE)/root/system,$(zip_root)/SYSTEM)
+else
 	$(hide) $(call package_files-copy-root, \
 	    $(SYSTEMIMAGE_SOURCE_DIR),$(zip_root)/SYSTEM)
+endif
 else ifdef INSTALLED_BUILD_PROP_TARGET
 	@# Copy the system build.prop even if not building a system image
 	@# because add_img_to_target_files may need it to build other partition
@@ -7184,14 +7201,22 @@ ifdef BOARD_PREBUILT_DTBOIMAGE
 	$(hide) mkdir -p $(zip_root)/PREBUILT_IMAGES
 	$(hide) cp $(INSTALLED_DTBOIMAGE_TARGET) $(zip_root)/PREBUILT_IMAGES/
 endif # BOARD_PREBUILT_DTBOIMAGE
-ifdef BUILT_KERNEL_16K_TARGET
+ifdef BOARD_KERNEL_PATH_16K
 	$(hide) mkdir -p $(zip_root)/PREBUILT_IMAGES
 	$(hide) cp $(BUILT_KERNEL_16K_TARGET) $(zip_root)/PREBUILT_IMAGES/
-endif # BUILT_KERNEL_16K_TARGET
-ifdef BUILT_RAMDISK_16K_TARGET
+endif # BOARD_KERNEL_PATH_16K
+ifdef BOARD_KERNEL_MODULES_16K
 	$(hide) mkdir -p $(zip_root)/PREBUILT_IMAGES
 	$(hide) cp $(BUILT_RAMDISK_16K_TARGET) $(zip_root)/PREBUILT_IMAGES/
-endif # BUILT_RAMDISK_16K_TARGET
+endif # BOARD_KERNEL_MODULES_16K
+ifdef BUILT_BOOTIMAGE_16K_TARGET
+	$(hide) mkdir -p $(zip_root)/IMAGES
+	$(hide) cp $(BUILT_BOOTIMAGE_16K_TARGET) $(zip_root)/IMAGES/
+endif # BUILT_BOOTIMAGE_16K_TARGET
+ifdef INSTALLED_DTBOIMAGE_16KB_TARGET
+	$(hide) mkdir -p $(zip_root)/IMAGES
+	$(hide) cp $(INSTALLED_DTBOIMAGE_16KB_TARGET) $(zip_root)/IMAGES/
+endif # INSTALLED_DTBOIMAGE_16KB_TARGET
 ifeq ($(BOARD_USES_PVMFWIMAGE),true)
 	$(hide) mkdir -p $(zip_root)/PREBUILT_IMAGES
 	$(hide) cp $(INSTALLED_PVMFWIMAGE_TARGET) $(zip_root)/PREBUILT_IMAGES/
@@ -8314,6 +8339,26 @@ $(call dist-for-goals,dist_files,$(PACKED_RECOVERY_IMAGE_ARCHIVE_TARGET))
 pack-recovery-image: $(PACK_RECOVERY_IMAGE_TARGET)
 
 endif # PACK_DESKTOP_RECOVERY_IMAGE
+
+# -----------------------------------------------------------------
+# Desktop pack update image hook.
+ifneq (,$(strip $(PACK_DESKTOP_UPDATE_IMAGE)))
+PACK_UPDATE_IMAGE_TARGET := $(PRODUCT_OUT)/android-desktop_update_image.bin
+
+$(PACK_UPDATE_IMAGE_TARGET): $(IMAGES) $(PACK_IMAGE_SCRIPT)
+	$(PACK_IMAGE_SCRIPT) --out_dir $(PRODUCT_OUT) --noarchive --update
+
+PACKED_UPDATE_IMAGE_ARCHIVE_TARGET := $(PACK_UPDATE_IMAGE_TARGET).gz
+
+$(PACKED_UPDATE_IMAGE_ARCHIVE_TARGET): $(PACK_UPDATE_IMAGE_TARGET) | $(GZIP)
+	$(GZIP) -fk $(PACK_UPDATE_IMAGE_TARGET)
+
+$(call dist-for-goals,dist_files,$(PACKED_UPDATE_IMAGE_ARCHIVE_TARGET))
+
+.PHONY: pack-update-image
+pack-update-image: $(PACK_UPDATE_IMAGE_TARGET)
+
+endif # PACK_DESKTOP_UPDATE_IMAGE
 
 # -----------------------------------------------------------------
 # OS Licensing

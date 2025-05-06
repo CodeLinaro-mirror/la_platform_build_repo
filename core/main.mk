@@ -289,6 +289,9 @@ subdir_makefiles_total := $(words int $(subdir_makefiles) post finish)
 
 $(foreach mk,$(subdir_makefiles),$(info [$(call inc_and_print,subdir_makefiles_inc)/$(subdir_makefiles_total)] including $(mk) ...)$(eval include $(mk)))
 
+# Build bootloader.img/radio.img, and unpack the partitions.
+include $(BUILD_SYSTEM)/tasks/tools/update_bootloader_radio_image.mk
+
 # For an unbundled image, we can skip blueprint_tools because unbundled image
 # aims to remove a large number framework projects from the manifest, the
 # sources or dependencies for these tools may be missing from the tree.
@@ -296,6 +299,9 @@ ifeq (,$(TARGET_BUILD_UNBUNDLED_IMAGE))
 droid_targets : blueprint_tools
 checkbuild: blueprint_tests
 endif
+
+# Create necessary directories and symlinks in the root filesystem
+include system/core/rootdir/create_root_structure.mk
 
 endif # dont_bother
 
@@ -681,12 +687,12 @@ endef
 # Scan all modules in general-tests, device-tests and other selected suites and
 # flatten the shared library dependencies.
 define update-host-shared-libs-deps-for-suites
-$(foreach suite,general-tests device-tests vts tvts art-host-tests host-unit-tests,\
+$(foreach suite,general-tests device-tests vts tvts art-host-tests host-unit-tests camera-hal-tests,\
   $(foreach m,$(COMPATIBILITY.$(suite).MODULES),\
     $(eval my_deps := $(call get-all-shared-libs-deps,$(m)))\
     $(foreach dep,$(my_deps),\
       $(foreach f,$(ALL_MODULES.$(dep).HOST_SHARED_LIBRARY_FILES),\
-        $(if $(filter $(suite),device-tests general-tests art-host-tests host-unit-tests),\
+        $(if $(filter $(suite),device-tests general-tests art-host-tests host-unit-tests camera-hal-tests),\
           $(eval my_testcases := $(HOST_OUT_TESTCASES)),\
           $(eval my_testcases := $$(COMPATIBILITY_TESTCASES_OUT_$(suite))))\
         $(eval target := $(my_testcases)/$(lastword $(subst /, ,$(dir $(f))))/$(notdir $(f)))\
@@ -1858,6 +1864,11 @@ endif
 # recovery.img
 ifndef INSTALLED_RECOVERYIMAGE_TARGET
 filter_out_files += $(PRODUCT_OUT)/recovery/%
+endif
+
+# userdata.img
+ifndef BUILDING_USERDATA_IMAGE
+filter_out_files += $(PRODUCT_OUT)/data/%
 endif
 
 installed_files := $(sort $(filter-out $(filter_out_files),$(filter $(PRODUCT_OUT)/%,$(modules_to_install))))
