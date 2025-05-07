@@ -438,85 +438,6 @@ function print_lunch_menu()
     echo
 }
 
-function lunch()
-{
-    local answer
-    setup_cog_env_if_needed
-
-    if [[ $# -gt 1 ]]; then
-        echo "usage: lunch [target]" >&2
-        return 1
-    fi
-
-    local used_lunch_menu=0
-
-    if [ "$1" ]; then
-        answer=$1
-    else
-        print_lunch_menu
-        echo "Which would you like? [aosp_cf_x86_64_phone-trunk_staging-eng]"
-        echo -n "Pick from common choices above (e.g. 13) or specify your own (e.g. aosp_barbet-trunk_staging-eng): "
-        read answer
-        used_lunch_menu=1
-    fi
-
-    local selection=
-
-    if [ -z "$answer" ]
-    then
-        selection=aosp_cf_x86_64_phone-trunk_staging-eng
-    elif (echo -n $answer | grep -q -e "^[0-9][0-9]*$")
-    then
-        local choices=($(TARGET_BUILD_APPS= TARGET_PRODUCT= TARGET_RELEASE= TARGET_BUILD_VARIANT= _get_build_var_cached COMMON_LUNCH_CHOICES 2>/dev/null))
-        if [ $answer -le ${#choices[@]} ]
-        then
-            # array in zsh starts from 1 instead of 0.
-            if [ -n "$ZSH_VERSION" ]
-            then
-                selection=${choices[$(($answer))]}
-            else
-                selection=${choices[$(($answer-1))]}
-            fi
-        fi
-    else
-        selection=$answer
-    fi
-
-    export TARGET_BUILD_APPS=
-
-    # Support <product>-<variant> or <product>-<release>-<variant>
-    # Default value of <release> is next if not specified.
-    local product release_and_variant release variant
-    product=${selection%%-*} # Trim everything after first dash
-    release_and_variant=${selection#*-} # Trim everything up to first dash
-    if [ "$release_and_variant" != "$selection" ]; then
-        local first=${release_and_variant%%-*} # Trim everything after first dash
-        if [ "$first" != "$release_and_variant" ]; then
-            # There is a 2nd dash, split into release-variant
-            release=$first # Everything up to the dash
-            variant=${release_and_variant#*-} # Trim everything up to dash
-        else
-            # There is not a 2nd dash, default to variant as the second param
-            variant=$first
-        fi
-    fi
-
-    if [ ! -n "$release" ]; then
-        echo "Release not specified, defaulting to 'trunk_food' build"
-        release=trunk_food
-    fi
-
-    if [[ -z "$product" ]] || [[ -z "$release" ]] || [[ -z "$variant" ]]
-    then
-        echo
-        echo "Invalid lunch combo: $selection"
-        echo "Valid combos must be of the form <product>-<release>-<variant>"
-        return 1
-    fi
-
-    _lunch_meat $product $release $variant
-}
-
 function _lunch_meat()
 {
     local product=$1
@@ -536,7 +457,9 @@ function _lunch_meat()
         return 1
     fi
     export TARGET_PRODUCT=$(_get_build_var_cached TARGET_PRODUCT)
+    export TARGET_BOARD_PLATFORM=$(_get_build_var_cached TARGET_BOARD_PLATFORM)
     export TARGET_BUILD_VARIANT=$(_get_build_var_cached TARGET_BUILD_VARIANT)
+    export PLATFORM_VERSION=$(_get_build_var_cached PLATFORM_VERSION)
     export TARGET_RELEASE=$release
     # Note this is the string "release", not the value of the variable.
     export TARGET_BUILD_TYPE=release
@@ -599,13 +522,13 @@ function _lunch_usage()
         echo "Note that the previous interactive menu and list of hard-coded"
         echo "list of curated targets has been removed. If you would like the"
         echo "list of products, release configs for a particular product, or"
-        echo "variants, run list_products, list_release_configs, list_variants"
+        echo "variants, run list_products list_releases or list_variants"
         echo "respectively."
         echo
     ) 1>&2
 }
 
-function lunch2()
+function lunch()
 {
     if [[ $# -eq 1 && $1 = "--help" ]]; then
         _lunch_usage
@@ -625,7 +548,17 @@ function lunch2()
     # Handle the legacy format
     local legacy=$(echo $1 | grep "-")
     if [[ $# -eq 1 && -n $legacy ]]; then
-        IFS="-" read -r product release variant <<< "$1"
+        # Count the number of hyphens in the input
+        hyphen_count=$(echo "$1" | awk -F"-" '{print NF-1}')
+        # Split the input string based on the number of hyphens
+        if [[ $hyphen_count -eq 1 ]]; then
+            IFS="-" read -r product variant <<< "$1"
+            # Set default release
+            release="trunk_staging"
+            echo "Release not specified, defaulting to $release build"
+        elif [[ $hyphen_count -eq 2 ]]; then
+            IFS="-" read -r product release variant <<< "$1"
+        fi
         if [[ -z "$product" ]] || [[ -z "$release" ]] || [[ -z "$variant" ]]; then
             echo "Invalid lunch combo: $1" 1>&2
             echo "Valid combos must be of the form <product>-<release>-<variant> when using" 1>&2

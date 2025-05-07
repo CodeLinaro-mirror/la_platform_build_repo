@@ -176,6 +176,7 @@ my_module_path := $(strip $(LOCAL_MODULE_PATH))
 endif
 my_module_path := $(patsubst %/,%,$(my_module_path))
 my_module_relative_path := $(strip $(LOCAL_MODULE_RELATIVE_PATH))
+my_module_relative_path := $(patsubst %/,%,$(my_module_relative_path))
 
 ifdef LOCAL_IS_HOST_MODULE
   partition_tag :=
@@ -861,13 +862,6 @@ else
       $(eval my_compat_dist_config_$(suite) += $(foreach dir, $(call compatibility_suite_dirs,$(suite)), \
         $(LOCAL_PATH)/DynamicConfig.xml:$(dir)/$(LOCAL_MODULE).dynamic)))
   endif
-
-  ifneq (,$(wildcard $(LOCAL_PATH)/$(LOCAL_MODULE)_*.config))
-  $(foreach extra_config, $(wildcard $(LOCAL_PATH)/$(LOCAL_MODULE)_*.config), \
-    $(foreach suite, $(LOCAL_COMPATIBILITY_SUITE), \
-      $(eval my_compat_dist_config_$(suite) += $(foreach dir, $(call compatibility_suite_dirs,$(suite)), \
-        $(extra_config):$(dir)/$(notdir $(extra_config))))))
-  endif
 endif # $(my_prefix)$(LOCAL_MODULE_CLASS)_$(LOCAL_MODULE)_compat_files
 
 
@@ -938,12 +932,6 @@ else
     my_supported_variant := DEVICE
   endif
 endif
-###########################################################
-## Add test module to ALL_DISABLED_PRESUBMIT_TESTS if LOCAL_PRESUBMIT_DISABLED is set to true.
-###########################################################
-ifeq ($(LOCAL_PRESUBMIT_DISABLED),true)
-  ALL_DISABLED_PRESUBMIT_TESTS += $(LOCAL_MODULE)
-endif  # LOCAL_PRESUBMIT_DISABLED
 
 ###########################################################
 ## Register with ALL_MODULES

@@ -126,6 +126,23 @@ android_symlinks = [
     },
 ]
 
+extra_vendor_symlinks = [
+    // Some vendors still haven't cleaned up all device specific directories under root!
+    // TODO(b/111434759, b/111287060) SoC specific hacks
+    {
+        target: "/vendor/lib/dsp",
+        name: "dsp",
+    },
+    {
+        target: "/mnt/vendor/persist",
+        name: "persist",
+    },
+    {
+        target: "/vendor/firmware_mnt",
+        name: "firmware",
+    },
+]
+
 filegroup {
     name: "generic_system_sign_key",
     srcs: [":avb_testkey_rsa4096"],
@@ -416,28 +433,74 @@ android_filesystem_defaults {
     }),
 }
 
-android_filesystem_defaults {
+system_image_fsverity_default = {
+    inputs: [
+        "etc/boot-image.prof",
+        "etc/classpaths/*.pb",
+        "etc/dirty-image-objects",
+        "etc/preloaded-classes",
+        "framework/*",
+        "framework/*/*", // framework/{arch}
+        "framework/oat/*/*", // framework/oat/{arch}
+    ],
+    libs: [":framework-res{.export-package.apk}"],
+}
+
+soong_config_module_type {
+    name: "system_image_defaults",
+    module_type: "android_filesystem_defaults",
+    config_namespace: "ANDROID",
+    bool_variables: ["TARGET_ADD_ROOT_EXTRA_VENDOR_SYMLINKS"],
+    properties: ["symlinks"],
+}
+
+genrule {
+    name: "plat_and_vendor_file_contexts",
+    device_common_srcs: [
+        ":plat_file_contexts",
+        ":vendor_file_contexts",
+    ],
+    out: ["file_contexts"],
+    cmd: "cat $(in) > $(out)",
+}
+
+system_image_defaults {
     name: "system_image_defaults",
     partition_name: "system",
     base_dir: "system",
+    stem: "system.img",
+    no_full_install: true,
     dirs: generic_rootdirs,
-    symlinks: generic_symlinks,
-    file_contexts: ":plat_file_contexts",
+    soong_config_variables: {
+        TARGET_ADD_ROOT_EXTRA_VENDOR_SYMLINKS: {
+            symlinks: generic_symlinks + extra_vendor_symlinks,
+            conditions_default: {
+                symlinks: generic_symlinks,
+            },
+        },
+    },
+    file_contexts: ":plat_and_vendor_file_contexts",
     linker_config: {
         gen_linker_config: true,
         linker_config_srcs: [":system_linker_config_json_file"],
     },
     fsverity: {
-        inputs: [
-            "etc/boot-image.prof",
-            "etc/classpaths/*.pb",
-            "etc/dirty-image-objects",
-            "etc/preloaded-classes",
-            "framework/*",
-            "framework/*/*", // framework/{arch}
-            "framework/oat/*/*", // framework/oat/{arch}
-        ],
-        libs: [":framework-res{.export-package.apk}"],
+        inputs: select(soong_config_variable("ANDROID", "PRODUCT_FSVERITY_GENERATE_METADATA"), {
+            true: [
+                "etc/boot-image.prof",
+                "etc/classpaths/*.pb",
+                "etc/dirty-image-objects",
+                "etc/preloaded-classes",
+                "framework/*",
+                "framework/*/*", // framework/{arch}
+                "framework/oat/*/*", // framework/oat/{arch}
+            ],
+            default: [],
+        }),
+        libs: select(soong_config_variable("ANDROID", "PRODUCT_FSVERITY_GENERATE_METADATA"), {
+            true: [":framework-res{.export-package.apk}"],
+            default: [],
+        }),
     },
     build_logtags: true,
     gen_aconfig_flags_pb: true,
@@ -448,6 +511,7 @@ android_filesystem_defaults {
     avb_private_key: ":generic_system_sign_key",
     avb_algorithm: "SHA256_RSA4096",
     avb_hash_algorithm: "sha256",
+    rollback_index_location: 1,
 
     deps: [
         "abx",
@@ -562,6 +626,7 @@ android_filesystem_defaults {
         "otapreopt_script", // generic_system
         "package-shareduid-allowlist.xml", // base_system
         "passwd_system", // base_system
+        "pbtombstone", // base_system
         "perfetto", // base_system
         "ping", // base_system
         "ping6", // base_system
@@ -654,6 +719,7 @@ android_filesystem_defaults {
             "logtagd.rc",
             "ot-cli-ftd",
             "ot-ctl",
+            "overlay_remounter",
             "procrank",
             "profcollectctl",
             "profcollectd",
@@ -681,6 +747,11 @@ android_filesystem_defaults {
             "update_engine_client",
         ],
         default: [],
+    }) + select(release_flag("RELEASE_UPROBESTATS_MODULE"), {
+        true: [],
+        default: [
+            "uprobestats", // base_system internal
+        ],
     }),
     multilib: {
         common: {
@@ -813,11 +884,6 @@ android_filesystem_defaults {
                 default: [
                     "framework-connectivity-b", // base_system
                 ],
-            }) + select(release_flag("RELEASE_AVATAR_PICKER_APP"), {
-                true: [
-                    "AvatarPicker", // generic_system (RELEASE_AVATAR_PICKER_APP)
-                ],
-                default: [],
             }) + select(release_flag("RELEASE_UPROBESTATS_MODULE"), {
                 true: [
                     "com.android.uprobestats", // base_system (RELEASE_UPROBESTATS_MODULE)
@@ -837,12 +903,7 @@ android_filesystem_defaults {
                 "android.system.virtualizationservice-ndk",
                 "libgsi",
                 "servicemanager",
-            ] + select(release_flag("RELEASE_UPROBESTATS_MODULE"), {
-                true: [],
-                default: [
-                    "uprobestats", // base_system internal
-                ],
-            }),
+            ],
         },
         both: {
             deps: [

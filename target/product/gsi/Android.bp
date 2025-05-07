@@ -81,8 +81,8 @@ gsi_symlinks = [
     },
 ]
 
-android_system_image {
-    name: "android_gsi",
+android_filesystem_defaults {
+    name: "android_gsi_defaults",
     defaults: [
         "system_image_defaults",
         "system_ext_image_defaults",
@@ -105,11 +105,6 @@ android_system_image {
         // telephony packages
         "CarrierConfig",
 
-        // Install a copy of the debug policy to the system_ext partition, and allow
-        // init-second-stage to load debug policy from system_ext.
-        // This option is only meant to be set by compliance GSI targets.
-        "system_ext_userdebug_plat_sepolicy.cil",
-
         ///////////////////////////////////////////
         // gsi_release
         ///////////////////////////////////////////
@@ -130,12 +125,6 @@ android_system_image {
         "com.android.vndk.v34",
 
         ///////////////////////////////////////////
-        // AVF
-        ///////////////////////////////////////////
-        "com.android.compos",
-        "features_com.android.virt.xml",
-
-        ///////////////////////////////////////////
         // gsi_product
         ///////////////////////////////////////////
         "Browser2",
@@ -143,16 +132,91 @@ android_system_image {
         "Dialer",
         "LatinIME",
         "apns-full-conf.xml",
+        "frameworks-base-overlays",
     ],
     multilib: {
+        lib64: {
+            deps: [
+                ///////////////////////////////////////////
+                // AVF
+                ///////////////////////////////////////////
+                "com.android.compos",
+                "features_com.android.virt.xml",
+            ],
+        },
         both: {
             // PRODUCT_PACKAGES_SHIPPING_API_LEVEL_34
             deps: ["android.hidl.memory@1.0-impl"],
         },
     },
+    type: "ext4",
+}
+
+// system.img for gsi_{arch} targets
+android_system_image {
+    name: "android_gsi",
+    defaults: ["android_gsi_defaults"],
     enabled: select(soong_config_variable("ANDROID", "PRODUCT_INSTALL_DEBUG_POLICY_TO_SYSTEM_EXT"), {
         "true": true,
         default: false,
     }),
-    type: "ext4",
+    deps: [
+        // Install a copy of the debug policy to the system_ext partition, and allow
+        // init-second-stage to load debug policy from system_ext.
+        // This option is only meant to be set by compliance GSI targets.
+        "system_ext_userdebug_plat_sepolicy.cil",
+    ],
+}
+
+// system.img for aosp_{arch} targets
+android_system_image {
+    name: "aosp_system_image",
+    defaults: ["android_gsi_defaults"],
+    deps: [
+        // handheld_system_ext
+        "AccessibilityMenu",
+        "WallpaperCropper",
+
+        // telephony_system_ext
+        "EmergencyInfo",
+
+        // handheld_product
+        "Calendar",
+        "Contacts",
+        "DeskClock",
+        "Gallery2",
+        "Music",
+        "preinstalled-packages-platform-handheld-product.xml",
+        "QuickSearchBox",
+        "SettingsIntelligence",
+        "frameworks-base-overlays",
+
+        // telephony_product
+        "ImsServiceEntitlement",
+        "preinstalled-packages-platform-telephony-product.xml",
+
+        // more AOSP packages
+        "initial-package-stopped-states-aosp.xml",
+        "messaging",
+        "PhotoTable",
+        "preinstalled-packages-platform-aosp-product.xml",
+        "ThemePicker",
+    ] + select(product_variable("debuggable"), {
+        true: ["frameworks-base-overlays-debug"],
+        default: [],
+    }),
+    enabled: select(soong_config_variable("gsi", "building_gsi"), {
+        true: true,
+        default: false,
+    }),
+    multilib: {
+        common: {
+            deps: select(release_flag("RELEASE_AVATAR_PICKER_APP"), {
+                true: [
+                    "AvatarPicker", // handheld_system_ext (RELEASE_AVATAR_PICKER_APP)
+                ],
+                default: [],
+            }),
+        },
+    },
 }

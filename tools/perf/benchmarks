@@ -337,6 +337,12 @@ class Runner():
 
     def Run(self):
         """Run all of the user-selected benchmarks."""
+
+        # With `--list`, just list the benchmarks available.
+        if self._options.List():
+            print(" ".join(self._options.BenchmarkIds()))
+            return
+
         # Clean out the log dir or create it if necessary
         prepare_log_dir(self._options.LogDir())
 
@@ -546,6 +552,8 @@ benchmarks:
         parser.add_argument("--benchmark", nargs="*", default=[b.id for b in self._benchmarks],
                             metavar="BENCHMARKS",
                             help="Benchmarks to run.  Default suite will be run if omitted.")
+        parser.add_argument("--list", action="store_true",
+                            help="list the available benchmarks.  No benchmark is run.")
         parser.add_argument("--dist-one", action="store_true",
                             help="Copy logs and metrics to the given dist dir. Requires that only"
                                 + " one benchmark be supplied. Postroll steps will be skipped.")
@@ -614,6 +622,12 @@ benchmarks:
 
     def DryRun(self):
         return self._args.dry_run
+
+    def List(self):
+        return self._args.list
+
+    def BenchmarkIds(self) :
+        return [benchmark.id for benchmark in self._benchmarks]
 
     def _lunches(self):
         def parse_lunch(lunch):
@@ -791,6 +805,24 @@ benchmarks:
                       change=AddJavaField("frameworks/base/packages/SystemUI/src/com/android/systemui/wmshell/WMShell.java",
                                     "public"),
                       modules=["SystemUiRavenTests"],
+                      preroll=1,
+                      postroll=2,
+                      ),
+            Benchmark(id="systemui_flicker_add_log_call",
+                      title="Add a Log call to flicker",
+                      change=Modify("platform_testing/libraries/flicker/src/android/tools/flicker/FlickerServiceResultsCollector.kt",
+                                    lambda: f'Log.v(LOG_TAG, "BENCHMARK = {random.randint(0, 1000000)}");\n',
+                                    before="Log.v(LOG_TAG,"),
+                      modules=["WMShellFlickerTestsPip"],
+                      preroll=1,
+                      postroll=2,
+                      ),
+            Benchmark(id="systemui_core_add_log_call",
+                      title="Add a Log call SystemUIApplication",
+                      change=Modify("frameworks/base/packages/SystemUI/src/com/android/systemui/SystemUIApplication.java",
+                                    lambda: f'Log.v(TAG, "BENCHMARK = {random.randint(0, 1000000)}");\n',
+                                    before="Log.wtf(TAG,"),
+                      modules=["SystemUI-core"],
                       preroll=1,
                       postroll=2,
                       ),
