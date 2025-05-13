@@ -963,8 +963,7 @@ def CopyInputDirectory(src, dst, filter_file):
         os.makedirs(full_dst, exist_ok=True)
       else:
         os.makedirs(os.path.dirname(full_dst), exist_ok=True)
-        if not os.path.exists(full_dst):
-          os.link(full_src, full_dst, follow_symlinks=False)
+        os.link(full_src, full_dst, follow_symlinks=False)
 
 
 def main(argv):
