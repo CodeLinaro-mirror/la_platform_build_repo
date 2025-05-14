@@ -65,7 +65,11 @@ public class PlatformAconfigPackage {
     /** @hide */
     @UnsupportedAppUsage
     public static final Set<String> PLATFORM_PACKAGE_MAP_FILES =
-            Set.of("system.package.map", "vendor.package.map", "product.package.map");
+            Set.of(
+                    "system.package.map",
+                    "system_ext.package.map",
+                    "vendor.package.map",
+                    "product.package.map");
 
     static {
         for (String pf : PLATFORM_PACKAGE_MAP_FILES) {
@@ -116,11 +120,11 @@ public class PlatformAconfigPackage {
             return aconfigPackage;
         } catch (AconfigStorageException e) {
             throw new AconfigStorageReadException(
-                    e.getErrorCode(), "Fail to create AconfigPackage", e);
+                    e.getErrorCode(), "Fail to create PlatformAconfigPackage: " + packageName, e);
         } catch (Exception e) {
             throw new AconfigStorageReadException(
                     AconfigStorageReadException.ERROR_GENERIC,
-                    "Fail to create PlatformAconfigPackage",
+                    "Fail to create PlatformAconfigPackage: " + packageName,
                     e);
         }
     }
