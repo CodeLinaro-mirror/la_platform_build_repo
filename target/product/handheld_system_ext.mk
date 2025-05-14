@@ -28,6 +28,8 @@ PRODUCT_PACKAGES += \
     Settings \
     StorageManager \
     WallpaperCropper \
+# Allowlist for system packages included in handheld_system_ext.mk
+PRODUCT_PACKAGES += preinstalled_packages_handheld_system_ext.xml
 
 ifneq ($(TARGET_USES_QSPA),true)
   PRODUCT_PACKAGES += \
