@@ -214,7 +214,6 @@ $(call add_json_bool, BuildingRecoveryImage,             $(BUILDING_RECOVERY_IMA
 $(call add_json_str,  UserdataPath,                      $(TARGET_COPY_OUT_DATA))
 $(call add_json_bool, BuildingUserdataImage,             $(BUILDING_USERDATA_IMAGE))
 
-$(call add_json_bool, UseGoma,                           $(filter-out false,$(USE_GOMA)))
 $(call add_json_bool, UseRBE,                            $(filter-out false,$(USE_RBE)))
 $(call add_json_bool, UseRBEJAVAC,                       $(filter-out false,$(RBE_JAVAC)))
 $(call add_json_bool, UseRBER8,                          $(filter-out false,$(RBE_R8)))
@@ -631,6 +630,8 @@ $(call add_json_list, ProductHostPackages, $(PRODUCT_HOST_PACKAGES))
 $(call add_json_bool, ProductEnableLogcatPersistence, $(PRODUCT_ENABLE_LOGCAT_PERSISTENCE))
 
 $(call add_json_bool, EnforceSELinuxTrebleLabeling, $(filter true,$(PRODUCT_ENFORCE_SELINUX_TREBLE_LABELING)))
+
+$(call add_json_str, SELinuxTrebleLabelingTrackingListFile, $(filter true,$(PRODUCT_SELINUX_TREBLE_LABELING_TRACKING_LIST_FILE)))
 
 $(call json_end)
 

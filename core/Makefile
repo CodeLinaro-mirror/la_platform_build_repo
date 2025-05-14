@@ -2328,9 +2328,10 @@ $(if $(BOARD_AVB_ENABLE), \
   $(if $(filter $(2),system_other), \
     $(hide) echo "avb_system_other_hashtree_enable=$(BOARD_AVB_ENABLE)" >> $(1)$(newline) \
     $(hide) echo "avb_system_other_add_hashtree_footer_args=$(BOARD_AVB_SYSTEM_OTHER_ADD_HASHTREE_FOOTER_ARGS)" >> $(1)$(newline) \
-    $(if $(BOARD_AVB_SYSTEM_KEY_PATH),\
-      $(hide) echo "avb_system_other_key_path=$(BOARD_AVB_SYSTEM_KEY_PATH)" >> $(1)$(newline) \
-      $(hide) echo "avb_system_other_algorithm=$(BOARD_AVB_SYSTEM_ALGORITHM)" >> $(1)$(newline))) \
+    $(if $(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_KEY_PATH)$(BOARD_AVB_SYSTEM_KEY_PATH),\
+      $(hide) echo "avb_system_other_key_path=$(firstword $(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_KEY_PATH) $(BOARD_AVB_SYSTEM_KEY_PATH))" >> $(1)$(newline)) \
+    $(if $(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_ALGORITHM)$(BOARD_AVB_SYSTEM_ALGORITHM),\
+      $(hide) echo "avb_system_other_algorithm=$(firstword $(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_ALGORITHM) $(BOARD_AVB_SYSTEM_ALGORITHM))" >> $(1)$(newline))) \
   $(if $(filter $(2),vendor), \
     $(hide) echo "avb_vendor_hashtree_enable=$(BOARD_AVB_ENABLE)" >> $(1)$(newline) \
     $(hide) echo "avb_vendor_add_hashtree_footer_args=$(BOARD_AVB_VENDOR_ADD_HASHTREE_FOOTER_ARGS)" >> $(1)$(newline) \
@@ -3496,11 +3497,12 @@ $(check-selinux-treble-labeling.timestamp): PRIVATE_SEPOLICY := $(sepolicy-binar
 $(check-selinux-treble-labeling.timestamp): PRIVATE_PLATFORM_SEAPP_CONTEXTS := $(platform-seapp-contexts)
 $(check-selinux-treble-labeling.timestamp): PRIVATE_VENDOR_SEAPP_CONTEXTS := $(vendor-seapp-contexts)
 $(check-selinux-treble-labeling.timestamp): PRIVATE_VENDOR_FILE_CONTEXTS := $(vendor-file-contexts)
+$(check-selinux-treble-labeling.timestamp): PRIVATE_TRACKING_LIST_FILE := $(PRODUCT_SELINUX_TREBLE_LABELING_TRACKING_LIST_FILE)
 $(check-selinux-treble-labeling.timestamp): $(HOST_OUT_EXECUTABLES)/treble_labeling_tests \
     $(platform-preinstalled-apps) $(vendor-preinstalled-apps) \
     $(platform-sepolicy-binary) $(sepolicy-binary) $(sepolicy-binary-without-vendor) \
     $(platform-seapp-contexts) $(vendor-seapp-contexts) $(vendor-file-contexts) \
-    $(AAPT2)
+    $(PRODUCT_SELINUX_TREBLE_LABELING_TRACKING_LIST_FILE) $(AAPT2)
 	@rm -rf $@
 	@echo $(PRIVATE_PLATFORM_APPS) > $@.platform_apps.txt
 	@echo $(PRIVATE_VENDOR_APPS) > $@.vendor_apps.txt
@@ -3510,6 +3512,7 @@ $(check-selinux-treble-labeling.timestamp): $(HOST_OUT_EXECUTABLES)/treble_label
     --platform_seapp_contexts $(PRIVATE_PLATFORM_SEAPP_CONTEXTS) \
     --vendor_seapp_contexts $(PRIVATE_VENDOR_SEAPP_CONTEXTS) \
     --vendor_file_contexts $(PRIVATE_VENDOR_FILE_CONTEXTS) \
+    $(if $(PRIVATE_TRACKING_LIST_FILE),--tracking_list_file $(PRIVATE_TRACKING_LIST_FILE)) \
     --aapt2_path $(AAPT2) > $@
 
 .PHONY: check-selinux-treble-labeling
@@ -3658,6 +3661,10 @@ $(eval $(call write-partition-file-list,$(systemimage_intermediates)/file_list.t
 ifneq ($(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE),)
 file_list_diff := $(HOST_OUT_EXECUTABLES)/file_list_diff$(HOST_EXECUTABLE_SUFFIX)
 system_file_diff_timestamp := $(systemimage_intermediates)/file_diff.timestamp
+# Override system's avb_key with the avb_key of the soong defined system image.
+# This will be used as the avb_key to sign system_other.img
+PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_KEY_PATH := $(ALL_MODULES.$(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE).FILESYSTEM_AVB_KEY_PATH)
+PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_ALGORITHM := $(ALL_MODULES.$(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE).FILESYSTEM_AVB_ALGORITHM)
 
 # The build configuration to build the REL version may have more files to allow.
 # Use allowlist_next in addition to the allowlist in this case.
