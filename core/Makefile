@@ -2328,9 +2328,10 @@ $(if $(BOARD_AVB_ENABLE), \
   $(if $(filter $(2),system_other), \
     $(hide) echo "avb_system_other_hashtree_enable=$(BOARD_AVB_ENABLE)" >> $(1)$(newline) \
     $(hide) echo "avb_system_other_add_hashtree_footer_args=$(BOARD_AVB_SYSTEM_OTHER_ADD_HASHTREE_FOOTER_ARGS)" >> $(1)$(newline) \
-    $(if $(BOARD_AVB_SYSTEM_KEY_PATH),\
-      $(hide) echo "avb_system_other_key_path=$(BOARD_AVB_SYSTEM_KEY_PATH)" >> $(1)$(newline) \
-      $(hide) echo "avb_system_other_algorithm=$(BOARD_AVB_SYSTEM_ALGORITHM)" >> $(1)$(newline))) \
+    $(if $(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_KEY_PATH)$(BOARD_AVB_SYSTEM_KEY_PATH),\
+      $(hide) echo "avb_system_other_key_path=$(firstword $(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_KEY_PATH) $(BOARD_AVB_SYSTEM_KEY_PATH))" >> $(1)$(newline)) \
+    $(if $(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_ALGORITHM)$(BOARD_AVB_SYSTEM_ALGORITHM),\
+      $(hide) echo "avb_system_other_algorithm=$(firstword $(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_ALGORITHM) $(BOARD_AVB_SYSTEM_ALGORITHM))" >> $(1)$(newline))) \
   $(if $(filter $(2),vendor), \
     $(hide) echo "avb_vendor_hashtree_enable=$(BOARD_AVB_ENABLE)" >> $(1)$(newline) \
     $(hide) echo "avb_vendor_add_hashtree_footer_args=$(BOARD_AVB_VENDOR_ADD_HASHTREE_FOOTER_ARGS)" >> $(1)$(newline) \
@@ -3496,11 +3497,12 @@ $(check-selinux-treble-labeling.timestamp): PRIVATE_SEPOLICY := $(sepolicy-binar
 $(check-selinux-treble-labeling.timestamp): PRIVATE_PLATFORM_SEAPP_CONTEXTS := $(platform-seapp-contexts)
 $(check-selinux-treble-labeling.timestamp): PRIVATE_VENDOR_SEAPP_CONTEXTS := $(vendor-seapp-contexts)
 $(check-selinux-treble-labeling.timestamp): PRIVATE_VENDOR_FILE_CONTEXTS := $(vendor-file-contexts)
+$(check-selinux-treble-labeling.timestamp): PRIVATE_TRACKING_LIST_FILE := $(PRODUCT_SELINUX_TREBLE_LABELING_TRACKING_LIST_FILE)
 $(check-selinux-treble-labeling.timestamp): $(HOST_OUT_EXECUTABLES)/treble_labeling_tests \
     $(platform-preinstalled-apps) $(vendor-preinstalled-apps) \
     $(platform-sepolicy-binary) $(sepolicy-binary) $(sepolicy-binary-without-vendor) \
     $(platform-seapp-contexts) $(vendor-seapp-contexts) $(vendor-file-contexts) \
-    $(AAPT2)
+    $(PRODUCT_SELINUX_TREBLE_LABELING_TRACKING_LIST_FILE) $(AAPT2)
 	@rm -rf $@
 	@echo $(PRIVATE_PLATFORM_APPS) > $@.platform_apps.txt
 	@echo $(PRIVATE_VENDOR_APPS) > $@.vendor_apps.txt
@@ -3510,6 +3512,7 @@ $(check-selinux-treble-labeling.timestamp): $(HOST_OUT_EXECUTABLES)/treble_label
     --platform_seapp_contexts $(PRIVATE_PLATFORM_SEAPP_CONTEXTS) \
     --vendor_seapp_contexts $(PRIVATE_VENDOR_SEAPP_CONTEXTS) \
     --vendor_file_contexts $(PRIVATE_VENDOR_FILE_CONTEXTS) \
+    $(if $(PRIVATE_TRACKING_LIST_FILE),--tracking_list_file $(PRIVATE_TRACKING_LIST_FILE)) \
     --aapt2_path $(AAPT2) > $@
 
 .PHONY: check-selinux-treble-labeling
@@ -3658,6 +3661,10 @@ $(eval $(call write-partition-file-list,$(systemimage_intermediates)/file_list.t
 ifneq ($(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE),)
 file_list_diff := $(HOST_OUT_EXECUTABLES)/file_list_diff$(HOST_EXECUTABLE_SUFFIX)
 system_file_diff_timestamp := $(systemimage_intermediates)/file_diff.timestamp
+# Override system's avb_key with the avb_key of the soong defined system image.
+# This will be used as the avb_key to sign system_other.img
+PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_KEY_PATH := $(ALL_MODULES.$(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE).FILESYSTEM_AVB_KEY_PATH)
+PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE_AVB_ALGORITHM := $(ALL_MODULES.$(PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE).FILESYSTEM_AVB_ALGORITHM)
 
 # The build configuration to build the REL version may have more files to allow.
 # Use allowlist_next in addition to the allowlist in this case.
@@ -6517,7 +6524,7 @@ else ifdef BOARD_PREBUILT_SYSTEM_DLKMIMAGE
 endif
 
 ifeq ($(BUILD_QEMU_IMAGES),true)
-  MK_VBMETA_BOOT_KERNEL_CMDLINE_SH := device/generic/goldfish/tools/mk_vbmeta_boot_params.sh
+  MK_VBMETA_BOOT_KERNEL_CMDLINE_SH := device/generic/goldfish/build/tools/mk_vbmeta_boot_params.sh
   $(BUILT_TARGET_FILES_DIR): $(MK_VBMETA_BOOT_KERNEL_CMDLINE_SH)
 endif
 
@@ -7273,22 +7280,10 @@ ifeq (true,$(EMMA_INSTRUMENT))
 # to be instrumented.
 # Any dependencies are set up later in build/make/core/main.mk.
 
-JACOCO_REPORT_CLASSES_ALL := $(PRODUCT_OUT)/jacoco-report-classes-all.jar
-$(JACOCO_REPORT_CLASSES_ALL): PRIVATE_TARGET_JACOCO_DIR := $(call intermediates-dir-for,PACKAGING,jacoco)
-$(JACOCO_REPORT_CLASSES_ALL): PRIVATE_HOST_JACOCO_DIR := $(call intermediates-dir-for,PACKAGING,jacoco,HOST)
-$(JACOCO_REPORT_CLASSES_ALL): PRIVATE_TARGET_PROGUARD_USAGE_DIR := $(call intermediates-dir-for,PACKAGING,proguard_usage)
-$(JACOCO_REPORT_CLASSES_ALL): PRIVATE_HOST_PROGUARD_USAGE_DIR := $(call intermediates-dir-for,PACKAGING,proguard_usage,HOST)
-$(JACOCO_REPORT_CLASSES_ALL) :
-	@echo "Collecting uninstrumented classes"
-	mkdir -p $(PRIVATE_TARGET_JACOCO_DIR) $(PRIVATE_HOST_JACOCO_DIR) $(PRIVATE_TARGET_PROGUARD_USAGE_DIR) $(PRIVATE_HOST_PROGUARD_USAGE_DIR)
-	$(SOONG_ZIP) -o $@ -L 0 \
-	  -C $(PRIVATE_TARGET_JACOCO_DIR) -P out/target/common/obj -D $(PRIVATE_TARGET_JACOCO_DIR) \
-	  -C $(PRIVATE_HOST_JACOCO_DIR) -P out/target/common/obj -D $(PRIVATE_HOST_JACOCO_DIR) \
-	  -C $(PRIVATE_TARGET_PROGUARD_USAGE_DIR) -P out/target/common/obj -D $(PRIVATE_TARGET_PROGUARD_USAGE_DIR) \
-	  -C $(PRIVATE_HOST_PROGUARD_USAGE_DIR) -P out/target/common/obj -D $(PRIVATE_HOST_PROGUARD_USAGE_DIR)
-
 ifeq (,$(TARGET_BUILD_UNBUNDLED))
-  $(JACOCO_REPORT_CLASSES_ALL): $(INTERNAL_ALLIMAGES_FILES)
+  _jacoco_modules := $(call product-installed-modules,$(INTERNAL_PRODUCT))
+else
+  _jacoco_modules := $(unbundled_build_modules)
 endif
 
 # This is not ideal, but it is difficult to correctly figure out the actual jacoco report
@@ -7296,8 +7291,20 @@ endif
 # the env variable is set and this should guarantee thaat all the jacoco report jars are ready
 # when we package the final report jar here.
 ifeq ($(JACOCO_PACKAGING_INCLUDE_DEVICE_TESTS),true)
-  $(JACOCO_REPORT_CLASSES_ALL): $(COMPATIBILITY.device-tests.FILES)
+  _jacoco_modules += $(COMPATIBILITY.device-tests.MODULES)
 endif
+
+JACOCO_REPORT_CLASSES_ALL := $(PRODUCT_OUT)/jacoco-report-classes-all.jar
+$(JACOCO_REPORT_CLASSES_ALL): PRIVATE_SOONG_ZIP_ARGUMENTS := $(foreach m,$(_jacoco_modules),$(ALL_MODULES.$(m).JACOCO_REPORT_SOONG_ZIP_ARGUMENTS))
+$(JACOCO_REPORT_CLASSES_ALL): $(SOONG_ZIP) $(foreach m,$(_jacoco_modules),$(ALL_MODULES.$(m).JACOCO_REPORT_FILES))
+	@echo "Collecting uninstrumented classes"
+	rm -f $@.tmparglist && touch $@.tmparglist
+	$(foreach arg,$(PRIVATE_SOONG_ZIP_ARGUMENTS),printf "%s\n" "$(arg)" >> $@.tmparglist$(newline))
+	$(SOONG_ZIP) -o $@ -L 0 @$@.tmparglist
+	rm -f $@.tmparglist
+
+_jacoco_modules :=
+
 endif # EMMA_INSTRUMENT=true
 
 
@@ -7605,7 +7612,7 @@ $(call dist-for-goals-with-filenametag,updatepackage,$(INTERNAL_UPDATE_PACKAGE_T
 dalvikfiles: $(INTERNAL_DALVIK_MODULES)
 
 ifeq ($(BUILD_QEMU_IMAGES),true)
-MK_QEMU_IMAGE_SH := device/generic/goldfish/tools/mk_qemu_image.sh
+MK_QEMU_IMAGE_SH := device/generic/goldfish/build/tools/mk_qemu_image.sh
 MK_COMBINE_QEMU_IMAGE := $(HOST_OUT_EXECUTABLES)/mk_combined_img
 
 ifdef INSTALLED_SYSTEMIMAGE_TARGET

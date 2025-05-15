@@ -33,7 +33,7 @@ use crate::codegen::CodegenMode;
 use crate::dump::{DumpFormat, DumpPredicate};
 use crate::storage::generate_storage_file;
 use aconfig_protos::{
-    ProtoFlagMetadata, ProtoFlagPermission, ProtoFlagState, ProtoFlagStorageBackend,
+    ParsedFlagExt, ProtoFlagMetadata, ProtoFlagPermission, ProtoFlagState, ProtoFlagStorageBackend,
     ProtoParsedFlag, ProtoParsedFlags, ProtoTracepoint,
 };
 use aconfig_storage_file::sip_hasher13::SipHasher13;
@@ -74,6 +74,8 @@ pub struct OutputFile {
 pub const DEFAULT_FLAG_STATE: ProtoFlagState = ProtoFlagState::DISABLED;
 pub const DEFAULT_FLAG_PERMISSION: ProtoFlagPermission = ProtoFlagPermission::READ_WRITE;
 
+pub const PLATFORM_CONTAINERS: [&str; 4] = ["system", "system_ext", "product", "vendor"];
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct NamespaceSetting {
     pub container: String,
@@ -87,10 +89,28 @@ pub struct MainlineBetaNamespaces {
 
 #[allow(dead_code)]
 impl MainlineBetaNamespaces {
+    fn has_flag(&self, pf: &ProtoParsedFlag) -> bool {
+        self.namespaces.contains_key(pf.namespace())
+    }
+
     fn is_mainline_beta_flag(&self, pf: &ProtoParsedFlag) -> bool {
         match self.namespaces.get(pf.namespace()) {
             Some(setting) => setting.container == pf.container(),
             None => false,
+        }
+    }
+
+    // for each mainline beta namespace, only platform and the corresponding
+    // module containers are allowed
+    fn supports_container(&self, pf: &ProtoParsedFlag) -> bool {
+        match self.namespaces.get(pf.namespace()) {
+            Some(setting) => {
+                setting.container == pf.container()
+                    || PLATFORM_CONTAINERS.iter().any(|&c| c == pf.container())
+            }
+            None => panic!(
+                "Should not check container support for flags in non mainline beta namespaces"
+            ),
         }
     }
 
@@ -100,12 +120,10 @@ impl MainlineBetaNamespaces {
                 if setting.container == pf.container() {
                     setting.allow_exported
                 } else {
-                    panic!("Should not be called on none mainline beta flag")
+                    panic!("Should not check exported mode support on none mainline beta flag")
                 }
             }
-            None => {
-                panic!("Should not be called on none mainline beta flag")
-            }
+            None => panic!("Should not check exported mode support on none mainline beta flag"),
         }
     }
 }
@@ -128,6 +146,32 @@ fn assign_storage_backend(
     };
     let m = pf.metadata.as_mut().ok_or(anyhow!("missing metadata"))?;
     m.set_storage(storage);
+    Ok(())
+}
+
+fn verify_mainline_beta_namespace_flag(
+    pf: &mut ProtoParsedFlag,
+    beta_namespaces: &Option<MainlineBetaNamespaces>,
+) -> Result<()> {
+    if let Some(namespaces) = beta_namespaces {
+        if !namespaces.has_flag(pf) {
+            return Ok(());
+        }
+        ensure!(
+            namespaces.supports_container(pf),
+            "Creating {} container flag in namespace {} is not allowed",
+            pf.container(),
+            pf.namespace()
+        );
+        if pf.is_exported() {
+            ensure!(
+                namespaces.supports_exported_mode(pf),
+                "Creating exported flag {} in namespace {} is not allowed",
+                pf.fully_qualified_name(),
+                pf.namespace()
+            );
+        }
+    }
     Ok(())
 }
 
@@ -206,6 +250,7 @@ pub fn parse_flags(
             metadata.set_purpose(purpose);
             parsed_flag.metadata = Some(metadata).into();
             assign_storage_backend(&mut parsed_flag, &beta_namespaces)?;
+            verify_mainline_beta_namespace_flag(&mut parsed_flag, &beta_namespaces)?;
 
             // verify ParsedFlag looks reasonable
             aconfig_protos::parsed_flag::verify_fields(&parsed_flag)?;
@@ -304,6 +349,7 @@ pub fn create_java_lib(
         package_fingerprint,
         single_exported_file,
         finalized_flags,
+        support_uau_annotation: !cfg!(enable_jarjar_flags_in_framwork),
     };
     generate_java_code(&package, modified_parsed_flags.into_iter(), config)
 }
@@ -508,11 +554,7 @@ fn extract_flag_names(flags: ProtoParsedFlags) -> Result<Vec<String>> {
 
 // Check if a flag should be managed by aconfigd
 pub fn should_include_flag(pf: &ProtoParsedFlag) -> bool {
-    let is_platform_container = pf.container == Some("vendor".to_string())
-        || pf.container == Some("system".to_string())
-        || pf.container == Some("system_ext".to_string())
-        || pf.container == Some("product".to_string());
-
+    let is_platform_container = PLATFORM_CONTAINERS.iter().any(|&c| c == pf.container());
     let is_disabled_ro = pf.state == Some(ProtoFlagState::DISABLED.into())
         && pf.permission == Some(ProtoFlagPermission::READ_ONLY.into());
 
@@ -929,7 +971,7 @@ mod tests {
         decl: &'static str,
         val: Option<&'static str>,
         config: Option<PathBuf>,
-    ) -> ProtoParsedFlag {
+    ) -> Result<ProtoParsedFlag> {
         let declaration =
             vec![Input { source: "memory".to_string(), reader: Box::new(decl.as_bytes()) }];
 
@@ -950,18 +992,16 @@ mod tests {
             ProtoFlagPermission::READ_WRITE,
             true,
             config,
-        )
-        .unwrap();
+        )?;
 
-        let parsed_flags =
-            aconfig_protos::parsed_flags::try_from_binary_proto(&flags_bytes).unwrap();
+        let parsed_flags = aconfig_protos::parsed_flags::try_from_binary_proto(&flags_bytes)?;
 
         assert_eq!(1, parsed_flags.parsed_flag.len());
-        parsed_flags.parsed_flag.first().unwrap().clone()
+        Ok(parsed_flags.parsed_flag.first().unwrap().clone())
     }
 
     #[test]
-    fn test_parse_flags_metadata_storage() {
+    fn test_parse_flags_mainline_beta_namespace_config() {
         let metadata_flag = r#"
         package: "com.first"
         container: "test"
@@ -977,7 +1017,8 @@ mod tests {
 
         // Case 1, regular RW flag without value file override
         let parsed_flag =
-            get_parsed_flag_proto("test", "com.first", metadata_flag, None, config.clone());
+            get_parsed_flag_proto("test", "com.first", metadata_flag, None, config.clone())
+                .unwrap();
         assert_eq!(ProtoFlagStorageBackend::ACONFIGD, parsed_flag.metadata.storage());
 
         // Case 2, regular RW flag with value file override to RO
@@ -995,7 +1036,8 @@ mod tests {
             metadata_flag,
             Some(first_flag_value),
             config.clone(),
-        );
+        )
+        .unwrap();
         assert_eq!(ProtoFlagStorageBackend::NONE, parsed_flag.metadata.storage());
 
         // Case 3, fixed read only flag
@@ -1012,7 +1054,8 @@ mod tests {
         "#;
 
         let parsed_flag =
-            get_parsed_flag_proto("test", "com.first", metadata_flag, None, config.clone());
+            get_parsed_flag_proto("test", "com.first", metadata_flag, None, config.clone())
+                .unwrap();
         assert_eq!(ProtoFlagStorageBackend::NONE, parsed_flag.metadata.storage());
 
         // Case 4, mainline beta namespace fixed read only flag
@@ -1033,7 +1076,8 @@ mod tests {
             metadata_flag,
             None,
             config.clone(),
-        );
+        )
+        .unwrap();
         assert_eq!(ProtoFlagStorageBackend::NONE, parsed_flag.metadata.storage());
 
         // Case 5, mainline beta namespace platform flag
@@ -1048,7 +1092,8 @@ mod tests {
         }
         "#;
         let parsed_flag =
-            get_parsed_flag_proto("system", "com.first", metadata_flag, None, config.clone());
+            get_parsed_flag_proto("system", "com.first", metadata_flag, None, config.clone())
+                .unwrap();
         assert_eq!(ProtoFlagStorageBackend::ACONFIGD, parsed_flag.metadata.storage());
 
         // Case 6, mainline beta namespace mainline flag
@@ -1068,7 +1113,8 @@ mod tests {
             metadata_flag,
             None,
             config.clone(),
-        );
+        )
+        .unwrap();
         assert_eq!(ProtoFlagStorageBackend::DEVICE_CONFIG, parsed_flag.metadata.storage());
 
         // Case 7, mainline beta namespace mainline flag but without config
@@ -1083,8 +1129,58 @@ mod tests {
         }
         "#;
         let parsed_flag =
-            get_parsed_flag_proto("com.android.tethering", "com.first", metadata_flag, None, None);
+            get_parsed_flag_proto("com.android.tethering", "com.first", metadata_flag, None, None)
+                .unwrap();
         assert_eq!(ProtoFlagStorageBackend::ACONFIGD, parsed_flag.metadata.storage());
+
+        // Case 8, mainline beta namespace invalid container
+        let metadata_flag = r#"
+        package: "com.first"
+        container: "com.android.tethering"
+        flag {
+            name: "first"
+            namespace: "com_android_networkstack"
+            description: "This is the description of this feature flag."
+            bug: "123"
+        }
+        "#;
+        let error = get_parsed_flag_proto(
+            "com.android.tethering",
+            "com.first",
+            metadata_flag,
+            None,
+            config.clone(),
+        )
+        .unwrap_err();
+        assert_eq!(
+            format!("{:?}", error),
+            "Creating com.android.tethering container flag in namespace com_android_networkstack is not allowed"
+        );
+
+        // Case 9, mainline beta namespace unsupported exported mode
+        let metadata_flag = r#"
+        package: "com.first"
+        container: "com.android.networkstack"
+        flag {
+            name: "first"
+            namespace: "com_android_networkstack"
+            description: "This is the description of this feature flag."
+            bug: "123"
+            is_exported: true
+        }
+        "#;
+        let error = get_parsed_flag_proto(
+            "com.android.networkstack",
+            "com.first",
+            metadata_flag,
+            None,
+            config.clone(),
+        )
+        .unwrap_err();
+        assert_eq!(
+            format!("{:?}", error),
+            "Creating exported flag com.first.first in namespace com_android_networkstack is not allowed"
+        );
     }
 
     #[test]

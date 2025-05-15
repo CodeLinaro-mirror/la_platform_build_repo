@@ -35,6 +35,8 @@ pub struct JavaCodegenConfig {
     pub package_fingerprint: u64,
     pub single_exported_file: bool,
     pub finalized_flags: FinalizedFlagMap,
+    // Whether to add the "@UnsupportedAppUsage" (UAU) annotation in the generated code.
+    pub support_uau_annotation: bool,
 }
 
 pub fn generate_java_code<I>(
@@ -83,6 +85,7 @@ where
         package_fingerprint: format!("0x{:X}L", config.package_fingerprint),
         single_exported_file: config.single_exported_file,
         use_device_config,
+        support_uau_annotation: config.support_uau_annotation,
     };
     let mut template = TinyTemplate::new();
     if library_exported && config.single_exported_file {
@@ -161,6 +164,7 @@ struct Context {
     pub package_fingerprint: String,
     pub single_exported_file: bool,
     pub use_device_config: bool,
+    pub support_uau_annotation: bool,
 }
 
 #[derive(Serialize, Debug)]
@@ -248,10 +252,7 @@ fn format_property_name(property_name: &str) -> String {
     format!("mProperties{}{}", &name[0..1].to_ascii_uppercase(), &name[1..])
 }
 
-fn add_feature_flags_impl_template(
-    context: &Context,
-    template: &mut TinyTemplate,
-) -> Result<(), tinytemplate::error::Error> {
+fn add_feature_flags_impl_template(context: &Context, template: &mut TinyTemplate) -> Result<()> {
     if context.is_test_mode {
         // Test mode has its own template, so use regardless of any other settings.
         template.add_template(
@@ -264,18 +265,32 @@ fn add_feature_flags_impl_template(
     match context.library_exported {
         // Exported library with new_exported enabled, use new storage exported template.
         true => {
+            ensure!(
+                !context.use_device_config,
+                "using device config in exported mode is currently not supported"
+            );
             template.add_template(
                 "FeatureFlagsImpl.java",
                 include_str!("../../templates/FeatureFlagsImpl.exported.java.template"),
             )?;
         }
         // New storage internal mode.
-        false => {
-            template.add_template(
-                "FeatureFlagsImpl.java",
-                include_str!("../../templates/FeatureFlagsImpl.new_storage.java.template"),
-            )?;
-        }
+        false => match context.use_device_config {
+            true => {
+                template.add_template(
+                    "FeatureFlagsImpl.java",
+                    include_str!(
+                        "../../templates/FeatureFlagsImpl.legacy_flag.internal.java.template"
+                    ),
+                )?;
+            }
+            false => {
+                template.add_template(
+                    "FeatureFlagsImpl.java",
+                    include_str!("../../templates/FeatureFlagsImpl.new_storage.java.template"),
+                )?;
+            }
+        },
     };
     Ok(())
 }
@@ -290,49 +305,36 @@ mod tests {
 
     const EXPECTED_FEATUREFLAGS_COMMON_CONTENT: &str = r#"
     package com.android.aconfig.test;
-    // TODO(b/303773055): Remove the annotation after access issue is resolved.
-    import android.compat.annotation.UnsupportedAppUsage;
     /** @hide */
     public interface FeatureFlags {
         @com.android.aconfig.annotations.AssumeFalseForR8
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         boolean disabledRo();
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         boolean disabledRw();
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         boolean disabledRwExported();
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         boolean disabledRwInOtherNamespace();
         @com.android.aconfig.annotations.AssumeTrueForR8
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         boolean enabledFixedRo();
         @com.android.aconfig.annotations.AssumeTrueForR8
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         boolean enabledFixedRoExported();
         @com.android.aconfig.annotations.AssumeTrueForR8
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         boolean enabledRo();
         @com.android.aconfig.annotations.AssumeTrueForR8
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         boolean enabledRoExported();
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         boolean enabledRw();
     }
     "#;
 
     const EXPECTED_FLAG_COMMON_CONTENT: &str = r#"
     package com.android.aconfig.test;
-    // TODO(b/303773055): Remove the annotation after access issue is resolved.
-    import android.compat.annotation.UnsupportedAppUsage;
     /** @hide */
     public final class Flags {
         /** @hide */
@@ -356,51 +358,42 @@ mod tests {
 
         @com.android.aconfig.annotations.AssumeFalseForR8
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         public static boolean disabledRo() {
             return FEATURE_FLAGS.disabledRo();
         }
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         public static boolean disabledRw() {
             return FEATURE_FLAGS.disabledRw();
         }
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         public static boolean disabledRwExported() {
             return FEATURE_FLAGS.disabledRwExported();
         }
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         public static boolean disabledRwInOtherNamespace() {
             return FEATURE_FLAGS.disabledRwInOtherNamespace();
         }
         @com.android.aconfig.annotations.AssumeTrueForR8
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         public static boolean enabledFixedRo() {
             return FEATURE_FLAGS.enabledFixedRo();
         }
         @com.android.aconfig.annotations.AssumeTrueForR8
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         public static boolean enabledFixedRoExported() {
             return FEATURE_FLAGS.enabledFixedRoExported();
         }
         @com.android.aconfig.annotations.AssumeTrueForR8
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         public static boolean enabledRo() {
             return FEATURE_FLAGS.enabledRo();
         }
         @com.android.aconfig.annotations.AssumeTrueForR8
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         public static boolean enabledRoExported() {
             return FEATURE_FLAGS.enabledRoExported();
         }
         @com.android.aconfig.annotations.AconfigFlagAccessor
-        @UnsupportedAppUsage
         public static boolean enabledRw() {
             return FEATURE_FLAGS.enabledRw();
         }
@@ -408,9 +401,6 @@ mod tests {
 
     const EXPECTED_CUSTOMFEATUREFLAGS_CONTENT: &str = r#"
     package com.android.aconfig.test;
-
-    // TODO(b/303773055): Remove the annotation after access issue is resolved.
-    import android.compat.annotation.UnsupportedAppUsage;
     import java.util.Arrays;
     import java.util.HashSet;
     import java.util.List;
@@ -428,55 +418,46 @@ mod tests {
         }
 
         @Override
-        @UnsupportedAppUsage
         public boolean disabledRo() {
             return getValue(Flags.FLAG_DISABLED_RO,
                     FeatureFlags::disabledRo);
         }
         @Override
-        @UnsupportedAppUsage
         public boolean disabledRw() {
             return getValue(Flags.FLAG_DISABLED_RW,
                 FeatureFlags::disabledRw);
         }
         @Override
-        @UnsupportedAppUsage
         public boolean disabledRwExported() {
             return getValue(Flags.FLAG_DISABLED_RW_EXPORTED,
                 FeatureFlags::disabledRwExported);
         }
         @Override
-        @UnsupportedAppUsage
         public boolean disabledRwInOtherNamespace() {
             return getValue(Flags.FLAG_DISABLED_RW_IN_OTHER_NAMESPACE,
                 FeatureFlags::disabledRwInOtherNamespace);
         }
         @Override
-        @UnsupportedAppUsage
         public boolean enabledFixedRo() {
             return getValue(Flags.FLAG_ENABLED_FIXED_RO,
                 FeatureFlags::enabledFixedRo);
         }
         @Override
-        @UnsupportedAppUsage
         public boolean enabledFixedRoExported() {
             return getValue(Flags.FLAG_ENABLED_FIXED_RO_EXPORTED,
                 FeatureFlags::enabledFixedRoExported);
         }
         @Override
-        @UnsupportedAppUsage
         public boolean enabledRo() {
             return getValue(Flags.FLAG_ENABLED_RO,
                 FeatureFlags::enabledRo);
         }
         @Override
-        @UnsupportedAppUsage
         public boolean enabledRoExported() {
             return getValue(Flags.FLAG_ENABLED_RO_EXPORTED,
                 FeatureFlags::enabledRoExported);
         }
         @Override
-        @UnsupportedAppUsage
         public boolean enabledRw() {
             return getValue(Flags.FLAG_ENABLED_RW,
                 FeatureFlags::enabledRw);
@@ -578,36 +559,8 @@ mod tests {
     }
     "#;
 
-    #[test]
-    fn test_generate_java_code_production() {
-        let parsed_flags = crate::test::parse_test_flags();
-        let mode = CodegenMode::Production;
-        let modified_parsed_flags =
-            crate::commands::modify_parsed_flags_based_on_mode(parsed_flags, mode).unwrap();
-        let flag_ids =
-            assign_flag_ids(crate::test::TEST_PACKAGE, modified_parsed_flags.iter()).unwrap();
-        let config = JavaCodegenConfig {
-            codegen_mode: mode,
-            flag_ids,
-            package_fingerprint: 5801144784618221668,
-            single_exported_file: false,
-            finalized_flags: FinalizedFlagMap::new(),
-        };
-        let generated_files = generate_java_code(
-            crate::test::TEST_PACKAGE,
-            modified_parsed_flags.into_iter(),
-            config,
-        )
-        .unwrap();
-        let expect_flags_content = EXPECTED_FLAG_COMMON_CONTENT.to_string()
-            + r#"
-            private static FeatureFlags FEATURE_FLAGS = new FeatureFlagsImpl();
-        }"#;
-
-        let expected_featureflagsmpl_content = r#"
+    const EXPECTED_NEW_STORAGE_FEATUREFLAGSIMPL_CONTENT: &str = r#"
         package com.android.aconfig.test;
-        // TODO(b/303773055): Remove the annotation after access issue is resolved.
-        import android.compat.annotation.UnsupportedAppUsage;
         import android.os.flagging.PlatformAconfigPackageInternal;
         import android.util.Log;
         /** @hide */
@@ -637,14 +590,12 @@ mod tests {
 
             @Override
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public boolean disabledRo() {
+                public boolean disabledRo() {
                 return false;
             }
             @Override
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public boolean disabledRw() {
+                public boolean disabledRw() {
                 if (!isCached) {
                     init();
                 }
@@ -652,8 +603,7 @@ mod tests {
             }
             @Override
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public boolean disabledRwExported() {
+                public boolean disabledRwExported() {
                 if (!isCached) {
                     init();
                 }
@@ -661,8 +611,7 @@ mod tests {
             }
             @Override
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public boolean disabledRwInOtherNamespace() {
+                public boolean disabledRwInOtherNamespace() {
                 if (!isCached) {
                     init();
                 }
@@ -670,43 +619,177 @@ mod tests {
             }
             @Override
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public boolean enabledFixedRo() {
+                public boolean enabledFixedRo() {
                 return true;
             }
             @Override
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public boolean enabledFixedRoExported() {
+                public boolean enabledFixedRoExported() {
                 return true;
             }
             @Override
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public boolean enabledRo() {
+                public boolean enabledRo() {
                 return true;
             }
             @Override
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public boolean enabledRoExported() {
+                public boolean enabledRoExported() {
                 return true;
             }
             @Override
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public boolean enabledRw() {
+                public boolean enabledRw() {
                 if (!isCached) {
                     init();
                 }
                 return enabledRw;
             }
         }
-        "#;
+    "#;
+
+    const EXPECTED_MAINLINE_BETA_FEATUREFLAGSIMPL_CONTENT: &str = r#"
+        package com.android.aconfig.test;
+        import android.provider.DeviceConfig;
+        /** @hide */
+        public final class FeatureFlagsImpl implements FeatureFlags {
+            @Override
+            @com.android.aconfig.annotations.AconfigFlagAccessor
+            public boolean disabledRo() {
+                return false;
+            }
+            @Override
+            @com.android.aconfig.annotations.AconfigFlagAccessor
+            public boolean disabledRw() {
+                try {
+                    return DeviceConfig.getBoolean(
+                    "aconfig_test",
+                    Flags.FLAG_DISABLED_RW,
+                    false);
+                } catch (NullPointerException e) {
+                    throw new RuntimeException(
+                        "Cannot read value from namespace aconfig_test "
+                        + "from DeviceConfig. It could be that the code using flag "
+                        + "executed before SettingsProvider initialization. Please use "
+                        + "fixed read-only flag by adding is_fixed_read_only: true in "
+                        + "flag declaration.",
+                        e
+                    );
+                }
+            }
+            @Override
+            @com.android.aconfig.annotations.AconfigFlagAccessor
+            public boolean disabledRwExported() {
+                try {
+                    return DeviceConfig.getBoolean(
+                    "aconfig_test",
+                    Flags.FLAG_DISABLED_RW_EXPORTED,
+                    false);
+                } catch (NullPointerException e) {
+                    throw new RuntimeException(
+                        "Cannot read value from namespace aconfig_test "
+                        + "from DeviceConfig. It could be that the code using flag "
+                        + "executed before SettingsProvider initialization. Please use "
+                        + "fixed read-only flag by adding is_fixed_read_only: true in "
+                        + "flag declaration.",
+                        e
+                    );
+                }
+            }
+            @Override
+            @com.android.aconfig.annotations.AconfigFlagAccessor
+            public boolean disabledRwInOtherNamespace() {
+                try {
+                    return DeviceConfig.getBoolean(
+                    "other_namespace",
+                    Flags.FLAG_DISABLED_RW_IN_OTHER_NAMESPACE,
+                    false);
+                } catch (NullPointerException e) {
+                    throw new RuntimeException(
+                        "Cannot read value from namespace other_namespace "
+                        + "from DeviceConfig. It could be that the code using flag "
+                        + "executed before SettingsProvider initialization. Please use "
+                        + "fixed read-only flag by adding is_fixed_read_only: true in "
+                        + "flag declaration.",
+                        e
+                    );
+                }
+            }
+            @Override
+            @com.android.aconfig.annotations.AconfigFlagAccessor
+            public boolean enabledFixedRo() {
+                return true;
+            }
+            @Override
+            @com.android.aconfig.annotations.AconfigFlagAccessor
+            public boolean enabledFixedRoExported() {
+                return true;
+            }
+            @Override
+            @com.android.aconfig.annotations.AconfigFlagAccessor
+            public boolean enabledRo() {
+                return true;
+            }
+            @Override
+            @com.android.aconfig.annotations.AconfigFlagAccessor
+            public boolean enabledRoExported() {
+                return true;
+            }
+            @Override
+            @com.android.aconfig.annotations.AconfigFlagAccessor
+            public boolean enabledRw() {
+                try {
+                    return DeviceConfig.getBoolean(
+                    "aconfig_test",
+                    Flags.FLAG_ENABLED_RW,
+                    true);
+                } catch (NullPointerException e) {
+                    throw new RuntimeException(
+                        "Cannot read value from namespace aconfig_test "
+                        + "from DeviceConfig. It could be that the code using flag "
+                        + "executed before SettingsProvider initialization. Please use "
+                        + "fixed read-only flag by adding is_fixed_read_only: true in "
+                        + "flag declaration.",
+                        e
+                    );
+                }
+            }
+        }
+    "#;
+
+    #[test]
+    fn test_generate_java_code_production() {
+        let parsed_flags = crate::test::parse_test_flags();
+        let mode = CodegenMode::Production;
+        let modified_parsed_flags =
+            crate::commands::modify_parsed_flags_based_on_mode(parsed_flags, mode).unwrap();
+        let flag_ids =
+            assign_flag_ids(crate::test::TEST_PACKAGE, modified_parsed_flags.iter()).unwrap();
+        let config = JavaCodegenConfig {
+            codegen_mode: mode,
+            flag_ids,
+            package_fingerprint: 5801144784618221668,
+            single_exported_file: false,
+            finalized_flags: FinalizedFlagMap::new(),
+            support_uau_annotation: false,
+        };
+        let generated_files = generate_java_code(
+            crate::test::TEST_PACKAGE,
+            modified_parsed_flags.into_iter(),
+            config,
+        )
+        .unwrap();
+        let expect_flags_content = EXPECTED_FLAG_COMMON_CONTENT.to_string()
+            + r#"
+            private static FeatureFlags FEATURE_FLAGS = new FeatureFlagsImpl();
+        }"#;
 
         let mut file_set = HashMap::from([
             ("com/android/aconfig/test/Flags.java", expect_flags_content.as_str()),
-            ("com/android/aconfig/test/FeatureFlagsImpl.java", expected_featureflagsmpl_content),
+            (
+                "com/android/aconfig/test/FeatureFlagsImpl.java",
+                EXPECTED_NEW_STORAGE_FEATUREFLAGSIMPL_CONTENT,
+            ),
             ("com/android/aconfig/test/FeatureFlags.java", EXPECTED_FEATUREFLAGS_COMMON_CONTENT),
             (
                 "com/android/aconfig/test/CustomFeatureFlags.java",
@@ -737,6 +820,73 @@ mod tests {
     }
 
     #[test]
+    fn test_generate_java_code_mainline_beta_production() {
+        let parsed_flags = crate::test::parse_test_flags();
+        let mode = CodegenMode::Production;
+        let modified_parsed_flags: Vec<_> =
+            crate::commands::modify_parsed_flags_based_on_mode(parsed_flags, mode)
+                .unwrap()
+                .into_iter()
+                .map(|mut pf| {
+                    if pf.metadata.storage() == ProtoFlagStorageBackend::ACONFIGD {
+                        let m = pf.metadata.as_mut().unwrap();
+                        m.set_storage(ProtoFlagStorageBackend::DEVICE_CONFIG);
+                    }
+                    pf
+                })
+                .collect();
+        let flag_ids =
+            assign_flag_ids(crate::test::TEST_PACKAGE, modified_parsed_flags.iter()).unwrap();
+        let config = JavaCodegenConfig {
+            codegen_mode: mode,
+            flag_ids,
+            package_fingerprint: 5801144784618221668,
+            single_exported_file: false,
+            finalized_flags: FinalizedFlagMap::new(),
+            support_uau_annotation: false,
+        };
+        let generated_files = generate_java_code(
+            crate::test::TEST_PACKAGE,
+            modified_parsed_flags.into_iter(),
+            config,
+        )
+        .unwrap();
+        let expect_flags_content = EXPECTED_FLAG_COMMON_CONTENT.to_string()
+            + r#"
+            private static FeatureFlags FEATURE_FLAGS = new FeatureFlagsImpl();
+        }"#;
+
+        let mut file_set = HashMap::from([
+            ("com/android/aconfig/test/Flags.java", expect_flags_content.as_str()),
+            (
+                "com/android/aconfig/test/FeatureFlagsImpl.java",
+                EXPECTED_MAINLINE_BETA_FEATUREFLAGSIMPL_CONTENT,
+            ),
+            ("com/android/aconfig/test/FeatureFlags.java", EXPECTED_FEATUREFLAGS_COMMON_CONTENT),
+            (
+                "com/android/aconfig/test/CustomFeatureFlags.java",
+                EXPECTED_CUSTOMFEATUREFLAGS_CONTENT,
+            ),
+            (
+                "com/android/aconfig/test/FakeFeatureFlagsImpl.java",
+                EXPECTED_FAKEFEATUREFLAGSIMPL_CONTENT,
+            ),
+        ]);
+
+        for file in generated_files {
+            let file_path = file.path.to_str().unwrap();
+            assert!(file_set.contains_key(file_path), "Cannot find {}", file_path);
+            crate::test::assert_no_significant_code_diff(
+                file_set.get(file_path).unwrap(),
+                &String::from_utf8(file.contents).unwrap(),
+            );
+            file_set.remove(file_path);
+        }
+
+        assert!(file_set.is_empty());
+    }
+
+    #[test]
     fn test_generate_java_code_new_exported() {
         let parsed_flags = crate::test::parse_test_flags();
         let mode = CodegenMode::Exported;
@@ -750,6 +900,7 @@ mod tests {
             package_fingerprint: 5801144784618221668,
             single_exported_file: false,
             finalized_flags: FinalizedFlagMap::new(),
+            support_uau_annotation: false,
         };
         let generated_files = generate_java_code(
             crate::test::TEST_PACKAGE,
@@ -968,6 +1119,7 @@ mod tests {
             package_fingerprint: 5801144784618221668,
             single_exported_file: false,
             finalized_flags,
+            support_uau_annotation: false,
         };
         let generated_files = generate_java_code(
             crate::test::TEST_PACKAGE,
@@ -1192,6 +1344,7 @@ mod tests {
             package_fingerprint: 5801144784618221668,
             single_exported_file: false,
             finalized_flags,
+            support_uau_annotation: false,
         };
         let generated_files = generate_java_code(
             crate::test::TEST_PACKAGE,
@@ -1230,6 +1383,7 @@ mod tests {
             package_fingerprint: 5801144784618221668,
             single_exported_file: false,
             finalized_flags: FinalizedFlagMap::new(),
+            support_uau_annotation: false,
         };
         let generated_files = generate_java_code(
             crate::test::TEST_PACKAGE,
@@ -1356,6 +1510,7 @@ mod tests {
             package_fingerprint: 5801144784618221668,
             single_exported_file: false,
             finalized_flags: FinalizedFlagMap::new(),
+            support_uau_annotation: false,
         };
         let generated_files = generate_java_code(
             crate::test::TEST_PACKAGE,
@@ -1365,76 +1520,60 @@ mod tests {
         .unwrap();
         let expect_featureflags_content = r#"
         package com.android.aconfig.test;
-        // TODO(b/303773055): Remove the annotation after access issue is resolved.
-        import android.compat.annotation.UnsupportedAppUsage;
         /** @hide */
         public interface FeatureFlags {
             @com.android.aconfig.annotations.AssumeFalseForR8
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            boolean disabledRo();
+                boolean disabledRo();
             @com.android.aconfig.annotations.AssumeFalseForR8
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            boolean disabledRw();
+                boolean disabledRw();
             @com.android.aconfig.annotations.AssumeFalseForR8
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            boolean disabledRwInOtherNamespace();
+                boolean disabledRwInOtherNamespace();
             @com.android.aconfig.annotations.AssumeTrueForR8
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            boolean enabledFixedRo();
+                boolean enabledFixedRo();
             @com.android.aconfig.annotations.AssumeTrueForR8
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            boolean enabledRo();
+                boolean enabledRo();
             @com.android.aconfig.annotations.AssumeTrueForR8
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            boolean enabledRw();
+                boolean enabledRw();
         }"#;
 
         let expect_featureflagsimpl_content = r#"
         package com.android.aconfig.test;
-        // TODO(b/303773055): Remove the annotation after access issue is resolved.
-        import android.compat.annotation.UnsupportedAppUsage;
         /** @hide */
         public final class FeatureFlagsImpl implements FeatureFlags {
             @Override
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public boolean disabledRo() {
+                public boolean disabledRo() {
                 return false;
             }
             @Override
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public boolean disabledRw() {
+                public boolean disabledRw() {
                 return false;
             }
             @Override
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public boolean disabledRwInOtherNamespace() {
+                public boolean disabledRwInOtherNamespace() {
                 return false;
             }
             @Override
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public boolean enabledFixedRo() {
+                public boolean enabledFixedRo() {
                 return true;
             }
             @Override
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public boolean enabledRo() {
+                public boolean enabledRo() {
                 return true;
             }
             @Override
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public boolean enabledRw() {
+                public boolean enabledRw() {
                 return true;
             }
         }
@@ -1442,8 +1581,6 @@ mod tests {
 
         let expect_flags_content = r#"
         package com.android.aconfig.test;
-        // TODO(b/303773055): Remove the annotation after access issue is resolved.
-        import android.compat.annotation.UnsupportedAppUsage;
         /** @hide */
         public final class Flags {
             /** @hide */
@@ -1460,38 +1597,32 @@ mod tests {
             public static final String FLAG_ENABLED_RW = "com.android.aconfig.test.enabled_rw";
             @com.android.aconfig.annotations.AssumeFalseForR8
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public static boolean disabledRo() {
+                public static boolean disabledRo() {
                 return FEATURE_FLAGS.disabledRo();
             }
             @com.android.aconfig.annotations.AssumeFalseForR8
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public static boolean disabledRw() {
+                public static boolean disabledRw() {
                 return FEATURE_FLAGS.disabledRw();
             }
             @com.android.aconfig.annotations.AssumeFalseForR8
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public static boolean disabledRwInOtherNamespace() {
+                public static boolean disabledRwInOtherNamespace() {
                 return FEATURE_FLAGS.disabledRwInOtherNamespace();
             }
             @com.android.aconfig.annotations.AssumeTrueForR8
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public static boolean enabledFixedRo() {
+                public static boolean enabledFixedRo() {
                 return FEATURE_FLAGS.enabledFixedRo();
             }
             @com.android.aconfig.annotations.AssumeTrueForR8
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public static boolean enabledRo() {
+                public static boolean enabledRo() {
                 return FEATURE_FLAGS.enabledRo();
             }
             @com.android.aconfig.annotations.AssumeTrueForR8
             @com.android.aconfig.annotations.AconfigFlagAccessor
-            @UnsupportedAppUsage
-            public static boolean enabledRw() {
+                public static boolean enabledRw() {
                 return FEATURE_FLAGS.enabledRw();
             }
             private static FeatureFlags FEATURE_FLAGS = new FeatureFlagsImpl();
@@ -1500,8 +1631,6 @@ mod tests {
         let expect_customfeatureflags_content = r#"
         package com.android.aconfig.test;
 
-        // TODO(b/303773055): Remove the annotation after access issue is resolved.
-        import android.compat.annotation.UnsupportedAppUsage;
         import java.util.Arrays;
         import java.util.HashSet;
         import java.util.List;
@@ -1519,38 +1648,32 @@ mod tests {
             }
 
             @Override
-            @UnsupportedAppUsage
-            public boolean disabledRo() {
+                public boolean disabledRo() {
                 return getValue(Flags.FLAG_DISABLED_RO,
                         FeatureFlags::disabledRo);
             }
             @Override
-            @UnsupportedAppUsage
-            public boolean disabledRw() {
+                public boolean disabledRw() {
                 return getValue(Flags.FLAG_DISABLED_RW,
                     FeatureFlags::disabledRw);
             }
             @Override
-            @UnsupportedAppUsage
-            public boolean disabledRwInOtherNamespace() {
+                public boolean disabledRwInOtherNamespace() {
                 return getValue(Flags.FLAG_DISABLED_RW_IN_OTHER_NAMESPACE,
                     FeatureFlags::disabledRwInOtherNamespace);
             }
             @Override
-            @UnsupportedAppUsage
-            public boolean enabledFixedRo() {
+                public boolean enabledFixedRo() {
                 return getValue(Flags.FLAG_ENABLED_FIXED_RO,
                     FeatureFlags::enabledFixedRo);
             }
             @Override
-            @UnsupportedAppUsage
-            public boolean enabledRo() {
+                public boolean enabledRo() {
                 return getValue(Flags.FLAG_ENABLED_RO,
                     FeatureFlags::enabledRo);
             }
             @Override
-            @UnsupportedAppUsage
-            public boolean enabledRw() {
+                public boolean enabledRw() {
                 return getValue(Flags.FLAG_ENABLED_RW,
                     FeatureFlags::enabledRw);
             }
@@ -1648,6 +1771,7 @@ mod tests {
             package_fingerprint: 5801144784618221668,
             single_exported_file: true,
             finalized_flags,
+            support_uau_annotation: false,
         };
         let generated_files = generate_java_code(
             crate::test::TEST_PACKAGE,
@@ -1747,6 +1871,7 @@ mod tests {
             package_fingerprint: 5801144784618221668,
             single_exported_file: false,
             finalized_flags: FinalizedFlagMap::new(),
+            support_uau_annotation: false,
         };
         let error = generate_java_code(
             crate::test::TEST_PACKAGE,
