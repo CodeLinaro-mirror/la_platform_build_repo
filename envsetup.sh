@@ -554,7 +554,7 @@ function lunch()
         if [[ $hyphen_count -eq 1 ]]; then
             IFS="-" read -r product variant <<< "$1"
             # Set default release
-            release="trunk_staging"
+            release="bp2a"
             echo "Release not specified, defaulting to $release build"
         elif [[ $hyphen_count -eq 2 ]]; then
             IFS="-" read -r product release variant <<< "$1"
