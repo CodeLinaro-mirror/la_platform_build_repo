@@ -908,7 +908,7 @@ system_image_defaults {
                 default: [],
             }) + select(release_flag("RELEASE_TELEPHONY_MODULE"), {
                 true: [
-                    "com.android.telephony", // base_system (RELEASE_TELEPHONY_MODULE)
+                    "com.android.telephony2", // base_system (RELEASE_TELEPHONY_MODULE)
                 ],
                 default: [],
             }),

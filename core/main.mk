@@ -558,7 +558,7 @@ $(foreach m,$(ALL_MODULES), \
   $(if $(r), \
     $(eval r := $(call module-installed-files,$(r))) \
     $(eval t_m := $(filter $(TARGET_OUT_ROOT)/%, $(ALL_MODULES.$(m).INSTALLED))) \
-    $(eval t_m := $(filter-out $(ALL_MODULES.$(m).ORDERONLY_INSTALLED) $(ALL_MODULES.$(m).HOST_INSTALLED), $(ALL_MODULES.$(m).INSTALLED))) \
+    $(eval t_m := $(filter-out $(ALL_MODULES.$(m).ORDERONLY_INSTALLED), $(ALL_MODULES.$(m).INSTALLED))) \
     $(eval t_r := $(filter $(TARGET_OUT_ROOT)/%, $(r))) \
     $(eval t_r := $(filter-out $(t_m), $(t_r))) \
     $(if $(t_m), $(eval $(call add-required-deps, $(t_m),$(t_r)))) \
@@ -1477,11 +1477,6 @@ else ifneq ($(TARGET_BUILD_APPS),)
       $(if $(ALL_MODULES.$(m).AAR),$(ALL_MODULES.$(m).AAR):$(m).aar)\
       ))
   $(call dist-for-goals,apps_only, $(apps_only_dist_built_files))
-
-  ifeq ($(EMMA_INSTRUMENT),true)
-    $(JACOCO_REPORT_CLASSES_ALL) : $(apps_only_installed_files)
-    $(call dist-for-goals,apps_only, $(JACOCO_REPORT_CLASSES_ALL))
-  endif
 
   # some more files are disted in soong's unbundled_builder module
 
