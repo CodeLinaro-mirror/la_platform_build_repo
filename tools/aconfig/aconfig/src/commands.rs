@@ -461,16 +461,22 @@ pub fn modify_parsed_flags_based_on_mode(
     parsed_flags: ProtoParsedFlags,
     codegen_mode: CodegenMode,
 ) -> Result<Vec<ProtoParsedFlag>> {
-    fn exported_mode_flag_modifier(mut parsed_flag: ProtoParsedFlag) -> ProtoParsedFlag {
+    fn exported_mode_flag_modifier(mut parsed_flag: ProtoParsedFlag) -> Result<ProtoParsedFlag> {
         parsed_flag.set_state(ProtoFlagState::DISABLED);
         parsed_flag.set_permission(ProtoFlagPermission::READ_WRITE);
         parsed_flag.set_is_fixed_read_only(false);
-        parsed_flag
+        let m = parsed_flag.metadata.as_mut().ok_or(anyhow!("missing metadata"))?;
+        m.set_storage(ProtoFlagStorageBackend::ACONFIGD);
+        Ok(parsed_flag)
     }
 
-    fn force_read_only_mode_flag_modifier(mut parsed_flag: ProtoParsedFlag) -> ProtoParsedFlag {
+    fn force_read_only_mode_flag_modifier(
+        mut parsed_flag: ProtoParsedFlag,
+    ) -> Result<ProtoParsedFlag> {
         parsed_flag.set_permission(ProtoFlagPermission::READ_ONLY);
-        parsed_flag
+        let m = parsed_flag.metadata.as_mut().ok_or(anyhow!("missing metadata"))?;
+        m.set_storage(ProtoFlagStorageBackend::NONE);
+        Ok(parsed_flag)
     }
 
     let modified_parsed_flags: Vec<_> = match codegen_mode {
@@ -479,13 +485,13 @@ pub fn modify_parsed_flags_based_on_mode(
             .into_iter()
             .filter(|pf| pf.is_exported())
             .map(exported_mode_flag_modifier)
-            .collect(),
+            .collect::<Result<Vec<_>>>()?,
         CodegenMode::ForceReadOnly => parsed_flags
             .parsed_flag
             .into_iter()
             .filter(|pf| !pf.is_exported())
             .map(force_read_only_mode_flag_modifier)
-            .collect(),
+            .collect::<Result<Vec<_>>>()?,
         CodegenMode::Production | CodegenMode::Test => {
             parsed_flags.parsed_flag.into_iter().collect()
         }
@@ -558,8 +564,7 @@ pub fn should_include_flag(pf: &ProtoParsedFlag) -> bool {
     let is_disabled_ro = pf.state == Some(ProtoFlagState::DISABLED.into())
         && pf.permission == Some(ProtoFlagPermission::READ_ONLY.into());
 
-    !((is_platform_container && is_disabled_ro)
-        || pf.metadata.storage() == ProtoFlagStorageBackend::DEVICE_CONFIG)
+    !(is_platform_container && is_disabled_ro)
 }
 
 #[cfg(test)]
@@ -1262,13 +1267,19 @@ mod tests {
 
     #[test]
     fn test_modify_parsed_flags_based_on_mode_exported() {
-        let parsed_flags = crate::test::parse_test_flags();
+        let mut parsed_flags = crate::test::parse_test_flags();
+
+        let pf = parsed_flags.parsed_flag.iter_mut().find(|pf| pf.is_exported()).unwrap();
+        let m = pf.metadata.as_mut().unwrap();
+        m.set_storage(ProtoFlagStorageBackend::DEVICE_CONFIG);
+
         let p_parsed_flags =
             modify_parsed_flags_based_on_mode(parsed_flags, CodegenMode::Exported).unwrap();
         assert_eq!(3, p_parsed_flags.len());
         for flag in p_parsed_flags.iter() {
             assert_eq!(ProtoFlagState::DISABLED, flag.state());
             assert_eq!(ProtoFlagPermission::READ_WRITE, flag.permission());
+            assert_eq!(ProtoFlagStorageBackend::ACONFIGD, flag.metadata.storage());
             assert!(!flag.is_fixed_read_only());
             assert!(flag.is_exported());
         }
@@ -1278,6 +1289,24 @@ mod tests {
         let error =
             modify_parsed_flags_based_on_mode(parsed_flags, CodegenMode::Exported).unwrap_err();
         assert_eq!("exported library contains no exported flags", format!("{:?}", error));
+    }
+
+    #[test]
+    fn test_modify_parsed_flags_based_on_mode_forcereadonly() {
+        let mut parsed_flags = crate::test::parse_test_flags();
+
+        let pf = parsed_flags.parsed_flag.iter_mut().find(|pf| !pf.is_exported()).unwrap();
+        let m = pf.metadata.as_mut().unwrap();
+        m.set_storage(ProtoFlagStorageBackend::DEVICE_CONFIG);
+
+        let p_parsed_flags =
+            modify_parsed_flags_based_on_mode(parsed_flags, CodegenMode::ForceReadOnly).unwrap();
+        assert_eq!(6, p_parsed_flags.len());
+        for flag in p_parsed_flags.iter() {
+            assert_eq!(ProtoFlagPermission::READ_ONLY, flag.permission());
+            assert_eq!(ProtoFlagStorageBackend::NONE, flag.metadata.storage());
+            assert!(!flag.is_exported());
+        }
     }
 
     #[test]
@@ -1305,15 +1334,6 @@ mod tests {
         let m = pf.metadata.as_mut().unwrap();
         m.set_storage(ProtoFlagStorageBackend::DEVICE_CONFIG);
         let flag_ids = assign_flag_ids(&package, parsed_flags.parsed_flag.iter()).unwrap();
-        let expected_flag_ids = HashMap::from([
-            (String::from("disabled_rw"), 0_u16),
-            (String::from("disabled_rw_exported"), 1_u16),
-            (String::from("enabled_fixed_ro"), 2_u16),
-            (String::from("enabled_fixed_ro_exported"), 3_u16),
-            (String::from("enabled_ro"), 4_u16),
-            (String::from("enabled_ro_exported"), 5_u16),
-            (String::from("enabled_rw"), 6_u16),
-        ]);
         assert_eq!(flag_ids, expected_flag_ids);
     }
 
