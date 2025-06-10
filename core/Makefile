@@ -952,10 +952,11 @@ RAMDISK_NODE_LIST := $(PRODUCT_OUT)/ramdisk_node_list
 # We just build this directly to the install location.
 INSTALLED_RAMDISK_TARGET := $(BUILT_RAMDISK_TARGET)
 ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
-$(INSTALLED_RAMDISK_TARGET): PRIVATE_DIRS := debug_ramdisk dev metadata mnt proc second_stage_resources sys vendor_early_services
-else
-$(INSTALLED_RAMDISK_TARGET): PRIVATE_DIRS := debug_ramdisk dev metadata mnt proc second_stage_resources sys
+ifdef BUILDING_VENDOR_BOOT_IMAGE
+$(INSTALLED_RAMDISK_TARGET): $(INTERNAL_VENDOR_RAMDISK_UPDATE)
 endif
+endif
+$(INSTALLED_RAMDISK_TARGET): PRIVATE_DIRS := debug_ramdisk dev metadata mnt proc second_stage_resources sys
 $(INSTALLED_RAMDISK_TARGET): $(MKBOOTFS) $(RAMDISK_NODE_LIST) $(INTERNAL_RAMDISK_FILES) $(INSTALLED_FILES_FILE_RAMDISK) | $(COMPRESSION_COMMAND_DEPS)
 	$(call pretty,"Target ramdisk: $@")
 	$(hide) mkdir -p $(addprefix $(TARGET_RAMDISK_OUT)/,$(PRIVATE_DIRS))
@@ -3662,8 +3663,10 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_au.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_R_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_r_au.order ;\
   cp -r $(TARGET_RAMDISK_OUT)/vendor_early_services/bin/early_services_init $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
+  cp -r $(TARGET_RAMDISK_OUT)/vendor_early_services/bin/early_services_init $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/bin ;\
   cp -r $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/bin/init_early_test $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
   mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/firmware_mnt; \
+  rm -rf $(TARGET_RAMDISK_OUT)/vendor_early_services; \
   cp -r $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/vendor_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
