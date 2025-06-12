@@ -333,6 +333,19 @@ $(eval SOONG_CONFIG_$(strip $1)_$(strip $2):=$(filter true,$3))
 $(eval SOONG_CONFIG_TYPE_$(strip $1)_$(strip $2):=bool)
 endef
 
+# soong_config_set_int is the same as soong_config_set, but it will
+# also type the variable as an integer, so that when using select() expressions
+# in blueprint files they can use integer values instead of strings.
+# It will error out if a non-integer is supplied
+# $1 is the namespace. $2 is the variable name. $3 is the variable value.
+# Ex: $(call soong_config_set_bool,acme,COOL_FEATURE,34)
+define soong_config_set_int
+$(call soong_config_define_internal,$1,$2) \
+$(if $(call math_is_int,$3),,$(error soong_config_set_int called with non-integer value $(3)))
+$(eval SOONG_CONFIG_$(strip $1)_$(strip $2):=$(strip $3))
+$(eval SOONG_CONFIG_TYPE_$(strip $1)_$(strip $2):=int)
+endef
+
 # soong_config_set_string_list is the same as soong_config_set, but it will
 # also type the variable as a list of strings, so that when using select() expressions
 # in blueprint files they can use list values instead of strings.
@@ -601,10 +614,7 @@ DISABLE_PREOPT :=
 DISABLE_PREOPT_BOOT_IMAGES :=
 ifneq (,$(TARGET_BUILD_APPS)$(TARGET_BUILD_UNBUNDLED_IMAGE))
   DISABLE_PREOPT := true
-  # VSDK builds perform dexpreopt during merge_target_files build step.
-  ifneq (true,$(BUILDING_WITH_VSDK))
-    DISABLE_PREOPT_BOOT_IMAGES := true
-  endif
+  DISABLE_PREOPT_BOOT_IMAGES := true
 endif
 ifeq (true,$(TARGET_BUILD_UNBUNDLED))
   ifneq (true,$(UNBUNDLED_BUILD_SDKS_FROM_SOURCE))
@@ -768,7 +778,6 @@ endif
 
 # TODO: remove all code referencing these, and remove override variables
 PRODUCT_FULL_TREBLE := true
-PRODUCT_NOTICE_SPLIT := true
 PRODUCT_TREBLE_LINKER_NAMESPACES := true
 PRODUCT_ENFORCE_VINTF_MANIFEST := true
 
@@ -777,7 +786,6 @@ PRODUCT_ENFORCE_VINTF_MANIFEST := true
     PRODUCT_FULL_TREBLE \
     PRODUCT_TREBLE_LINKER_NAMESPACES \
     PRODUCT_ENFORCE_VINTF_MANIFEST \
-    PRODUCT_NOTICE_SPLIT \
 
 # TODO(b/114488870): remove all sets of these everwhere, and disallow them to be used
 $(KATI_obsolete_var PRODUCT_TREBLE_LINKER_NAMESPACES_OVERRIDE,Deprecated.)

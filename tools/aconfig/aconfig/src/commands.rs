@@ -15,6 +15,7 @@
  */
 
 use anyhow::{bail, ensure, Context, Result};
+use convert_finalized_flags::FinalizedFlagMap;
 use itertools::Itertools;
 use protobuf::Message;
 use std::collections::HashMap;
@@ -80,18 +81,8 @@ pub fn parse_flags(
             .read_to_string(&mut contents)
             .with_context(|| format!("failed to read {}", input.source))?;
 
-        let mut flag_declarations =
-            aconfig_protos::flag_declarations::try_from_text_proto(&contents)
-                .with_context(|| input.error_context())?;
-
-        // system_ext flags should be treated as system flags as we are combining /system_ext
-        // and /system as one container
-        // TODO: remove this logic when we start enforcing that system_ext cannot be set as
-        // container in aconfig declaration files.
-        if flag_declarations.container() == "system_ext" {
-            flag_declarations.set_container(String::from("system"));
-        }
-
+        let flag_declarations = aconfig_protos::flag_declarations::try_from_text_proto(&contents)
+            .with_context(|| input.error_context())?;
         ensure!(
             package == flag_declarations.package(),
             "failed to parse {}: expected package {}, got {}",
@@ -220,7 +211,7 @@ pub fn create_java_lib(
     allow_instrumentation: bool,
     new_exported: bool,
     single_exported_file: bool,
-    check_api_level: bool,
+    finalized_flags: FinalizedFlagMap,
 ) -> Result<Vec<OutputFile>> {
     let parsed_flags = input.try_parse_flags()?;
     let modified_parsed_flags =
@@ -239,7 +230,7 @@ pub fn create_java_lib(
         package_fingerprint,
         new_exported,
         single_exported_file,
-        check_api_level,
+        finalized_flags,
     };
     generate_java_code(&package, modified_parsed_flags.into_iter(), config)
 }
@@ -461,6 +452,7 @@ fn extract_flag_names(flags: ProtoParsedFlags) -> Result<Vec<String>> {
 pub fn should_include_flag(pf: &ProtoParsedFlag) -> bool {
     let should_filter_container = pf.container == Some("vendor".to_string())
         || pf.container == Some("system".to_string())
+        || pf.container == Some("system_ext".to_string())
         || pf.container == Some("product".to_string());
 
     let disabled_ro = pf.state == Some(ProtoFlagState::DISABLED.into())

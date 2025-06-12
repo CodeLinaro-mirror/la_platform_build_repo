@@ -84,21 +84,6 @@ ifneq ($(BUILDING_VENDOR_KERNEL_BOOT_IMAGE),)
 endif
 
 
-###########################################################
-# Get the module names suitable for ALL_MODULES.* variables that are installed
-# for a given partition
-#
-# $(1): Partition
-###########################################################
-define register-names-for-partition
-$(sort $(foreach m,$(product_MODULES),\
-	$(if $(filter $(PRODUCT_OUT)/$(strip $(1))/%, $(ALL_MODULES.$(m).INSTALLED)), \
-		$(m)
-	) \
-))
-endef
-
-
 # Release & Aconfig Flags
 # -----------------------------------------------------------------
 include $(BUILD_SYSTEM)/packaging/flags.mk
@@ -790,7 +775,13 @@ name := $(name)-apkcerts
 intermediates := \
 	$(call intermediates-dir-for,PACKAGING,apkcerts)
 APKCERTS_FILE := $(intermediates)/$(name).txt
-all_apkcerts_files := $(sort $(foreach p,$(PACKAGES),$(PACKAGES.$(p).APKCERTS_FILE)))
+ifeq ($(RELEASE_APKCERTS_INSTALL_ONLY), true)
+  all_apkcerts_packages := $(filter $(call product-installed-modules,$(INTERNAL_PRODUCT)),$(PACKAGES))
+else
+  all_apkcerts_packages := $(PACKAGES)
+endif
+all_apkcerts_files := $(sort $(foreach p,$(all_apkcerts_packages),$(PACKAGES.$(p).APKCERTS_FILE)))
+
 $(APKCERTS_FILE): $(all_apkcerts_files)
 # We don't need to really build all the modules.
 # TODO: rebuild APKCERTS_FILE if any app change its cert.
@@ -798,7 +789,7 @@ $(APKCERTS_FILE):
 	@echo APK certs list: $@
 	@mkdir -p $(dir $@)
 	@rm -f $@
-	$(foreach p,$(sort $(PACKAGES)),\
+	$(foreach p,$(sort $(all_apkcerts_packages)),\
 	  $(if $(PACKAGES.$(p).APKCERTS_FILE),\
 	    $(call _apkcerts_merge,$(PACKAGES.$(p).APKCERTS_FILE), $@),\
 	    $(if $(PACKAGES.$(p).EXTERNAL_KEY),\
@@ -809,7 +800,7 @@ $(APKCERTS_FILE):
 	  $(if $(filter true,$(BUILDING_SYSTEM_EXT_IMAGE)),\
             $(call _apkcerts_write_line,BuildManifestSystemExt,$(FSVERITY_APK_KEY_PATH).x509.pem,$(FSVERITY_APK_KEY_PATH).pk8,,system_ext,$@)))
 	# In case value of PACKAGES is empty.
-	$(hide) touch $@
+	$(hide) touch $@ && sort -u -o $@ $@
 
 $(call declare-0p-target,$(APKCERTS_FILE))
 
@@ -1935,15 +1926,6 @@ kernel_notice_file := $(TARGET_OUT_NOTICE_FILES)/src/kernel.txt
 # need no associated notice file on the device UI.
 exclude_target_dirs := apex
 
-# TODO(b/69865032): Make PRODUCT_NOTICE_SPLIT the default behavior.
-ifneq ($(PRODUCT_NOTICE_SPLIT),true)
-#target_notice_file_html := $(TARGET_OUT_INTERMEDIATES)/NOTICE.html
-target_notice_file_html_gz := $(TARGET_OUT_INTERMEDIATES)/NOTICE.html.gz
-installed_notice_html_or_xml_gz := $(TARGET_OUT)/etc/NOTICE.html.gz
-
-$(call declare-0p-target,$(target_notice_file_html_gz))
-$(call declare-0p-target,$(installed_notice_html_or_xml_gz))
-else
 # target_notice_file_xml := $(TARGET_OUT_INTERMEDIATES)/NOTICE.xml
 target_notice_file_xml_gz := $(TARGET_OUT_INTERMEDIATES)/NOTICE.xml.gz
 installed_notice_html_or_xml_gz := $(TARGET_OUT)/etc/NOTICE.xml.gz
@@ -2062,8 +2044,6 @@ license_modules_vendor += $(license_modules_rehomed)
 system_xml_directories := xml_system
 system_notice_file_message := "Notices for files contained in the system filesystem image in this directory:"
 endif
-
-endif # PRODUCT_NOTICE_SPLIT
 
 ALL_DEFAULT_INSTALLED_MODULES += $(installed_notice_html_or_xml_gz)
 
@@ -5649,7 +5629,9 @@ APEX_INFO_FILE := $(APEX_OUT)/apex-info-list.xml
 # apexd_host scans/activates APEX files and writes /apex/apex-info-list.xml
 # Note that `@echo $(PRIVATE_APEX_FILES)` line is added to trigger the rule when the APEX list is changed.
 $(APEX_INFO_FILE): PRIVATE_APEX_FILES := $(apex_files)
-$(APEX_INFO_FILE): $(HOST_OUT_EXECUTABLES)/apexd_host $(apex_files)
+$(APEX_INFO_FILE): $(HOST_OUT_EXECUTABLES)/apexd_host \
+    $(HOST_OUT_EXECUTABLES)/deapexer $(HOST_OUT_EXECUTABLES)/debugfs $(HOST_OUT_EXECUTABLES)/fsck.erofs \
+    $(apex_files)
 	@echo "Extracting apexes..."
 	@echo $(PRIVATE_APEX_FILES) > /dev/null
 	@rm -rf $(APEX_OUT)
@@ -5764,7 +5746,7 @@ my_decompress_tools := \
     lz4:$(HOST_OUT_EXECUTABLES)/lz4 \
 
 
-# BOARD_KERNEL_CONFIG_FILE and BOARD_KERNEL_VERSION can be used to override the values extracted
+# BOARD_KERNEL_VERSION can be used to override the values extracted
 # from INSTALLED_KERNEL_TARGET.
 ifdef BOARD_KERNEL_VERSION
 $(BUILT_KERNEL_VERSION_FILE): PRIVATE_DECOMPRESS_TOOLS := $(my_decompress_tools)
@@ -5776,15 +5758,8 @@ $(BUILT_KERNEL_VERSION_FILE): $(EXTRACT_KERNEL) $(firstword $(INSTALLED_KERNEL_T
     echo "Specified kernel version '$(BOARD_KERNEL_VERSION)' does not match actual kernel version '$$KERNEL_RELEASE' " ; exit 1; fi;
 	echo '$(BOARD_KERNEL_VERSION)' > $@
 
-ifdef BOARD_KERNEL_CONFIG_FILE
-$(BUILT_KERNEL_CONFIGS_FILE): $(BOARD_KERNEL_CONFIG_FILE)
-	cp $< $@
-
-$(call declare-license-metadata,$(BUILT_KERNEL_CONFIGS_FILE),SPDX-license-identifier-GPL-2.0-only,restricted,$(BUILD_SYSTEM)/LINUX_KERNEL_COPYING,"Kernel",kernel)
 $(call declare-license-metadata,$(BUILT_KERNEL_VERSION_FILE),SPDX-license-identifier-GPL-2.0-only,restricted,$(BUILD_SYSTEM)/LINUX_KERNEL_COPYING,"Kernel",kernel)
 
-my_board_extracted_kernel := true
-endif # BOARD_KERNEL_CONFIG_FILE
 endif # BOARD_KERNEL_VERSION
 
 
@@ -6295,7 +6270,10 @@ endif
 endif # BOARD_AVB_ENABLE
 ifneq (,$(strip $(BOARD_CUSTOMIMAGES_PARTITION_LIST)))
 	$(hide) $(foreach partition,$(BOARD_CUSTOMIMAGES_PARTITION_LIST), \
-	  echo "flash $(partition)" >> $@;)
+		$(if $(BOARD_$(call to-upper,$(partition))_IMAGE_NO_FLASHALL),, \
+	      echo "flash $(partition)" >> $@; \
+		) \
+	)
 endif
 	$(hide) echo "reboot fastboot" >> $@
 	$(hide) echo "update-super" >> $@
@@ -6480,7 +6458,7 @@ ifneq (,$(strip $(BOARD_AVB_VBMETA_VENDOR)))
 	$(hide) echo "avb_vbmeta_vendor_rollback_index_location=$(BOARD_AVB_VBMETA_VENDOR_ROLLBACK_INDEX_LOCATION)" >> $@
 endif # BOARD_AVB_VBMETA_VENDOR_KEY_PATH
 ifneq (,$(strip $(BOARD_AVB_VBMETA_CUSTOM_PARTITIONS)))
-	$(hide) echo "avb_custom_vbmeta_images_partition_list=$(BOARD_AVB_VBMETA_CUSTOM_PARTITIONS)" >> $@
+	$(hide) echo "avb_custom_vbmeta_images_partition_list=$(sort $(BOARD_AVB_VBMETA_CUSTOM_PARTITIONS))" >> $@
 	$(hide) $(foreach partition,$(BOARD_AVB_VBMETA_CUSTOM_PARTITIONS),\
 	echo "avb_vbmeta_$(partition)=$(BOARD_AVB_VBMETA_$(call to-upper,$(partition)))" >> $@ ;\
 	echo "avb_vbmeta_$(partition)_args=$(BOARD_AVB_MAKE_VBMETA_$(call to-upper,$(partition))_IMAGE_ARGS)" >> $@ ;\
@@ -6551,9 +6529,7 @@ endif
 ifneq ($(BOARD_PARTIAL_OTA_UPDATE_PARTITIONS_LIST),)
 	$(hide) echo "partial_ota_update_partitions_list=$(BOARD_PARTIAL_OTA_UPDATE_PARTITIONS_LIST)" >> $@
 endif
-ifeq ($(BUILDING_WITH_VSDK),true)
-	$(hide) echo "building_with_vsdk=true" >> $@
-endif
+	$(hide) sort -o $@ $@
 
 $(call declare-0p-target,$(INSTALLED_FASTBOOT_INFO_TARGET))
 
@@ -6711,13 +6687,13 @@ define dump-dynamic-partitions-info
   $(foreach device,$(BOARD_SUPER_PARTITION_BLOCK_DEVICES), \
     echo "super_$(device)_device_size=$(BOARD_SUPER_PARTITION_$(call to-upper,$(device))_DEVICE_SIZE)" >> $(1);)
   $(if $(BOARD_SUPER_PARTITION_PARTITION_LIST), \
-    echo "dynamic_partition_list=$(call filter-out-missing-partitions,$(BOARD_SUPER_PARTITION_PARTITION_LIST))" >> $(1))
+    echo "dynamic_partition_list=$(sort $(call filter-out-missing-partitions,$(BOARD_SUPER_PARTITION_PARTITION_LIST)))" >> $(1))
   $(if $(BOARD_SUPER_PARTITION_GROUPS),
     echo "super_partition_groups=$(BOARD_SUPER_PARTITION_GROUPS)" >> $(1))
   $(foreach group,$(BOARD_SUPER_PARTITION_GROUPS), \
     echo "super_$(group)_group_size=$(BOARD_$(call to-upper,$(group))_SIZE)" >> $(1); \
     $(if $(BOARD_$(call to-upper,$(group))_PARTITION_LIST), \
-      echo "super_$(group)_partition_list=$(call filter-out-missing-partitions,$(BOARD_$(call to-upper,$(group))_PARTITION_LIST))" >> $(1);))
+      echo "super_$(group)_partition_list=$(strip $(call filter-out-missing-partitions,$(BOARD_$(call to-upper,$(group))_PARTITION_LIST)))" >> $(1);))
   $(if $(filter true,$(TARGET_USERIMAGES_SPARSE_EXT_DISABLED)), \
     echo "build_non_sparse_super_partition=true" >> $(1))
   $(if $(filter true,$(TARGET_USERIMAGES_SPARSE_F2FS_DISABLED)), \
@@ -7604,22 +7580,6 @@ $(APPCOMPAT_ZIP): $(SOONG_ZIP)
 	$(hide) find $(PRODUCT_OUT)/appcompat | sort >$(PRIVATE_LIST_FILE)
 	$(hide) $(SOONG_ZIP) -d -o $@ -C $(PRODUCT_OUT)/appcompat -l $(PRIVATE_LIST_FILE)
 
-# The mac build doesn't build dex2oat, so create the zip file only if the build OS is linux.
-ifeq ($(BUILD_OS),linux)
-ifneq ($(DEX2OAT),)
-dexpreopt_tools_deps := $(DEXPREOPT_GEN_DEPS) $(DEXPREOPT_GEN)
-dexpreopt_tools_deps += $(HOST_OUT_EXECUTABLES)/dexdump
-dexpreopt_tools_deps += $(HOST_OUT_EXECUTABLES)/oatdump
-DEXPREOPT_TOOLS_ZIP := $(PRODUCT_OUT)/dexpreopt_tools.zip
-$(DEXPREOPT_TOOLS_ZIP): $(dexpreopt_tools_deps)
-$(DEXPREOPT_TOOLS_ZIP): PRIVATE_DEXPREOPT_TOOLS_DEPS := $(dexpreopt_tools_deps)
-$(DEXPREOPT_TOOLS_ZIP): $(SOONG_ZIP)
-	$(hide) mkdir -p $(dir $@)
-	$(hide) $(SOONG_ZIP) -d -o $@ -j $(addprefix -f ,$(PRIVATE_DEXPREOPT_TOOLS_DEPS)) -f $$(realpath $(DEX2OAT))
-$(call declare-1p-target,$(DEXPREOPT_TOOLS_ZIP),)
-endif # DEX2OAT is set
-endif # BUILD_OS == linux
-
 DEXPREOPT_CONFIG_ZIP := $(PRODUCT_OUT)/dexpreopt_config.zip
 
 $(DEXPREOPT_CONFIG_ZIP): $(INSTALLED_SYSTEMIMAGE_TARGET) \
@@ -7653,6 +7613,12 @@ dexpreopt_config_zip: $(DEXPREOPT_CONFIG_ZIP)
 $(call declare-1p-target,$(DEXPREOPT_CONFIG_ZIP),)
 
 # -----------------------------------------------------------------
+# Zips of the symbols directory per test suites
+#
+
+$(foreach suite,$(ALL_COMPATIBILITY_SUITES),$(eval $(call create-suite-symbols-map,$(suite))))
+
+# -----------------------------------------------------------------
 # A zip of the symbols directory.  Keep the full paths to make it
 # more obvious where these files came from.
 # Also produces a textproto containing mappings from elf IDs to symbols
@@ -7670,29 +7636,37 @@ SYMBOLS_ZIP := $(PRODUCT_OUT)/$(name)-symbols.zip
 # The path to a file containing mappings from elf IDs to filenames.
 SYMBOLS_MAPPING := $(PRODUCT_OUT)/$(name)-symbols-mapping.textproto
 .KATI_READONLY := SYMBOLS_ZIP SYMBOLS_MAPPING
-# For apps_only build we'll establish the dependency later in build/make/core/main.mk.
+
 ifeq (,$(TARGET_BUILD_UNBUNDLED))
-$(SYMBOLS_ZIP): $(INTERNAL_ALLIMAGES_FILES) $(updater_dep)
+  _symbols_zip_modules := $(call product-installed-modules,$(INTERNAL_PRODUCT))
+  $(SYMBOLS_ZIP): $(updater_dep)
+else
+  _symbols_zip_modules := $(unbundled_build_modules)
 endif
-$(SYMBOLS_ZIP): PRIVATE_LIST_FILE := $(call intermediates-dir-for,PACKAGING,symbols)/filelist
-$(SYMBOLS_ZIP): PRIVATE_MAPPING_PACKAGING_DIR := $(call intermediates-dir-for,PACKAGING,elf_symbol_mapping)
-$(SYMBOLS_ZIP): $(SOONG_ZIP) $(SYMBOLS_MAP)
+
+_symbols_zip_modules_symbols_files := $(foreach m,$(_symbols_zip_modules),$(ALL_MODULES.$(m).SYMBOLIC_OUTPUT_PATH))
+_symbols_zip_modules_mapping_files := $(foreach m,$(_symbols_zip_modules),$(ALL_MODULES.$(m).ELF_SYMBOL_MAPPING_PATH))
+
+$(SYMBOLS_ZIP): PRIVATE_SYMBOLS_MODULES_FILES := $(_symbols_zip_modules_symbols_files)
+$(SYMBOLS_ZIP): PRIVATE_SYMBOLS_MODULES_MAPPING_FILES := $(_symbols_zip_modules_mapping_files)
+$(SYMBOLS_ZIP): $(SOONG_ZIP) $(SYMBOLS_MAP) $(_symbols_zip_modules_symbols_files) $(_symbols_zip_modules_mapping_files)
 	@echo "Package symbols: $@"
-	$(hide) rm -rf $@ $(PRIVATE_LIST_FILE)
-	$(hide) mkdir -p $(TARGET_OUT_UNSTRIPPED) $(dir $(PRIVATE_LIST_FILE)) $(PRIVATE_MAPPING_PACKAGING_DIR)
-	# Find all of the files in the symbols directory and zip them into the symbols zip.
-	$(hide) find -L $(TARGET_OUT_UNSTRIPPED) -type f | sort >$(PRIVATE_LIST_FILE)
-	$(hide) $(SOONG_ZIP) --ignore_missing_files -d -o $@ -C $(OUT_DIR)/.. -l $(PRIVATE_LIST_FILE)
-	# Find all of the files in the symbols mapping directory and merge them into the symbols mapping textproto.
-	$(hide) find -L $(PRIVATE_MAPPING_PACKAGING_DIR) -type f | sort >$(PRIVATE_LIST_FILE)
-	$(hide) $(SYMBOLS_MAP) -merge $(SYMBOLS_MAPPING) -ignore_missing_files @$(PRIVATE_LIST_FILE)
+	$(hide) rm -rf $@ $@.symbols_list $@.mapping_list
+	# Find all installed files in the symbols directory and zip them into the symbols zip.
+	echo "$(PRIVATE_SYMBOLS_MODULES_FILES)" | tr " " "\n" | sort > $@.symbols_list
+	$(hide) $(SOONG_ZIP) -d -o $@ -l $@.symbols_list
+	# Find all installed files in the symbols mapping directory and merge them into the symbols mapping textproto.
+	echo "$(PRIVATE_SYMBOLS_MODULES_MAPPING_FILES)" | tr " " "\n" | sort > $@.mapping_list
+	$(hide) $(SYMBOLS_MAP) -merge $(SYMBOLS_MAPPING) @$@.mapping_list
 $(SYMBOLS_ZIP): .KATI_IMPLICIT_OUTPUTS := $(SYMBOLS_MAPPING)
 
 $(call declare-1p-container,$(SYMBOLS_ZIP),)
 ifeq (,$(TARGET_BUILD_UNBUNDLED))
-$(call declare-container-license-deps,$(SYMBOLS_ZIP),$(INTERNAL_ALLIMAGES_FILES) $(updater_dep),$(PRODUCT_OUT)/:/)
+$(call declare-container-license-deps,$(SYMBOLS_ZIP),$(PRIVATE_SYMBOLS_MODULES_FILES) $(updater_dep),$(PRODUCT_OUT)/:/)
 endif
 
+_symbols_zip_modules_symbols_files :=
+_symbols_zip_modules_mapping_files :=
 # -----------------------------------------------------------------
 # A zip of the coverage directory.
 #
@@ -7782,6 +7756,72 @@ ifeq (,$(TARGET_BUILD_UNBUNDLED))
   _proguard_dict_zip_modules := $(call product-installed-modules,$(INTERNAL_PRODUCT))
 else
   _proguard_dict_zip_modules := $(unbundled_build_modules)
+endif
+
+# Filter out list to avoid uncessary proguard related file generation
+ifeq (,$(TARGET_BUILD_UNBUNDLED))
+filter_out_proguard_dict_zip_modules :=
+# product.img
+ifndef BUILDING_PRODUCT_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/product/%
+endif
+# system.img
+ifndef BUILDING_SYSTEM_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/system/%
+endif
+# system_dlkm.img
+ifndef BUILDING_SYSTEM_DLKM_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/system_dlkm/%
+endif
+# system_ext.img
+ifndef BUILDING_SYSTEM_EXT_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/system_ext/%
+endif
+# system_other.img
+ifndef BUILDING_SYSTEM_OTHER_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/system_other/%
+endif
+# odm.img
+ifndef BUILDING_ODM_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/odm/%
+endif
+# odm_dlkm.img
+ifndef BUILDING_ODM_DLKM_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/odm_dlkm/%
+endif
+# vendor.img
+ifndef BUILDING_VENDOR_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/vendor/%
+endif
+# vendor_dlkm.img
+ifndef BUILDING_VENDOR_DLKM_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/vendor_dlkm/%
+endif
+# cache.img
+ifndef BUILDING_CACHE_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/cache/%
+endif
+# ramdisk.img
+ifndef BUILDING_RAMDISK_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/ramdisk/%
+endif
+# recovery.img
+ifndef INSTALLED_RECOVERYIMAGE_TARGET
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/recovery/%
+endif
+# userdata.img
+ifndef BUILDING_USERDATA_IMAGE
+filter_out_proguard_dict_zip_modules += $(PRODUCT_OUT)/data/%
+endif
+
+# Check the installed files of each module and return the module name
+# or return empty if none of the files remain to be installed
+define filter-out-proguard-modules
+$(if $(filter-out $(filter_out_proguard_dict_zip_modules),$(call module-installed-files,$(1))),$(1))
+endef
+
+# Filter out proguard dict zip modules those are not installed at the built image
+_proguard_dict_zip_modules := $(foreach m,$(_proguard_dict_zip_modules),$(strip $(call filter-out-proguard-modules,$(m))))
 endif
 
 # The path to the zip file containing proguard dictionaries.
@@ -7989,6 +8029,12 @@ $(INTERNAL_UPDATE_PACKAGE_TARGET): $(BUILT_TARGET_FILES_PACKAGE) $(IMG_FROM_TARG
 	PATH=$(INTERNAL_USERIMAGES_BINARY_PATHS):$(dir $(ZIP2ZIP)):$$PATH \
 	    $(IMG_FROM_TARGET_FILES) \
 	        --additional IMAGES/VerifiedBootParams.textproto:VerifiedBootParams.textproto \
+			$(foreach partition,$(BOARD_CUSTOMIMAGES_PARTITION_LIST), \
+					$(if $(BOARD_$(call to-upper,$(partition))_IMAGE_NO_FLASHALL), \
+						--exclude IMAGES/$(partition).img \
+						--exclude IMAGES/$(partition).map \
+					) \
+			) \
 	        --build_super_image $(BUILD_SUPER_IMAGE) \
 	        $(BUILT_TARGET_FILES_PACKAGE) $@
 
