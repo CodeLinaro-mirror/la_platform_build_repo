@@ -145,7 +145,6 @@ android_filesystem_defaults {
                 // AVF
                 ///////////////////////////////////////////
                 "com.android.compos",
-                "features_com.android.virt.xml",
             ],
         },
         both: {
