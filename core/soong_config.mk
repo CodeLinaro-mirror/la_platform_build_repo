@@ -548,6 +548,7 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_bool, BuildingVendorDlkmImage,               $(BUILDING_VENDOR_DLKM_IMAGE))
   $(call add_json_list, VendorKernelModules, $(BOARD_VENDOR_KERNEL_MODULES))
   $(call add_json_str, VendorKernelBlocklistFile, $(BOARD_VENDOR_KERNEL_MODULES_BLOCKLIST_FILE))
+  $(call add_json_list, VendorKernelModules2ndStage16kbMode, $(foreach k,$(BOARD_VENDOR_KERNEL_MODULES_2ND_STAGE_16KB_MODE),$(TARGET_KERNEL_DIR_16K)/$(k)))
   $(call add_json_bool, BuildingOdmDlkmImage,               $(BUILDING_ODM_DLKM_IMAGE))
   $(call add_json_list, OdmKernelModules, $(BOARD_ODM_KERNEL_MODULES))
   $(call add_json_str, OdmKernelBlocklistFile, $(BOARD_ODM_KERNEL_MODULES_BLOCKLIST_FILE))
@@ -555,6 +556,8 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, VendorRamdiskKernelBlocklistFile, $(BOARD_VENDOR_RAMDISK_KERNEL_MODULES_BLOCKLIST_FILE))
   $(call add_json_list, VendorRamdiskKernelLoadModules, $(BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD))
   $(call add_json_str, VendorRamdiskKernelOptionsFile, $(BOARD_VENDOR_RAMDISK_KERNEL_MODULES_OPTIONS_FILE))
+  $(call add_json_bool, DoNotStripVendorRamdiskModules, $(BOARD_DO_NOT_STRIP_VENDOR_RAMDISK_MODULES))
+  $(call add_json_bool, DoNotStripVendorModules, $(BOARD_DO_NOT_STRIP_VENDOR_MODULES))
 
   # Used to generate /vendor/build.prop
   $(call add_json_list, BoardInfoFiles, $(if $(TARGET_BOARD_INFO_FILES),$(TARGET_BOARD_INFO_FILES),$(firstword $(TARGET_BOARD_INFO_FILE) $(wildcard $(TARGET_DEVICE_DIR)/board-info.txt))))
@@ -596,6 +599,8 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_list, BoardPartialOtaUpdatePartitionsList, $(BOARD_PARTIAL_OTA_UPDATE_PARTITIONS_LIST))
   $(call add_json_str, BoardFlashBlockSize, $(BOARD_FLASH_BLOCK_SIZE))
   $(call add_json_bool, BootloaderInUpdatePackage, $(BOARD_BOOTLOADER_IN_UPDATE_PACKAGE))
+
+  $(call add_json_str, TargetRecoveryWipe, $(TARGET_RECOVERY_WIPE))
 
   # Fastboot
   $(call add_json_str, BoardFastbootInfoFile, $(TARGET_BOARD_FASTBOOT_INFO_FILE))

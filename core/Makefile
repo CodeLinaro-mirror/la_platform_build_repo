@@ -769,6 +769,21 @@ $(hide) cat $1 >> $2
 
 endef
 
+define _apkcerts_build_for_packages
+$(1): $(sort $(foreach p,$(2),$(PACKAGES.$(p).APKCERTS_FILE)))
+	rm -f $$@
+	$$(foreach p,$(sort $(2)),\
+    $$(if $$(filter UNUSED-%,$$(PACKAGES.$$(p).STEM)),,\
+      $$(if $$(PACKAGES.$$(p).APKCERTS_FILE),\
+        $$(call _apkcerts_merge,$$(PACKAGES.$$(p).APKCERTS_FILE), $$@),\
+        $$(if $$(PACKAGES.$$(p).EXTERNAL_KEY),\
+          $$(call _apkcerts_write_line,$$(PACKAGES.$$(p).STEM),EXTERNAL,,$$(PACKAGES.$$(p).COMPRESSED),$$(PACKAGES.$$(p).PARTITION),$$@),\
+          $$(call _apkcerts_write_line,$$(PACKAGES.$$(p).STEM),$$(PACKAGES.$$(p).CERTIFICATE),$$(PACKAGES.$$(p).PRIVATE_KEY),$$(PACKAGES.$$(p).COMPRESSED),$$(PACKAGES.$$(p).PARTITION),$$@)))))
+	touch $$@
+	sort -u -o $$@ $$@
+
+endef
+
 name := $(TARGET_PRODUCT)
 ifeq ($(TARGET_BUILD_TYPE),debug)
   name := $(name)_debug
@@ -777,26 +792,35 @@ name := $(name)-apkcerts
 intermediates := \
 	$(call intermediates-dir-for,PACKAGING,apkcerts)
 APKCERTS_FILE := $(intermediates)/$(name).txt
-ifeq ($(RELEASE_APKCERTS_INSTALL_ONLY), true)
-  all_apkcerts_packages := $(filter $(call product-installed-modules,$(INTERNAL_PRODUCT)),$(PACKAGES))
-else
-  all_apkcerts_packages := $(PACKAGES)
-endif
-all_apkcerts_files := $(sort $(foreach p,$(all_apkcerts_packages),$(PACKAGES.$(p).APKCERTS_FILE)))
 
-$(APKCERTS_FILE): $(all_apkcerts_files)
-# We don't need to really build all the modules.
-# TODO: rebuild APKCERTS_FILE if any app change its cert.
-$(APKCERTS_FILE):
+# remove duplicates
+PACKAGES := $(sort $(PACKAGES))
+
+make_apkcerts_packages := $(foreach p,$(PACKAGES),$(if $(ALL_MODULES.$(p).IS_SOONG_MODULE),,$(p)))
+make_apkcerts_file := $(intermediates)/$(name)-make.txt
+$(eval $(call _apkcerts_build_for_packages,$(make_apkcerts_file),$(make_apkcerts_packages)))
+
+soong_apkcerts_packages := $(foreach p,$(PACKAGES),$(if $(ALL_MODULES.$(p).IS_SOONG_MODULE),$(p)))
+soong_doublecheck_apkcerts_file := $(intermediates)/$(name)-soong-doublecheck.txt
+$(eval $(call _apkcerts_build_for_packages,$(soong_doublecheck_apkcerts_file),$(soong_apkcerts_packages)))
+
+soong_apkcerts_file_with_soong_and_make_modules_removed := $(intermediates)/$(name)-soong_apkcerts_file_with_soong_and_make_modules_removed.txt
+$(soong_apkcerts_file_with_soong_and_make_modules_removed): $(SOONG_APKCERTS_FILE)
+	rm -f $@ $@.tmp $@.tmp2
+	cp $(SOONG_APKCERTS_FILE) $@.tmp
+	$(foreach p,$(PACKAGES),$(if $(ALL_MODULES.$(p).IS_MAKE_AND_SOONG_MODULE),\
+		grep -v "^name=\"$(PACKAGES.$(p).STEM).apk\"" $@.tmp > $@.tmp2 && mv $@.tmp2 $@.tmp$(newline)))
+	mv $@.tmp $@
+
+soong_apkcerts_doublecheck_stamp := $(intermediates)/$(name)-soong-doublecheck-stamp.txt
+$(soong_apkcerts_doublecheck_stamp): $(soong_doublecheck_apkcerts_file) $(soong_apkcerts_file_with_soong_and_make_modules_removed)
+	rm -f $@ && diff -q $^ && touch $@
+
+$(APKCERTS_FILE): $(make_apkcerts_file) $(soong_apkcerts_file_with_soong_and_make_modules_removed) $(soong_apkcerts_doublecheck_stamp)
 	@echo APK certs list: $@
 	@mkdir -p $(dir $@)
 	@rm -f $@
-	$(foreach p,$(sort $(all_apkcerts_packages)),\
-	  $(if $(PACKAGES.$(p).APKCERTS_FILE),\
-	    $(call _apkcerts_merge,$(PACKAGES.$(p).APKCERTS_FILE), $@),\
-	    $(if $(PACKAGES.$(p).EXTERNAL_KEY),\
-	      $(call _apkcerts_write_line,$(PACKAGES.$(p).STEM),EXTERNAL,,$(PACKAGES.$(p).COMPRESSED),$(PACKAGES.$(p).PARTITION),$@),\
-	      $(call _apkcerts_write_line,$(PACKAGES.$(p).STEM),$(PACKAGES.$(p).CERTIFICATE),$(PACKAGES.$(p).PRIVATE_KEY),$(PACKAGES.$(p).COMPRESSED),$(PACKAGES.$(p).PARTITION),$@))))
+	cat $(make_apkcerts_file) $(soong_apkcerts_file_with_soong_and_make_modules_removed) > $@
 	$(if $(filter true,$(PRODUCT_FSVERITY_GENERATE_METADATA)),\
 	  $(call _apkcerts_write_line,BuildManifest,$(FSVERITY_APK_KEY_PATH).x509.pem,$(FSVERITY_APK_KEY_PATH).pk8,,system,$@) \
 	  $(if $(filter true,$(BUILDING_SYSTEM_EXT_IMAGE)),\
@@ -808,10 +832,6 @@ $(call declare-0p-target,$(APKCERTS_FILE))
 
 .PHONY: apkcerts-list
 apkcerts-list: $(APKCERTS_FILE)
-
-ifneq (,$(TARGET_BUILD_APPS))
-  $(call dist-for-goals, apps_only, $(APKCERTS_FILE):apkcerts.txt)
-endif
 
 # In unbundled builds, apexkeys.txt is built by soong
 ifeq (,$(TARGET_BUILD_APPS))
@@ -3503,6 +3523,7 @@ $(check-selinux-treble-labeling.timestamp): PRIVATE_VENDOR_SEAPP_CONTEXTS := $(v
 $(check-selinux-treble-labeling.timestamp): PRIVATE_VENDOR_FILE_CONTEXTS := $(vendor-file-contexts)
 $(check-selinux-treble-labeling.timestamp): PRIVATE_TRACKING_LIST_FILE := $(PRODUCT_SELINUX_TREBLE_LABELING_TRACKING_LIST_FILE)
 $(check-selinux-treble-labeling.timestamp): PRIVATE_TREAT_AS_WARNINGS := $(if $(filter true,$(PRODUCT_ENFORCE_SELINUX_TREBLE_LABELING)),,--treat_as_warnings)
+$(check-selinux-treble-labeling.timestamp): PRIVATE_DEBUGGABLE := $(if $(filter user,$(TARGET_BUILD_VARIANT)),,--debuggable)
 $(check-selinux-treble-labeling.timestamp): $(HOST_OUT_EXECUTABLES)/treble_labeling_tests \
     $(platform-preinstalled-apps) $(vendor-preinstalled-apps) \
     $(platform-sepolicy-binary) $(sepolicy-binary) $(sepolicy-binary-without-vendor) \
@@ -3518,13 +3539,16 @@ $(check-selinux-treble-labeling.timestamp): $(HOST_OUT_EXECUTABLES)/treble_label
     --vendor_seapp_contexts $(PRIVATE_VENDOR_SEAPP_CONTEXTS) \
     --vendor_file_contexts $(PRIVATE_VENDOR_FILE_CONTEXTS) \
     $(if $(PRIVATE_TRACKING_LIST_FILE),--tracking_list_file $(PRIVATE_TRACKING_LIST_FILE)) \
-    $(PRIVATE_TREAT_AS_WARNINGS) \
+    $(PRIVATE_TREAT_AS_WARNINGS) $(PRIVATE_DEBUGGABLE) \
     --aapt2_path $(AAPT2) > $@
 
 .PHONY: check-selinux-treble-labeling
 check-selinux-treble-labeling: $(check-selinux-treble-labeling.timestamp)
 
+# Treble Labeling tests only for 202604 or later
+ifeq ($(call math_gt_or_eq,$(PLATFORM_SEPOLICY_VERSION),202604),true)
 droidcore: check-selinux-treble-labeling
+endif
 
 platform-preinstalled-apps-patterns :=
 platform-preinstalled-apps :=
