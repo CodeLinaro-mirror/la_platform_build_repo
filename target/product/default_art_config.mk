@@ -113,6 +113,13 @@ else
 
 endif
 
+# When we release NSC in Conscrypt.
+ifeq ($(RELEASE_CONSCRYPT_NSC),true)
+    PRODUCT_APEX_BOOT_JARS += \
+    com.android.conscrypt:framework-conscrypt-nsc \
+
+endif
+
 # Check if the build supports NFC apex or not
 ifeq ($(RELEASE_PACKAGE_NFC_STACK),NfcNci)
     PRODUCT_BOOT_JARS += \

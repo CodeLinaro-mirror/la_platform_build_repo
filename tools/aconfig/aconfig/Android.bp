@@ -36,6 +36,10 @@ rust_defaults {
             true: ["enable_jarjar_flags_in_framwork"],
             default: [],
         }),
+    features: select(release_flag("RELEASE_ACONFIG_DEFAULT_EXPORTED_READS_TO_DISABLED"), {
+        true: ["default_exported_reads_to_disabled"],
+        default: [],
+    }),
 }
 
 rust_binary_host {

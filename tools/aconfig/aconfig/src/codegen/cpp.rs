@@ -567,7 +567,10 @@ namespace com::android::aconfig::test {
                     "system",
                     aconfig_storage::StorageFileType::package_map);
                 if (!package_map_file.ok()) {
+// Host doesn't have the package map file.
+#ifdef __ANDROID__
                     ALOGE("error: failed to get package map file: %s", package_map_file.error().c_str());
+#endif
                     package_exists_in_storage_ = false;
                     return;
                 }
@@ -722,8 +725,12 @@ namespace com::android::aconfig::test {
 
     };
 
-    std::unique_ptr<flag_provider_interface> provider_ =
-        std::make_unique<flag_provider>();
+    static flag_provider_interface* get_provider_instance() {
+        static flag_provider* instance_ = new flag_provider();
+        return instance_;
+    }
+
+    std::unique_ptr<flag_provider_interface> provider_(get_provider_instance());
 }
 
 bool com_android_aconfig_test_disabled_ro() {
@@ -794,7 +801,10 @@ namespace com::android::aconfig::test {
                     "system",
                     aconfig_storage::StorageFileType::package_map);
                 if (!package_map_file.ok()) {
+// Host doesn't have the package map file.
+#ifdef __ANDROID__
                     ALOGE("error: failed to get package map file: %s", package_map_file.error().c_str());
+#endif
                     package_exists_in_storage_ = false;
                     return;
                 }
@@ -979,8 +989,12 @@ namespace com::android::aconfig::test {
         bool fingerprint_matches_;
     };
 
-    std::unique_ptr<flag_provider_interface> provider_ =
-        std::make_unique<flag_provider>();
+    static flag_provider_interface* get_provider_instance() {
+        static flag_provider* instance_ = new flag_provider();
+        return instance_;
+    }
+
+    std::unique_ptr<flag_provider_interface> provider_(get_provider_instance());
 }
 
 bool com_android_aconfig_test_disabled_ro() {
@@ -1057,7 +1071,10 @@ namespace com::android::aconfig::test {
                     aconfig_storage::StorageFileType::package_map);
 
                 if (!package_map_file.ok()) {
+// Host doesn't have the package map file.
+#ifdef __ANDROID__
                     ALOGE("error: failed to get package map file: %s", package_map_file.error().c_str());
+#endif
                     package_exists_in_storage_ = false;
                     return;
                 }
@@ -1275,8 +1292,12 @@ namespace com::android::aconfig::test {
             }
     };
 
-    std::unique_ptr<flag_provider_interface> provider_ =
-        std::make_unique<flag_provider>();
+    static flag_provider_interface* get_provider_instance() {
+        static flag_provider* instance_ = new flag_provider();
+        return instance_;
+    }
+
+    std::unique_ptr<flag_provider_interface> provider_(get_provider_instance());
 }
 
 bool com_android_aconfig_test_disabled_ro() {
@@ -1400,8 +1421,12 @@ namespace com::android::aconfig::test {
             }
     };
 
-    std::unique_ptr<flag_provider_interface> provider_ =
-        std::make_unique<flag_provider>();
+    static flag_provider_interface* get_provider_instance() {
+        static flag_provider* instance_ = new flag_provider();
+        return instance_;
+    }
+
+    std::unique_ptr<flag_provider_interface> provider_(get_provider_instance());
 }
 
 bool com_android_aconfig_test_disabled_ro() {
@@ -1524,8 +1549,12 @@ namespace com::android::aconfig::test {
             }
     };
 
-    std::unique_ptr<flag_provider_interface> provider_ =
-        std::make_unique<flag_provider>();
+    static flag_provider_interface* get_provider_instance() {
+        static flag_provider* instance_ = new flag_provider();
+        return instance_;
+    }
+
+    std::unique_ptr<flag_provider_interface> provider_(get_provider_instance());
 }
 
 bool com_android_aconfig_test_disabled_fixed_ro() {

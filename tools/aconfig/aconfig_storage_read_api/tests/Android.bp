@@ -21,7 +21,7 @@ rust_test {
         "libanyhow",
         "libaconfig_storage_file",
         "libaconfig_storage_read_api",
-        "librand-0.8",
+        "librand",
     ],
     data: [
         ":read_api_test_storage_files",

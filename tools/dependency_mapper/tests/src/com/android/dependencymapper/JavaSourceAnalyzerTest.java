@@ -37,7 +37,7 @@ public class JavaSourceAnalyzerTest {
     public static void beforeClass() throws URISyntaxException {
         Path path = Paths.get(SOURCES_RSP_PATH);
         // Perform source analysis.
-        mJavaSourceDataList = JavaSourceAnalyzer.analyze(path);
+        mJavaSourceDataList = JavaSourceAnalyzer.parse(path);
     }
 
     @Test

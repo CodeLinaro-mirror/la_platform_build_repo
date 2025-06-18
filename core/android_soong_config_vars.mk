@@ -65,6 +65,7 @@ endif
 $(call soong_config_set_bool,ANDROID,ASAN_ENABLED,$(if $(filter address,$(SANITIZE_TARGET)),true,false))
 $(call soong_config_set_bool,ANDROID,HWASAN_ENABLED,$(if $(filter hwaddress,$(SANITIZE_TARGET)),true,false))
 $(call soong_config_set_bool,ANDROID,SANITIZE_TARGET_SYSTEM_ENABLED,$(if $(filter true,$(SANITIZE_TARGET_SYSTEM)),true,false))
+$(call soong_config_set_bool,ANDROID,HAS_SANITIZE_HOST,$(if $(SANITIZE_HOST),true,false))
 
 # For init.environ.rc
 $(call soong_config_set_bool,ANDROID,GCOV_COVERAGE,$(NATIVE_COVERAGE))
@@ -83,6 +84,15 @@ $(call soong_config_set,art_module,art_debug_opt_flag,$(ART_DEBUG_OPT_FLAG))
 endif
 # The default value of ART_BUILD_HOST_DEBUG is true
 $(call soong_config_set_bool,art_module,art_build_host_debug,$(if $(filter false,$(ART_BUILD_HOST_DEBUG)),false,true))
+
+# For ART_BUILD_TARGET in art/build/Android.common_build.mk
+# Sets 'art_module_build_target' to true unless both NDEBUG and DEBUG variables are explicitly 'false'.
+$(call soong_config_set_bool,art_module,art_build_target, \
+  $(if $(filter-out false_marker,$(ART_BUILD_TARGET_NDEBUG)_marker $(ART_BUILD_TARGET_DEBUG)_marker),true,false))
+# For ART_BUILD_HOST in art/build/Android.common_build.mk
+# Sets 'art_module_build_host' to true unless both NDEBUG and DEBUG variables are explicitly 'false'.
+$(call soong_config_set_bool,art_module,art_build_host, \
+  $(if $(filter-out false_marker,$(ART_BUILD_HOST_NDEBUG)_marker $(ART_BUILD_HOST_DEBUG)_marker),true,false))
 
 # For chre
 $(call soong_config_set_bool,chre,chre_daemon_lpma_enabled,$(if $(filter true,$(CHRE_DAEMON_LPMA_ENABLED)),true,false))
@@ -461,3 +471,6 @@ $(call soong_config_set_bool,fp_hal_feature,GOOGLE_CONFIG_TOUCH_TO_UNLOCK_ANYTIM
 $(call soong_config_set_bool,CLOCKWORK,CLOCKWORK_EMULATOR_PRODUCT,$(if $(filter true,$(CLOCKWORK_EMULATOR_PRODUCT)),true,false))
 $(call soong_config_set_bool,CLOCKWORK,CLOCKWORK_ENABLE_HEALTH_SERVICES_HAL,$(if $(filter true,$(CLOCKWORK_ENABLE_HEALTH_SERVICES_HAL)),true,false))
 $(call soong_config_set_bool,CLOCKWORK,CLOCKWORK_G3_BUILD,$(if $(filter true,$(CLOCKWORK_G3_BUILD)),true,false))
+
+# Flag for using SetupWizardCar certificate
+$(call soong_config_set_bool,AUTO,USE_AUTOMTIVE_SETUPWIZARD_TEST_CERTIFICATE,$(if $(filter true,$(USE_AUTOMTIVE_SETUPWIZARD_TEST_CERTIFICATE)),true,false))

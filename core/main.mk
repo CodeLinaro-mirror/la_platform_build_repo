@@ -1458,6 +1458,9 @@ else ifneq ($(TARGET_BUILD_APPS),)
   # If this build is just for apps, only build apps and not the full system by default.
   # The majority of this block has been converted to soong's unbundled_builder module.
 
+  apps_only_installed_files := $(foreach m,$(unbundled_build_modules),\
+    $(filter-out $(ALL_MODULES.$(m).INSTALLED_SYMLINKS),$(ALL_MODULES.$(m).INSTALLED)))
+
 apps_only: $(unbundled_build_modules)
 
 droid_targets: apps_only
