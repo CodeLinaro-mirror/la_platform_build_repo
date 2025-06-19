@@ -4051,16 +4051,18 @@ define ES_MOD_ORDER
 bootmarker_proxy spmi-pmic-arb qcom_hwspinlock qcom-cpufreq-hw qcom_cpu_vendor_hooks rtc-pm8xxx qnoc-qos gh_msgq debug_symbol smem pinctrl-slpi proxy-consumer nvmem_qcom-spmi-sdam msm_dma_iommu_mapping iommu-logger icc-debug debug-regulator cmd-db
 gh_rm_drv minidump qti-fixed-regulator gdsc-regulator llcc-qcom
 qcom-scm qcom_ipc_logging clk-qcom
-pinctrl-msm secure_buffer qcom_aoss qcom_rpmh qcom-pdc clk-dummy nvmem_qfprom dwc3-msm msm_gpi gpucc-sm8150 gpucc-sm6150 camcc-sm8150 camcc-sc8180x camcc-sm6150
-pinctrl-sm8150 pinctrl-sm6150 qcom_iommu_util socinfo icc-bcm-voter crypto-qti rpmh-regulator clk-rpmh dispcc-sm6150 debugcc-sm6150
-ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs gcc-sm8150 dispcc-sm8250 gcc-sc8180x gcc-sm6150
+pinctrl-msm secure_buffer qcom_aoss qcom_rpmh qcom-pdc clk-dummy nvmem_qfprom dwc3-msm msm_gpi
+pinctrl-sm8150 pinctrl-sm6150 qcom_iommu_util socinfo icc-bcm-voter crypto-qti rpmh-regulator clk-rpmh dispcc-sm6150 debugcc-sm6150 mem_buf_dev
+ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs gcc-sm8150 dispcc-sm8250 gcc-sc8180x gcc-sm6150 qcom_dma_heaps
 ufs_qcom qnoc-sm8150 qnoc-sc8180x-auto qnoc-sm6150 phy-qcom-ufs-qmp-v4 phy-qcom-ufs-qmp-v3-660
 
 endef
 
 # Default modules - second set
 define ES_MOD_ORDER_2
-reboot-mode llcc-qcom qcom_wdt_core phy-generic phy-msm-ssusb-qmp usb_f_diag sdhci-msm-scaling
+reboot-mode llcc-qcom mem_buf_dev qcom_wdt_core phy-generic phy-msm-ssusb-qmp usb_f_diag sdhci-msm-scaling
+usb_f_cdev usb_f_qdss qcom-pon qcom_dma_heaps qcom-spmi-pmic msm_gpi mem_buf_msgq qrtr msm_qmp qcom-rpmh-regulator cqhci
+sdhci-msm qcom-dload-mode pinctrl-sdmshrike mem_buf qcom_soc_wdt
 
 endef
 
@@ -4080,14 +4082,10 @@ endef
 
 # MM Display modules
 define ES_MOD_ORDER_DI
-qcom_glink qcom_smd msm_gpi
-qcom_glink_smem scc-sm8150 scc-sm6150
-rproc_qcom_common
-qcom-geni-se-ssc
-qcom-apcs-ipc-mailbox silent_boot refgen qseecom_proxy drm_display_helper drm_dp_aux_bus i2c-mux pinctrl-sx150x msm_geni_serial llcc-qcom mem_buf_dev
+mdt_loader qcom-apcs-ipc-mailbox silent_boot refgen qseecom_proxy drm_display_helper drm_dp_aux_bus i2c-mux pinctrl-sx150x msm_geni_serial scc-sm8150 scc-sm6150 llcc-qcom mem_buf_dev
 silent-mode-hw-monitoring qseecom_dlkm
 i2c-mux-pca954x spidev smcinvoke_dlkm
-hdcp_qseecom_dlkm
+hdcp_qseecom_dlkm msm_gpi
 spi-msm-geni i2c-msm-geni
 anx7625
 msm_drm
@@ -4106,7 +4104,7 @@ endef
 define ES_MOD_ORDER_RV
 qcom_llcc_pmu
 qcom-pmu-lib
-dcvs_fp msm_performance nvmem_qfprom
+dcvs_fp msm_performance nvmem_qfprom mdt_loader
 qcom-dcvs
 msm_kgsl
 
@@ -4120,17 +4118,13 @@ endef
 
 # MM Audio modules
 define ES_MOD_ORDER_AU
-qmi_helpers
-smp2p_sleepstate
-qcom_pil_info
-qcom_ramdump
-qcom_glink qcom_smd smp2p pdr_interface
-qcom_glink_smem qcom_glink_spss
+smp2p stub_dlkm_legacy snd_event_dlkm_legacy qcom_smd qcom_glink qcom_ramdump qcom_pil_info smp2p_sleepstate qmi_helpers mdt_loader
+qrtr-smd qcom_glink_spss qcom_glink_smem pdr_interface
 rproc_qcom_common
 qcom_sysmon
-qcom_q6v5
-qrtr-smd qcom_q6v5_pas qcom_spss
-snd_event_dlkm_legacy q6_notifier_dlkm_legacy stub_dlkm_legacy
+qcom_q6v5 qcom_spss
+qcom_q6v5_pas
+q6_notifier_dlkm_legacy
 apr_dlkm
 adsp_loader_dlkm_legacy q6_dlkm_legacy
 platform_dlkm
