@@ -3405,7 +3405,6 @@ ES_MOD_PATH := "/lib/modules"
 ES_DEFAULT_LKMS := \
    ais \
    msm_kgsl \
-   msm-vidc \
    snd_event_dlkm \
    q6_pdr_dlkm \
    stub_dlkm \
@@ -3498,7 +3497,9 @@ endef
 
 # MM Video modules
 define ES_MOD_ORDER_VI
-videocc-sm8150 msm-vidc
+videocc-kalama
+llcc-qcom qcom-scm mdt_loader msm-mmrm  mem_buf_dev
+msm_video
 
 endef
 
@@ -3657,6 +3658,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -r $(TARGET_RAMDISK_OUT)/vendor_early_services/bin/early_services_init $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
   mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/firmware_mnt; \
   cp -r $(PRODUCT_OUT)/vendor_dlkm/lib/modules/pinctrl-spmi-gpio.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/ ;\
+  cp -r $(PRODUCT_OUT)/vendor_dlkm/lib/modules/msm_video.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/ ;\
   cp -r $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
   cp -rf $(PRODUCT_OUT)/obj/ETC/precompiled_sepolicy_intermediates/precompiled_sepolicy  $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
