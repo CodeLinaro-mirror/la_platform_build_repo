@@ -563,14 +563,17 @@ namespace com::android::aconfig::test {
                     cache_[i] = -1;
                 }
 
+// Storage files are only available on Android, not on host.
+#ifndef __ANDROID__
+                package_exists_in_storage_ = false;
+                return;
+#endif
+
                 auto package_map_file = aconfig_storage::get_mapped_file(
                     "system",
                     aconfig_storage::StorageFileType::package_map);
                 if (!package_map_file.ok()) {
-// Host doesn't have the package map file.
-#ifdef __ANDROID__
                     ALOGE("error: failed to get package map file: %s", package_map_file.error().c_str());
-#endif
                     package_exists_in_storage_ = false;
                     return;
                 }
@@ -617,7 +620,6 @@ namespace com::android::aconfig::test {
             virtual bool disabled_rw() override {
                 if (cache_[0].load(std::memory_order_relaxed) == -1) {
                     if (!package_exists_in_storage_) {
-                        ALOGE("error: package does not exist, returning flag default value.");
                         return false;
                     }
 
@@ -638,7 +640,6 @@ namespace com::android::aconfig::test {
             virtual bool disabled_rw_exported() override {
                 if (cache_[1].load(std::memory_order_relaxed) == -1) {
                     if (!package_exists_in_storage_) {
-                        ALOGE("error: package does not exist, returning flag default value.");
                         return false;
                     }
 
@@ -659,7 +660,6 @@ namespace com::android::aconfig::test {
             virtual bool disabled_rw_in_other_namespace() override {
                 if (cache_[2].load(std::memory_order_relaxed) == -1) {
                     if (!package_exists_in_storage_) {
-                        ALOGE("error: package does not exist, returning flag default value.");
                         return false;
                     }
 
@@ -696,7 +696,6 @@ namespace com::android::aconfig::test {
             virtual bool enabled_rw() override {
                 if (cache_[3].load(std::memory_order_relaxed) == -1) {
                     if (!package_exists_in_storage_) {
-                        ALOGE("error: package does not exist, returning flag default value.");
                         return true;
                     }
 
@@ -797,14 +796,17 @@ namespace com::android::aconfig::test {
                     cache_[i] = -1;
                 }
 
+// Storage files are only available on Android, not on host.
+#ifndef __ANDROID__
+                package_exists_in_storage_ = false;
+                return;
+#endif
+
                 auto package_map_file = aconfig_storage::get_mapped_file(
                     "system",
                     aconfig_storage::StorageFileType::package_map);
                 if (!package_map_file.ok()) {
-// Host doesn't have the package map file.
-#ifdef __ANDROID__
                     ALOGE("error: failed to get package map file: %s", package_map_file.error().c_str());
-#endif
                     package_exists_in_storage_ = false;
                     return;
                 }
@@ -857,7 +859,6 @@ namespace com::android::aconfig::test {
             virtual bool disabled_rw() override {
                 if (cache_[0].load(std::memory_order_relaxed) == -1) {
                     if (!package_exists_in_storage_) {
-                        ALOGE("error: package does not exist, returning flag default value.");
                         return false;
                     }
 
@@ -883,7 +884,6 @@ namespace com::android::aconfig::test {
             virtual bool disabled_rw_exported() override {
                 if (cache_[1].load(std::memory_order_relaxed) == -1) {
                     if (!package_exists_in_storage_) {
-                        ALOGE("error: package does not exist, returning flag default value.");
                         return false;
                     }
 
@@ -910,7 +910,6 @@ namespace com::android::aconfig::test {
             virtual bool disabled_rw_in_other_namespace() override {
                 if (cache_[2].load(std::memory_order_relaxed) == -1) {
                     if (!package_exists_in_storage_) {
-                        ALOGE("error: package does not exist, returning flag default value.");
                         return false;
                     }
 
@@ -953,7 +952,6 @@ namespace com::android::aconfig::test {
             virtual bool enabled_rw() override {
                 if (cache_[3].load(std::memory_order_relaxed) == -1) {
                     if (!package_exists_in_storage_) {
-                        ALOGE("error: package does not exist, returning flag default value.");
                         return true;
                     }
 
@@ -1066,15 +1064,18 @@ namespace com::android::aconfig::test {
                 , flag_value_file_(nullptr)
                 , package_exists_in_storage_(true) {
 
+// Storage files are only available on Android, not on host.
+#ifndef __ANDROID__
+                package_exists_in_storage_ = false;
+                return;
+#endif
+
                 auto package_map_file = aconfig_storage::get_mapped_file(
                      "system",
                     aconfig_storage::StorageFileType::package_map);
 
                 if (!package_map_file.ok()) {
-// Host doesn't have the package map file.
-#ifdef __ANDROID__
                     ALOGE("error: failed to get package map file: %s", package_map_file.error().c_str());
-#endif
                     package_exists_in_storage_ = false;
                     return;
                 }
@@ -1133,7 +1134,6 @@ namespace com::android::aconfig::test {
                       return it->second;
                 } else {
                     if (!package_exists_in_storage_) {
-                        ALOGE("error: package does not exist, returning flag default value.");
                         return false;
                     }
 
@@ -1160,7 +1160,6 @@ namespace com::android::aconfig::test {
                       return it->second;
                 } else {
                     if (!package_exists_in_storage_) {
-                        ALOGE("error: package does not exist, returning flag default value.");
                         return false;
                     }
 
@@ -1187,7 +1186,6 @@ namespace com::android::aconfig::test {
                       return it->second;
                 } else {
                     if (!package_exists_in_storage_) {
-                        ALOGE("error: package does not exist, returning flag default value.");
                         return false;
                     }
 
@@ -1266,7 +1264,6 @@ namespace com::android::aconfig::test {
                       return it->second;
                 } else {
                     if (!package_exists_in_storage_) {
-                        ALOGE("error: package does not exist, returning flag default value.");
                         return true;
                     }
 

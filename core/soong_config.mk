@@ -482,6 +482,10 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, InternalBootconfigFile, $(INTERNAL_BOOTCONFIG_FILE))
   $(call add_json_str, BoardPrebuiltBootImage, $(BOARD_PREBUILT_BOOTIMAGE))
   $(call add_json_str, BoardKernelPath16k, $(BOARD_KERNEL_PATH_16K))
+  $(call add_json_str, BoardPrebuiltDtboImage, $(BOARD_PREBUILT_DTBOIMAGE))
+  $(call add_json_str, BoardDtboPartitionSize, $(BOARD_DTBOIMG_PARTITION_SIZE))
+  $(call add_json_str, BoardPrebuiltDtboImage16kb, $(BOARD_PREBUILT_DTBOIMAGE_16KB))
+  $(call add_json_bool, Board16kOtaUseIncremental, $(BOARD_16K_OTA_USE_INCREMENTAL))
 
   $(call add_json_bool, BuildingSystemOtherImage, $(BUILDING_SYSTEM_OTHER_IMAGE))
 
