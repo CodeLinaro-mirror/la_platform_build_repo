@@ -107,9 +107,11 @@ $(call add_json_str,  AAPTPreferredConfig,               $(PRODUCT_AAPT_PREF_CON
 $(call add_json_list, AAPTPrebuiltDPI,                   $(PRODUCT_AAPT_PREBUILT_DPI))
 
 $(call add_json_str,  DefaultAppCertificate,             $(PRODUCT_DEFAULT_DEV_CERTIFICATE))
+$(call add_json_str,  DefaultSystemDevCertificate,       $(DEFAULT_SYSTEM_DEV_CERTIFICATE))
 $(call add_json_list, ExtraOtaKeys,                      $(PRODUCT_EXTRA_OTA_KEYS))
 $(call add_json_list, ExtraOtaRecoveryKeys,              $(PRODUCT_EXTRA_RECOVERY_KEYS))
 $(call add_json_str,  MainlineSepolicyDevCertificates,   $(MAINLINE_SEPOLICY_DEV_CERTIFICATES))
+$(call add_json_str,  MainlineBluetoothSepolicyDevCertificates,   $(MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES))
 
 $(call add_json_str,  AppsDefaultVersionName,            $(APPS_DEFAULT_VERSION_NAME))
 
@@ -478,6 +480,8 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_list, InternalKernelCmdline, $(INTERNAL_KERNEL_CMDLINE))
   $(call add_json_list, InternalBootconfig, $(INTERNAL_BOOTCONFIG))
   $(call add_json_str, InternalBootconfigFile, $(INTERNAL_BOOTCONFIG_FILE))
+  $(call add_json_str, BoardPrebuiltBootImage, $(BOARD_PREBUILT_BOOTIMAGE))
+  $(call add_json_str, BoardKernelPath16k, $(BOARD_KERNEL_PATH_16K))
 
   $(call add_json_bool, BuildingSystemOtherImage, $(BUILDING_SYSTEM_OTHER_IMAGE))
 
@@ -627,7 +631,9 @@ else
 endif
 $(call add_json_list, SystemExtManifestFiles, $(SYSTEM_EXT_MANIFEST_FILES) $(SYSTEM_EXT_HWSERVICE_FILES))
 $(call add_json_list, DeviceManifestFiles, $(DEVICE_MANIFEST_FILE))
+$(call add_json_list, DeviceManifestSkus, $(DEVICE_MANIFEST_SKUS))
 $(call add_json_list, OdmManifestFiles, $(ODM_MANIFEST_FILES))
+$(call add_json_list, OdmManifestSkus, $(ODM_MANIFEST_SKUS))
 
 $(call add_json_map,CompatibilityTestcases)
 $(foreach suite,$(sort $(patsubst COMPATIBILITY_TESTCASES_OUT_%,%,$(filter-out COMPATIBILITY_TESTCASES_OUT_INCLUDE_MODULE_FOLDER_%,$(filter COMPATIBILITY_TESTCASES_OUT_%,$(.VARIABLES))))),\
@@ -642,6 +648,8 @@ $(call add_json_list, ProductHostPackages, $(PRODUCT_HOST_PACKAGES))
 $(call add_json_bool, EnforceSELinuxTrebleLabeling, $(filter true,$(PRODUCT_ENFORCE_SELINUX_TREBLE_LABELING)))
 
 $(call add_json_str, SELinuxTrebleLabelingTrackingListFile, $(filter true,$(PRODUCT_SELINUX_TREBLE_LABELING_TRACKING_LIST_FILE)))
+
+$(call add_json_bool, BuildOTAPackage, $(call invert_bool,$(filter true,$(TARGET_SKIP_OTA_PACKAGE))))
 
 $(call json_end)
 

@@ -1061,6 +1061,7 @@ $(INSTALLED_DTBOIMAGE_TARGET): $(BOARD_PREBUILT_DTBOIMAGE) $(AVBTOOL) $(BOARD_AV
 	$(AVBTOOL) add_hash_footer \
 	    --image $@ \
 	    $(call get-partition-size-argument,$(BOARD_DTBOIMG_PARTITION_SIZE)) \
+	    $(if $(RELEASE_DTBO_DETERMINISTIC_AVB_SALT), --salt $$(sha256sum $(BUILD_NUMBER_FILE) $(BUILD_DATETIME_FILE) | cut -d " " -f 1 | tr -d '\n') ) \
 	    --partition_name dtbo $(INTERNAL_AVB_DTBO_SIGNING_ARGS) \
 	    $(BOARD_AVB_DTBO_ADD_HASH_FOOTER_ARGS)
 
@@ -1200,6 +1201,7 @@ $(INSTALLED_DTBOIMAGE_16KB_TARGET): $(BOARD_PREBUILT_DTBOIMAGE_16KB) $(AVBTOOL) 
 	$(AVBTOOL) add_hash_footer \
 	    --image $@ \
 	    $(call get-partition-size-argument,$(BOARD_DTBOIMG_PARTITION_SIZE)) \
+	    $(if $(RELEASE_DTBO_DETERMINISTIC_AVB_SALT), --salt $$(sha256sum $(BUILD_NUMBER_FILE) $(BUILD_DATETIME_FILE) | cut -d " " -f 1 | tr -d '\n') ) \
 	    --partition_name dtbo $(INTERNAL_AVB_DTBO_SIGNING_ARGS) \
 	    $(BOARD_AVB_DTBO_ADD_HASH_FOOTER_ARGS)
 
@@ -7280,6 +7282,14 @@ _symbols_zip_modules := $(call product-installed-modules,$(INTERNAL_PRODUCT))
 _symbols_zip_modules_symbols_files := $(foreach m,$(_symbols_zip_modules),$(ALL_MODULES.$(m).SYMBOLIC_OUTPUT_PATH))
 _symbols_zip_modules_mapping_files := $(foreach m,$(_symbols_zip_modules),$(ALL_MODULES.$(m).ELF_SYMBOL_MAPPING_PATH))
 
+.PHONY: symbols-files
+symbols-files: $(_symbols_zip_modules_symbols_files)
+droidcore-unbundled: symbols-files
+
+.PHONY: symbols-mappings
+symbols-mappings: $(_symbols_zip_modules_mapping_files)
+droidcore-unbundled: symbols-mappings
+
 $(SYMBOLS_ZIP): PRIVATE_SYMBOLS_MODULES_FILES := $(_symbols_zip_modules_symbols_files)
 $(SYMBOLS_ZIP): PRIVATE_SYMBOLS_MODULES_MAPPING_FILES := $(_symbols_zip_modules_mapping_files)
 $(SYMBOLS_ZIP): $(SOONG_ZIP) $(SYMBOLS_MAP) $(_symbols_zip_modules_symbols_files) $(_symbols_zip_modules_mapping_files)
@@ -7987,9 +7997,9 @@ endif # PACK_DESKTOP_ESP_IMAGE
 # This artifact is used in two places:
 # 1. Packed into the recovery image.
 # 2. Added into DIST_DIR so that lab provisioning can download the firmware.
-TARGET_PRODUCT_FW_IMAGE_PACKAGE := gen-$(TARGET_PRODUCT)-firmware-image
-GENERATED_FW_IMAGE := $(call module-built-files,$(TARGET_PRODUCT_FW_IMAGE_PACKAGE))
+GENERATED_FW_IMAGE := $(call module-built-files,desktop-firmware-squashfs)
 
+# The lab provisioning script expects the format BOARD-firmware.img.
 ifneq (,$(GENERATED_FW_IMAGE))
 $(call dist-for-goals,dist_files,$(GENERATED_FW_IMAGE):${TARGET_PRODUCT}-firmware.img)
 endif

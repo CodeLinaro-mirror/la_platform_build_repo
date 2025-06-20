@@ -61,6 +61,7 @@ class OptimizedBuildTarget(ABC):
         logging.error(f'error while getting build targets: {e}')
         metrics_agent_instance = metrics_agent.MetricsAgent.instance()
         metrics_agent_instance.report_unoptimized_target(self.target, f'Error in optimized target for {self.target}: {repr(e)}')
+        self.modules_to_build = {self.target}
         return {self.target}
 
     if self.target == 'general-tests':
@@ -71,6 +72,9 @@ class OptimizedBuildTarget(ABC):
   def get_package_outputs_commands(self) -> list[list[str]]:
     features = self.build_context.enabled_build_features
     if self.get_enabled_flag() in features:
+      # If there was a fallback, don't try to do the packaging logic
+      if self.modules_to_build == {self.target}:
+        return []
       return self.get_package_outputs_commands_impl()
 
     return []
