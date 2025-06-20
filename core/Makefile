@@ -3423,6 +3423,9 @@ ES_DEFAULT_LKMS := \
 
 # Default modules - first set; Last set auto-generated modules_end.order
 define ES_MOD_ORDER
+gcc-kalama qnoc-kalama dispcc-kalama pinctrl-kalama clk-dummy pinctrl-spmi-gpio
+tcsrcc-kalama camcc-kalama dispcc-crow videocc-kalama phy-qcom-ufs-qmp-v4-kalama
+
 spmi-pmic-arb qcom_hwspinlock qcom-cpufreq-hw rtc-pm8xxx regmap-spmi qnoc-qos qcom_ipc_logging qcom-scm  proxy-consumer nvmem_qcom-spmi-sdam msm_dma_iommu_mapping iommu-logger icc-debug gh_msgq debug-regulator cmd-db
 pinctrl-msm smem gh_rm_drv secure_buffer qcom_rpmh qcom_aoss  qti-fixed-regulator gdsc-regulator qcom-pdc proxy-consumer  qcom_iommu_util soc_sleep_stats socinfo icc-bcm-voter minidump crypto-qti-common rpmh-regulator clk-qcom clk-rpmh
 ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs ufs_qcom  phy-qcom-ufs-qmp-v4
@@ -3450,8 +3453,37 @@ endef
 # MM Display modules
 define ES_MOD_ORDER_DI
 msm_geni_serial 
-qcom_va_minidump llcc-qcom  hdcp_qseecom_dlkm
- spi-msm-geni i2c-msm-geni
+llcc-qcom
+spi-msm-geni i2c-msm-geni
+msm_ext_display
+qcom_glink
+qcom_glink_smem
+qcom_smd
+rproc_qcom_common
+qseecom_proxy
+qmi_helpers
+pdr_interface
+pmic_glink
+ucsi_glink
+wcd_usbss_i2c
+fsa4480-i2c
+redriver
+dwc3-msm
+qcom_va_minidump
+msm-mmrm
+panel_event_notifier
+altmode-glink
+hdcp_qseecom_dlkm
+sync_fence
+msm_hw_fence
+mem_buf_dev
+qcom_iommu_util
+qcom_rpmh
+pinctrl-msm
+msm_dma_iommu_mapping
+qcom-scm
+qcom_ipc_logging
+spmi-pmic-arb
 msm_drm
 
 endef
