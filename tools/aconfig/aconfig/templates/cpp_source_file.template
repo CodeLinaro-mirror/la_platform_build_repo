@@ -50,15 +50,17 @@ namespace {cpp_namespace} \{
             , package_exists_in_storage_(true) \{
             {{ -endif }}{#- end of use_package_fingerprint #}
 
+// Storage files are only available on Android, not on host.
+#ifndef __ANDROID__
+            package_exists_in_storage_ = false;
+            return;
+#endif
             auto package_map_file = aconfig_storage::get_mapped_file(
                  "{container}",
                  aconfig_storage::StorageFileType::package_map);
 
             if (!package_map_file.ok()) \{
-// Host doesn't have the package map file.
-#ifdef __ANDROID__
                 ALOGE("error: failed to get package map file: %s", package_map_file.error().c_str());
-#endif
                 package_exists_in_storage_ = false;
                 return;
             }
@@ -119,7 +121,6 @@ namespace {cpp_namespace} \{
             } else \{
                 {{ if item.readwrite- }}
                 if (!package_exists_in_storage_) \{
-                    ALOGE("error: package does not exist, returning flag default value.");
                     return {item.default_value};
                 }
                 {{ if use_package_fingerprint- }}
@@ -176,14 +177,16 @@ namespace {cpp_namespace} \{
                 cache_[i] = -1;
             }
 
+// Storage files are only available on Android, not on host.
+#ifndef __ANDROID__
+            package_exists_in_storage_ = false;
+            return;
+#endif
             auto package_map_file = aconfig_storage::get_mapped_file(
                  "{container}",
                  aconfig_storage::StorageFileType::package_map);
             if (!package_map_file.ok()) \{
-// Host doesn't have the package map file.
-#ifdef __ANDROID__
                 ALOGE("error: failed to get package map file: %s", package_map_file.error().c_str());
-#endif
                 package_exists_in_storage_ = false;
                 return;
             }
@@ -236,7 +239,6 @@ namespace {cpp_namespace} \{
             {{ -if item.readwrite }}
             if (cache_[{item.readwrite_idx}].load(std::memory_order_relaxed) == -1) \{
                 if (!package_exists_in_storage_) \{
-                    ALOGE("error: package does not exist, returning flag default value.");
                     return {item.default_value};
                 }
                 {{ if use_package_fingerprint- }}
