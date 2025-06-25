@@ -3427,7 +3427,9 @@ tcsrcc-kalama camcc-kalama dispcc-crow videocc-kalama phy-qcom-ufs-qmp-v4-kalama
 
 spmi-pmic-arb qcom_hwspinlock qcom-cpufreq-hw rtc-pm8xxx regmap-spmi qnoc-qos qcom_ipc_logging qcom-scm  proxy-consumer nvmem_qcom-spmi-sdam msm_dma_iommu_mapping iommu-logger icc-debug gh_msgq debug-regulator cmd-db
 pinctrl-msm smem gh_rm_drv secure_buffer qcom_rpmh qcom_aoss  qti-fixed-regulator gdsc-regulator qcom-pdc proxy-consumer  qcom_iommu_util soc_sleep_stats socinfo icc-bcm-voter minidump crypto-qti-common rpmh-regulator clk-qcom clk-rpmh
-ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs ufs_qcom  phy-qcom-ufs-qmp-v4
+ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs ufs_qcom  phy-qcom-ufs-qmp-v4 stub-regulator
+
+coresight qcom_va_minidump plh_vendor plh_scmi msm_performance nvmem_qfprom gpucc-kalama qcom-pmu-lib qcom_rimps dcvs_fp qcom_llcc_pmu mdt_loader qcom-dcvs qcom_ipcc tmecom-intf
 
 endef
 
@@ -3506,7 +3508,6 @@ define ES_MOD_ORDER_RV_GEN4
 gpucc-lemans dcvs_fp qcom_llcc_pmu mdt_loader nvmem_qfprom qcom_ipcc
 qcom-dcvs qcom-pmu-lib
 msm_performance
-msm_kgsl
 
 endef
 
@@ -3515,7 +3516,6 @@ define ES_MOD_ORDER_RV
 dcvs_fp scc-sm8150
 qcom-dcvs gpucc-sm8150
 nvmem_qfprom
-msm_kgsl
 
 endef
 
@@ -3675,6 +3675,8 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ;\
   $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_2}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
   sed -e '$(call es_mod_list,${ES_MOD_ORDER}${ES_MOD_ORDER_2})' "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" | sed 's/.ko//' > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end.order" ;\
+  echo msm_kgsl >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end.order" ;\
+  echo "/lib/modules/msm_kgsl.ko: /lib/modules/msm_performance.ko /lib/modules/plh_scmi.ko /lib/modules/boot_stats.ko /lib/modules/soc_sleep_stats.ko /lib/modules/qcom_va_minidump.ko /lib/modules/coresight.ko" >> "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.dep" ;\
   echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ;\
   $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_DI}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
   sed -e '$(call es_mod_list,${ES_MOD_ORDER_GEN4})' "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" | sed 's/.ko//' > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end_gen4.order" ;\
@@ -3691,6 +3693,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/firmware_mnt; \
   cp -r $(PRODUCT_OUT)/vendor_dlkm/lib/modules/pinctrl-spmi-gpio.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/ ;\
   cp -r $(PRODUCT_OUT)/vendor_dlkm/lib/modules/msm_video.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/ ;\
+  cp -r $(PRODUCT_OUT)/vendor_dlkm/lib/modules/msm_kgsl.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/ ;\
   cp -r $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
   cp -rf $(PRODUCT_OUT)/obj/ETC/precompiled_sepolicy_intermediates/precompiled_sepolicy  $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
