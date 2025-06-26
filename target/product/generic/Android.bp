@@ -735,6 +735,7 @@ system_image_defaults {
             "layertracegenerator",
             "logpersist.start",
             "logtagd.rc",
+            "lpmodify",
             "ot-cli-ftd",
             "ot-ctl",
             "overlay_remounter",

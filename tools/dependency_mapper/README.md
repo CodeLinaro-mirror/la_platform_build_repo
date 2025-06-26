@@ -33,5 +33,5 @@ dependency-mapper --src-path <src-list.rsp> --jar-path <classes.jar>  --cross-mo
 ```
 
 # Notes
-## Dependencies enlisted are only within the java files present in input.
-## To ensure dependencies are listed correctly classes jar should contain every class files generated from each source file.
+* Dependencies enlisted are only within the java files present in input.
+* To ensure dependencies are listed correctly classes jar should contain every class files generated from each source file.
