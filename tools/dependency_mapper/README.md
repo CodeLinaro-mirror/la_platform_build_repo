@@ -35,3 +35,4 @@ dependency-mapper --src-path <src-list.rsp> --jar-path <classes.jar>  --cross-mo
 # Notes
 * Dependencies enlisted are only within the java files present in input.
 * To ensure dependencies are listed correctly classes jar should contain every class files generated from each source file.
+* Run `m dependency-mapper-test-data` when adding new testfiles, then copy the output jar to tests/res/testfiles location.
