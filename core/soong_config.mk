@@ -494,6 +494,10 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, BootloaderFilePath, $(BOOTLOADER_FILE_PATH))
   $(call add_json_list, AbOtaBootloaderPartitions, $(AB_OTA_BOOTLOADER_PARTITIONS))
 
+  # pvmfw
+  $(call add_json_bool, BoardUsesPvmfwImage, $(BOARD_USES_PVMFWIMAGE))
+  $(call add_json_str, BoardPvmfwPartitionSize, $(BOARD_PVMFWIMAGE_PARTITION_SIZE))
+
   $(call add_json_bool, BuildingSystemOtherImage, $(BUILDING_SYSTEM_OTHER_IMAGE))
 
   # super image stuff
