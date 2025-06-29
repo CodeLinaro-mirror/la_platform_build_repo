@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
 public class JavaSourceAnalyzer {
 
     // Regex that matches against "package abc.xyz.lmn;" declarations in a java file.
-    private static final String PACKAGE_REGEX = "^package\\s+([a-zA-Z_][a-zA-Z0-9_.]*);";
+    private static final String PACKAGE_REGEX = "^\\s*package\\s+([a-zA-Z_][a-zA-Z0-9_.]*);";
 
     public static List<JavaSourceData> parse(Path srcRspFile) {
         Set<String> files = Utils.parseRspFile(srcRspFile);
@@ -47,7 +47,7 @@ public class JavaSourceAnalyzer {
     private static String constructPackagePrependedFileName(String filePath) {
         String packageAppendedFileName = null;
         // if the file path is abc/def/ghi/JavaFile.java we extract JavaFile.java
-        String javaFileName = filePath.substring(filePath.lastIndexOf("/") + 1);
+        String packagePrependedFileName = filePath.substring(filePath.lastIndexOf("/") + 1);
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
             // Process each line and match against the package regex pattern.
@@ -55,7 +55,7 @@ public class JavaSourceAnalyzer {
                 Pattern pattern = Pattern.compile(PACKAGE_REGEX);
                 Matcher matcher = pattern.matcher(line);
                 if (matcher.find()) {
-                    packageAppendedFileName = matcher.group(1) + "." + javaFileName;
+                    packagePrependedFileName = matcher.group(1) + "." + packagePrependedFileName;
                     break;
                 }
             }
@@ -63,8 +63,6 @@ public class JavaSourceAnalyzer {
             System.err.println("Error reading java file at: " + filePath);
             throw new RuntimeException(e);
         }
-        // Should not be null
-        assert packageAppendedFileName != null;
-        return packageAppendedFileName;
+        return packagePrependedFileName;
     }
 }

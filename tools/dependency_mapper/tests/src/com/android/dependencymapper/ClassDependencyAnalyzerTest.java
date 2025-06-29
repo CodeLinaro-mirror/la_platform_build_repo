@@ -138,13 +138,20 @@ public class ClassDependencyAnalyzerTest {
 
     @Test
     public void testMethodDeps() {
-        String fieldUsage = "res.testdata.methods.FieldUsage";
+        String fieldUsage1 = "res.testdata.methods.FieldUsage";
+        String fieldUsage2 = "WithoutPackageClass";
         String methodUsage = "res.testdata.methods.MethodUsage";
         String ref1 = "res.testdata.methods.ReferenceClass1";
         String ref2 = "res.testdata.methods.ReferenceClass2";
 
         dependencyVerifier(
-                fieldUsage,
+                fieldUsage1,
+                new HashSet<>(List.of(ref1)),
+                new HashSet<>(List.of(ref2)),
+                mClassDependencyDataList,
+                ClassDependencyData::getClassDependencies);
+        dependencyVerifier(
+                fieldUsage2,
                 new HashSet<>(List.of(ref1)),
                 new HashSet<>(List.of(ref2)),
                 mClassDependencyDataList,
@@ -157,7 +164,13 @@ public class ClassDependencyAnalyzerTest {
                 ClassDependencyData::getClassDependencies);
 
         dependencyVerifier(
-                fieldUsage,
+                fieldUsage1,
+                new HashSet<>(List.of(ref1)),
+                new HashSet<>(List.of(ref2)),
+                mCrossModuleClassDependencyDataList,
+                ClassDependencyData::getCrossModuleClassDependencies);
+        dependencyVerifier(
+                fieldUsage2,
                 new HashSet<>(List.of(ref1)),
                 new HashSet<>(List.of(ref2)),
                 mCrossModuleClassDependencyDataList,

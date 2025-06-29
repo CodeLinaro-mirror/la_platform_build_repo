@@ -146,7 +146,9 @@ public class DependencyMapper {
                             + "' does not have a corresponding source file.");
                     return;
                 }
-                mFileDependencies.get(sourceFile).add(dependencySource);
+                if (!sourceFile.equals(dependencySource)) {
+                    mFileDependencies.get(sourceFile).add(dependencySource);
+                }
             });
         });
     }

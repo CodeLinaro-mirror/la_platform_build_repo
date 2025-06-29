@@ -66,6 +66,8 @@ public class JavaSourceAnalyzerTest {
                 "res.testdata.inheritance.BaseClass.java");
         expectedSourceData.put("tests/res/testdata/methods/FieldUsage.java",
                 "res.testdata.methods.FieldUsage.java");
+        expectedSourceData.put("tests/res/testdata/WithoutPackageClass.java",
+            "WithoutPackageClass.java");
         return expectedSourceData;
     }
 }
