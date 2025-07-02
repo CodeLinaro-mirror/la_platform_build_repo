@@ -3399,7 +3399,7 @@ ifeq ($(BOARD_AVB_ENABLE),true)
 ifdef BUILDING_VENDOR_BOOT_IMAGE
 
 ES_VNDR_MOD_PATH := "/vendor_early_services/vendor/lib/modules"
-ES_MOD_PATH := "/lib/modules"
+ES_MOD_PATH := "/vendor_early_services/lib/modules"
 
 # strip debug info and copied to ES mods
 ES_DEFAULT_LKMS := \
@@ -3537,13 +3537,11 @@ endef
 
 # MM Audio reach modules
 define ES_MOD_ORDER_R_AU
-qmi_helpers
 smp2p_sleepstate
 qcom_pil_info
 qcom_ramdump
-qcom_glink qcom_smd smp2p msm_gpi pdr_interface
-qcom_glink_smem qcom_glink_spss
-rproc_qcom_common
+smp2p
+qcom_glink_spss
 qcom_sysmon frpc-adsprpc
 qcom_q6v5
 qrtr-smd qcom_q6v5_pas qcom_spss
@@ -3555,8 +3553,64 @@ audpkt_ion_dlkm
 audio_pkt_dlkm
 adsp_loader_dlkm
 q6_dlkm audio_prm_dlkm
-machine_dlkm coupled_ssr_dlkm
-
+pinctrl_lpi_dlkm
+swr_dlkm
+swr_ctrl_dlkm
+wcd_core_dlkm
+mbhc_dlkm
+wcd9xxx_dlkm
+wcd937x_dlkm
+wcd937x_slave_dlkm
+wcd938x_dlkm
+wcd938x_slave_dlkm
+wcd939x_dlkm
+wcd939x_slave_dlkm
+wsa883x_dlkm
+wsa884x_dlkm
+swr_dmic_dlkm
+lpass_cdc_dlkm
+lpass_cdc_wsa2_macro_dlkm
+lpass_cdc_wsa_macro_dlkm
+lpass_cdc_va_macro_dlkm
+lpass_cdc_tx_macro_dlkm
+lpass_cdc_rx_macro_dlkm
+sdpm_clk
+qcom-spmi-temp-alarm
+ddr_cdev
+memlat
+memlat_vendor
+memlat_scmi
+subsystem_sleep_stats
+sys_pm_vx
+spcom
+qti_battery_charger
+qcom-hv-haptics
+smcinvoke_dlkm
+pci-msm-drv
+mhi
+cnss_utils
+cnss_prealloc
+cnss_plat_ipc_qmi_svc
+wlan_firmware_service
+qcom_esoc
+mhi_cntrl_qcom
+cnss2
+bam_dma
+slimbus
+slim-qcom-ngd-ctrl
+btpower
+bt_fm_slim
+sps_drv
+qce50_dlkm
+qcedev-mod_dlkm
+snd-soc-hdmi-codec
+heap_mem_ext_v01
+msm_memshare
+qrtr-mhi
+qrtr-gunyah
+snd-usb-audio-qmi
+hdmi_dlkm
+machine_dlkm
 endef
 
 # MM Audio modules (Elite)
@@ -3657,18 +3711,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH) $(ES_SYSTEM_DEPS)
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/ ;\
 	        $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/msm_kgsl.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/msm_kgsl.ko;\
-        $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/snd_event_dlkm.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/snd_event_dlkm.ko;\
-        $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/q6_pdr_dlkm.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/q6_pdr_dlkm.ko;\
-        $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/stub_dlkm.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/stub_dlkm.ko;\
-        $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/q6_notifier_dlkm.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/q6_notifier_dlkm.ko;\
-        $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/gpr_dlkm.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/gpr_dlkm.ko;\
-        $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/spf_core_dlkm.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/spf_core_dlkm.ko;\
-        $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/audpkt_ion_dlkm.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/audpkt_ion_dlkm.ko;\
-        $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/audio_pkt_dlkm.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/audio_pkt_dlkm.ko;\
-		$(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/adsp_loader_dlkm.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/adsp_loader_dlkm.ko;\
-		$(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/q6_dlkm.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/q6_dlkm.ko;\
-		$(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/audio_prm_dlkm.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/audio_prm_dlkm.ko;\
-		$(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/machine_dlkm.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/machine_dlkm.ko;\
+        $(foreach fn, $(ES_MOD_ORDER_R_AU), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
 		$(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/camera.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/camera.ko;\
 	echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ;\
   $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
@@ -3686,6 +3729,8 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_RV_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_rv_gen4.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_au.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_R_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_r_au.order ;\
+  mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH); \
+  $(foreach fn, $(ES_MOD_ORDER_R_AU), cp $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH);)\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_QCX})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_qcx.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_DI_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di_gen4.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_gen4.order ;\
@@ -3800,6 +3845,26 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libdisplayconfig.qti.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libvmmem.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.display.config@2.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/early_audio $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/system/bin/tinymix $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libsndcardparser.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libagm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libar-gsl.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/liblx-osal.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libats.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libaudio_log_utils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libar-acdb.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/liblx-ar_util.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libar-gpr.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libdiag.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libpdmapper.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libpdnotifier.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libexpat.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/acdbdata/kalama_cdp/; \
+  cp -rf $(PRODUCT_OUT)/vendor/etc/acdbdata/kalama_cdp/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/acdbdata/kalama_cdp/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/card-defs.xml $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/ ;\
+  mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/media/audio/early_audio/; \
+  cp -rf $(TOPDIR)vendor/qcom/opensource/agm/service/audio/tone.wav $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/media/audio/early_audio/ ;\
 	$(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_VENDOR_RAMDISK_OUT) $(PRIVATE_ADDITIONAL_DIR) | $(COMPRESSION_COMMAND) > $(INTERNAL_VENDOR_RAMDISK_TARGET)
 	$(hide) touch $@
 endif
