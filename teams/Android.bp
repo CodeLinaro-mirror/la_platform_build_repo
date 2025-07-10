@@ -4368,6 +4368,13 @@ team {
 }
 
 team {
+    name: "trendy_team_desktop_connectivity",
+
+    // go/trendy/manage/engineers/4563545867255808
+    trendy_team_id: "4563545867255808",
+}
+
+team {
     name: "trendy_team_desktop_firmware",
 
     // go/trendy/manage/engineers/5787938454863872
