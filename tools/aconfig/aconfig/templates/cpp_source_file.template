@@ -55,18 +55,18 @@ namespace {cpp_namespace} \{
             package_exists_in_storage_ = false;
             return;
 #endif
-            auto package_map_file = aconfig_storage::get_mapped_file(
+            auto package_map_file_ret = aconfig_storage::get_mapped_file(
                  "{container}",
                  aconfig_storage::StorageFileType::package_map);
 
-            if (!package_map_file.ok()) \{
-                ALOGE("error: failed to get package map file: %s", package_map_file.error().c_str());
+            if (!package_map_file_ret.ok()) \{
+                ALOGE("error: failed to get package map file: %s", package_map_file_ret.error().c_str());
                 package_exists_in_storage_ = false;
                 return;
             }
-
+            std::unique_ptr<aconfig_storage::MappedStorageFile> package_map_file(*package_map_file_ret);
             auto context = aconfig_storage::get_package_read_context(
-                **package_map_file, "{package}");
+                *package_map_file, "{package}");
 
             if (!context.ok()) \{
                 ALOGE("error: failed to get package read context: %s", context.error().c_str());
@@ -89,9 +89,6 @@ namespace {cpp_namespace} \{
 
             // cache package boolean flag start index
             boolean_start_index_ = context->boolean_start_index;
-
-            // unmap package map file and free memory
-            delete *package_map_file;
 
             auto flag_value_file = aconfig_storage::get_mapped_file(
                 "{container}",
@@ -182,17 +179,17 @@ namespace {cpp_namespace} \{
             package_exists_in_storage_ = false;
             return;
 #endif
-            auto package_map_file = aconfig_storage::get_mapped_file(
+            auto package_map_file_ret = aconfig_storage::get_mapped_file(
                  "{container}",
                  aconfig_storage::StorageFileType::package_map);
-            if (!package_map_file.ok()) \{
-                ALOGE("error: failed to get package map file: %s", package_map_file.error().c_str());
+            if (!package_map_file_ret.ok()) \{
+                ALOGE("error: failed to get package map file: %s", package_map_file_ret.error().c_str());
                 package_exists_in_storage_ = false;
                 return;
             }
-
+            std::unique_ptr<aconfig_storage::MappedStorageFile> package_map_file(*package_map_file_ret);
             auto context = aconfig_storage::get_package_read_context(
-                **package_map_file, "{package}");
+                *package_map_file, "{package}");
             if (!context.ok()) \{
                 ALOGE("error: failed to get package read context: %s", context.error().c_str());
                 package_exists_in_storage_ = false;
@@ -214,9 +211,6 @@ namespace {cpp_namespace} \{
 
             // cache package boolean flag start index
             boolean_start_index_ = context->boolean_start_index;
-
-            // unmap package map file and free memory
-            delete *package_map_file;
 
             auto flag_value_file = aconfig_storage::get_mapped_file(
                 "{container}",

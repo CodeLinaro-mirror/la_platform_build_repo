@@ -1589,13 +1589,6 @@ else ifeq ($(TARGET_BUILD_UNBUNDLED),$(TARGET_BUILD_UNBUNDLED_IMAGE))
     $(call dist-for-goals, dist_files, $(JACOCO_REPORT_CLASSES_ALL))
   endif
 
-  ifdef CLANG_COVERAGE
-    $(foreach f,$(SOONG_NDK_API_XML), \
-        $(call dist-for-goals,droidcore,$(f):ndk_apis/$(notdir $(f))))
-    $(foreach f,$(SOONG_CC_API_XML), \
-        $(call dist-for-goals,droidcore,$(f):cc_apis/$(notdir $(f))))
-  endif
-
   # For full system build (whether unbundled or not), we configure
   # droid_targets to depend on droidcore-unbundled, which will set up the full
   # system dependencies and also dist the subset of targets that correspond to

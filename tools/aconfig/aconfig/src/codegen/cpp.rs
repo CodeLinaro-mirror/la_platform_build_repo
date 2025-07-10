@@ -569,17 +569,17 @@ namespace com::android::aconfig::test {
                 return;
 #endif
 
-                auto package_map_file = aconfig_storage::get_mapped_file(
+                auto package_map_file_ret = aconfig_storage::get_mapped_file(
                     "system",
                     aconfig_storage::StorageFileType::package_map);
-                if (!package_map_file.ok()) {
-                    ALOGE("error: failed to get package map file: %s", package_map_file.error().c_str());
+                if (!package_map_file_ret.ok()) {
+                    ALOGE("error: failed to get package map file: %s", package_map_file_ret.error().c_str());
                     package_exists_in_storage_ = false;
                     return;
                 }
-
+                std::unique_ptr<aconfig_storage::MappedStorageFile> package_map_file(*package_map_file_ret);
                 auto context = aconfig_storage::get_package_read_context(
-                    **package_map_file, "com.android.aconfig.test");
+                    *package_map_file, "com.android.aconfig.test");
                 if (!context.ok()) {
                     ALOGE("error: failed to get package read context: %s", context.error().c_str());
                     package_exists_in_storage_ = false;
@@ -593,9 +593,6 @@ namespace com::android::aconfig::test {
 
                 // cache package boolean flag start index
                 boolean_start_index_ = context->boolean_start_index;
-
-                // unmap package map file and free memory
-                delete *package_map_file;
 
                 auto flag_value_file = aconfig_storage::get_mapped_file(
                     "system",
@@ -802,17 +799,17 @@ namespace com::android::aconfig::test {
                 return;
 #endif
 
-                auto package_map_file = aconfig_storage::get_mapped_file(
+                auto package_map_file_ret = aconfig_storage::get_mapped_file(
                     "system",
                     aconfig_storage::StorageFileType::package_map);
-                if (!package_map_file.ok()) {
-                    ALOGE("error: failed to get package map file: %s", package_map_file.error().c_str());
+                if (!package_map_file_ret.ok()) {
+                    ALOGE("error: failed to get package map file: %s", package_map_file_ret.error().c_str());
                     package_exists_in_storage_ = false;
                     return;
                 }
-
+                std::unique_ptr<aconfig_storage::MappedStorageFile> package_map_file(*package_map_file_ret);
                 auto context = aconfig_storage::get_package_read_context(
-                    **package_map_file, "com.android.aconfig.test");
+                    *package_map_file, "com.android.aconfig.test");
                 if (!context.ok()) {
                     ALOGE("error: failed to get package read context: %s", context.error().c_str());
                     package_exists_in_storage_ = false;
@@ -832,9 +829,6 @@ namespace com::android::aconfig::test {
 
                 // cache package boolean flag start index
                 boolean_start_index_ = context->boolean_start_index;
-
-                // unmap package map file and free memory
-                delete *package_map_file;
 
                 auto flag_value_file = aconfig_storage::get_mapped_file(
                     "system",
@@ -1070,18 +1064,18 @@ namespace com::android::aconfig::test {
                 return;
 #endif
 
-                auto package_map_file = aconfig_storage::get_mapped_file(
+                auto package_map_file_ret = aconfig_storage::get_mapped_file(
                      "system",
                     aconfig_storage::StorageFileType::package_map);
 
-                if (!package_map_file.ok()) {
-                    ALOGE("error: failed to get package map file: %s", package_map_file.error().c_str());
+                if (!package_map_file_ret.ok()) {
+                    ALOGE("error: failed to get package map file: %s", package_map_file_ret.error().c_str());
                     package_exists_in_storage_ = false;
                     return;
                 }
-
+                std::unique_ptr<aconfig_storage::MappedStorageFile> package_map_file(*package_map_file_ret);
                 auto context = aconfig_storage::get_package_read_context(
-                    **package_map_file, "com.android.aconfig.test");
+                    *package_map_file, "com.android.aconfig.test");
 
                 if (!context.ok()) {
                     ALOGE("error: failed to get package read context: %s", context.error().c_str());
@@ -1096,9 +1090,6 @@ namespace com::android::aconfig::test {
 
                 // cache package boolean flag start index
                 boolean_start_index_ = context->boolean_start_index;
-
-                // unmap package map file and free memory
-                delete *package_map_file;
 
                 auto flag_value_file = aconfig_storage::get_mapped_file(
                     "system",
