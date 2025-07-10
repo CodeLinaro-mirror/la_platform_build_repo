@@ -275,6 +275,7 @@ $(foreach mk,$(subdir_makefiles),$(info [$(call inc_and_print,include_makefiles_
 
 # Build bootloader.img/radio.img, and unpack the partitions.
 -include vendor/google_devices/$(TARGET_SOC)/prebuilts/misc_bins/update_bootloader_radio_image.mk
+-include $(UPDATE_BOOTLOADER_RADIO_IMAGE_MAKEFILE)
 
 # For an unbundled image, we can skip blueprint_tools because unbundled image
 # aims to remove a large number framework projects from the manifest, the
