@@ -73,7 +73,7 @@ $(foreach map,$(PRODUCT_RELEASE_CONFIG_MAPS), \
 )
 
 # The .textproto files are the canonical source of truth.
-_args := --guard=false $(foreach map,$(_protobuf_map_files), --map $(map) )
+_args := $(foreach map,$(_protobuf_map_files), --map $(map) )
 _args += --allow-missing=true
 ifneq (,$(TARGET_PRODUCT))
     _args += --product $(TARGET_PRODUCT)

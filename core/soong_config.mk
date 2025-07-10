@@ -404,7 +404,7 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str,  ProductDirectory,    $(dir $(INTERNAL_PRODUCT)))
 
   $(call add_json_map,PartitionQualifiedVariables)
-  $(foreach image_type,INIT_BOOT BOOT VENDOR_BOOT SYSTEM VENDOR CACHE USERDATA PRODUCT SYSTEM_EXT OEM ODM VENDOR_DLKM ODM_DLKM SYSTEM_DLKM VBMETA VBMETA_SYSTEM VBMETA_SYSTEM_DLKM VBMETA_VENDOR_DLKM, \
+  $(foreach image_type,INIT_BOOT BOOT VENDOR_BOOT VENDOR_KERNEL_BOOT SYSTEM VENDOR CACHE USERDATA PRODUCT SYSTEM_EXT OEM ODM VENDOR_DLKM ODM_DLKM SYSTEM_DLKM VBMETA VBMETA_SYSTEM VBMETA_SYSTEM_DLKM VBMETA_VENDOR_DLKM, \
     $(call add_json_map,$(call to-lower,$(image_type))) \
     $(call add_json_bool, BuildingImage, $(filter true,$(BUILDING_$(image_type)_IMAGE))) \
     $(call add_json_bool, PrebuiltImage, $(filter true,$(BOARD_PREBUILT_$(image_type)IMAGE))) \
@@ -494,10 +494,6 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, BootloaderFilePath, $(BOOTLOADER_FILE_PATH))
   $(call add_json_list, AbOtaBootloaderPartitions, $(AB_OTA_BOOTLOADER_PARTITIONS))
 
-  # pvmfw
-  $(call add_json_bool, BoardUsesPvmfwImage, $(BOARD_USES_PVMFWIMAGE))
-  $(call add_json_str, BoardPvmfwPartitionSize, $(BOARD_PVMFWIMAGE_PARTITION_SIZE))
-
   $(call add_json_bool, BuildingSystemOtherImage, $(BUILDING_SYSTEM_OTHER_IMAGE))
 
   # super image stuff
@@ -577,6 +573,10 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, VendorRamdiskKernelOptionsFile, $(BOARD_VENDOR_RAMDISK_KERNEL_MODULES_OPTIONS_FILE))
   $(call add_json_bool, DoNotStripVendorRamdiskModules, $(BOARD_DO_NOT_STRIP_VENDOR_RAMDISK_MODULES))
   $(call add_json_bool, DoNotStripVendorModules, $(BOARD_DO_NOT_STRIP_VENDOR_MODULES))
+
+  # Used to generated vendor_kernel_boot
+  $(call add_json_list, VendorKernelRamdiskKernelModules, $(BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES))
+  $(call add_json_str, VendorKernelRamdiskKernelModulesBlocklistFile, $(BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_BLOCKLIST_FILE))
 
   # Used to generate /vendor/build.prop
   $(call add_json_list, BoardInfoFiles, $(if $(TARGET_BOARD_INFO_FILES),$(TARGET_BOARD_INFO_FILES),$(firstword $(TARGET_BOARD_INFO_FILE) $(wildcard $(TARGET_DEVICE_DIR)/board-info.txt))))

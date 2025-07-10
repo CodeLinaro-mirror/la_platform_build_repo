@@ -1858,6 +1858,7 @@ $(INSTALLED_VENDOR_KERNEL_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_KERNE
 	    --image $@ \
 	   $(call get-partition-size-argument,$(BOARD_VENDOR_KERNEL_BOOTIMAGE_PARTITION_SIZE)) \
 	   --partition_name vendor_kernel_boot $(INTERNAL_AVB_VENDOR_KERNEL_BOOT_SIGNING_ARGS) \
+	   --salt $$(sha256sum $(BUILD_NUMBER_FILE) $(BUILD_DATETIME_FILE) | cut -d " " -f 1 | tr -d '\n') \
 	   $(BOARD_AVB_VENDOR_KERNEL_BOOT_ADD_HASH_FOOTER_ARGS)
 else
 $(INSTALLED_VENDOR_KERNEL_BOOTIMAGE_TARGET):
@@ -5229,6 +5230,7 @@ $(foreach partition,\
           $(eval $(call declare-custom-vbmeta-target,$(partition))))
 endif
 
+# $(1): output file
 define build-vbmetaimage-target
   $(call pretty,"Target vbmeta image: $(INSTALLED_VBMETAIMAGE_TARGET)")
   $(hide) mkdir -p $(AVB_CHAIN_KEY_DIR)
@@ -5237,7 +5239,7 @@ define build-vbmetaimage-target
     $(INTERNAL_AVB_MAKE_VBMETA_IMAGE_ARGS) \
     $(PRIVATE_AVB_VBMETA_SIGNING_ARGS) \
     $(BOARD_AVB_MAKE_VBMETA_IMAGE_ARGS) \
-    --output $@
+    --output $(1)
     # libavb expects to be able to read the maximum vbmeta size, so we must provide a partition
     # which matches this or the read will fail.
     # See external/avb/libavb/avb_slot_verify.c#VBMETA_MAX_SIZE
@@ -5276,17 +5278,17 @@ $(INSTALLED_VBMETAIMAGE_TARGET): \
 	    $(BOARD_AVB_VBMETA_VENDOR_KEY_PATH) \
       $(foreach partition,$(call to-upper,$(BOARD_AVB_VBMETA_CUSTOM_PARTITIONS)),$(BOARD_AVB_VBMETA_$(partition)_KEY_PATH)) \
 	    $(BOARD_AVB_KEY_PATH)
-	$(build-vbmetaimage-target)
+	$(call build-vbmetaimage-target,$(@))
 
 $(call declare-1p-container,$(INSTALLED_VBMETAIMAGE_TARGET),)
 
 UNMOUNTED_NOTICE_DEPS += $(INSTALLED_VBMETAIMAGE_TARGET)
 
-.PHONY: vbmetaimage-nodeps
-vbmetaimage-nodeps: PRIVATE_AVB_VBMETA_SIGNING_ARGS := \
+.PHONY: vbmetaimage-nodeps vbmetanod
+vbmetaimage-nodeps vbmetanod: PRIVATE_AVB_VBMETA_SIGNING_ARGS := \
     --algorithm $(BOARD_AVB_ALGORITHM) --key $(BOARD_AVB_KEY_PATH)
-vbmetaimage-nodeps:
-	$(build-vbmetaimage-target)
+vbmetaimage-nodeps vbmetanod:
+	$(call build-vbmetaimage-target,$(INSTALLED_VBMETAIMAGE_TARGET))
 endif # BUILDING_VBMETA_IMAGE
 
 endif # BOARD_AVB_ENABLE
@@ -7590,7 +7592,7 @@ endif # BOARD_BUILD_SUPER_IMAGE_BY_DEFAULT
 # Build $(PRODUCT_OUT)/super.img without dependencies.
 .PHONY: superimage-nodeps supernod
 superimage-nodeps supernod: intermediates :=
-superimage-nodeps supernod: | $(INSTALLED_SUPERIMAGE_DEPENDENCIES)
+superimage-nodeps supernod: | $(LPMAKE) $(BUILD_SUPER_IMAGE)
 	$(call pretty,"make $(INSTALLED_SUPERIMAGE_TARGET): ignoring dependencies")
 	$(call build-superimage-target,$(INSTALLED_SUPERIMAGE_TARGET),\
 	  $(call intermediates-dir-for,PACKAGING,superimage-nodeps)/misc_info.txt)
