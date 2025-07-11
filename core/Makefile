@@ -3651,6 +3651,8 @@ ES_SYSTEM_DEPS := \
  $(PRODUCT_OUT)/system/lib64/libprocessgroup.so \
  $(PRODUCT_OUT)/system/lib64/libz.so \
  $(PRODUCT_OUT)/system/lib64/libvndksupport.so \
+ $(PRODUCT_OUT)/system/lib64/libexpat.so \
+ $(PRODUCT_OUT)/system/bin/tinymix \
  $(PRODUCT_OUT)/system/bin/bootstrap/linker \
  $(PRODUCT_OUT)/system/bin/bootstrap/linker_asan \
  $(PRODUCT_OUT)/system/bin/bootstrap/linker_asan64 \
