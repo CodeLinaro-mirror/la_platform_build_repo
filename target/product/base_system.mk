@@ -389,6 +389,10 @@ endif
 ifeq ($(RELEASE_TELEPHONY_MODULE),true)
     PRODUCT_PACKAGES += \
        com.android.telephony2
+
+else
+    PRODUCT_PACKAGES += \
+        framework-platformtelephony
 endif
 
 ifneq (,$(RELEASE_RANGING_STACK))
@@ -514,6 +518,11 @@ PRODUCT_VENDOR_PROPERTIES += ro.zygote?=zygote32
 PRODUCT_SYSTEM_PROPERTIES += debug.atrace.tags.enableflags=0
 PRODUCT_SYSTEM_PROPERTIES += persist.traced.enable=1
 PRODUCT_SYSTEM_PROPERTIES += ro.surface_flinger.game_default_frame_rate_override=60
+
+# When the flag RELEASE_ADBD_OPEN_VSOCK_PORT is enabled, open adbd on vsock port 8382 as default.
+ifneq ($(RELEASE_ADBD_OPEN_VSOCK_PORT),)
+PRODUCT_SYSTEM_PROPERTIES += service.adb.listen_addrs?=vsock:8382
+endif
 
 # Include kernel configs.
 PRODUCT_PACKAGES += \

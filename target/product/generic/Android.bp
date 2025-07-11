@@ -912,7 +912,9 @@ system_image_defaults {
                 true: [
                     "com.android.telephony2", // base_system (RELEASE_TELEPHONY_MODULE)
                 ],
-                default: [],
+                default: [
+                    "framework-platformtelephony",
+                ],
             }),
         },
         prefer32: {
