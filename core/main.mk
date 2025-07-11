@@ -275,6 +275,7 @@ $(foreach mk,$(subdir_makefiles),$(info [$(call inc_and_print,include_makefiles_
 
 # Build bootloader.img/radio.img, and unpack the partitions.
 -include vendor/google_devices/$(TARGET_SOC)/prebuilts/misc_bins/update_bootloader_radio_image.mk
+-include $(UPDATE_BOOTLOADER_RADIO_IMAGE_MAKEFILE)
 
 # For an unbundled image, we can skip blueprint_tools because unbundled image
 # aims to remove a large number framework projects from the manifest, the
@@ -1587,13 +1588,6 @@ else ifeq ($(TARGET_BUILD_UNBUNDLED),$(TARGET_BUILD_UNBUNDLED_IMAGE))
 
   ifeq ($(EMMA_INSTRUMENT),true)
     $(call dist-for-goals, dist_files, $(JACOCO_REPORT_CLASSES_ALL))
-  endif
-
-  ifdef CLANG_COVERAGE
-    $(foreach f,$(SOONG_NDK_API_XML), \
-        $(call dist-for-goals,droidcore,$(f):ndk_apis/$(notdir $(f))))
-    $(foreach f,$(SOONG_CC_API_XML), \
-        $(call dist-for-goals,droidcore,$(f):cc_apis/$(notdir $(f))))
   endif
 
   # For full system build (whether unbundled or not), we configure
