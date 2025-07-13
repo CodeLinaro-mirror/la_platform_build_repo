@@ -771,6 +771,11 @@ system_image_defaults {
         default: [
             "uprobestats", // base_system internal
         ],
+    }) + select(release_flag("RELEASE_NATIVE_FRAMEWORK_PROTOTYPE"), {
+        true: [
+            "zygote_next", // base_system (RELEASE_NATIVE_FRAMEWORK_PROTOTYPE)
+        ],
+        default: [],
     }),
     multilib: {
         common: {
