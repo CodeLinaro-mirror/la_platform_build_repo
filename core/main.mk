@@ -273,6 +273,9 @@ $(foreach mk,$(subdir_makefiles),$(info [$(call inc_and_print,include_makefiles_
 # Unfortunately build/tasks is included at a wrong time and the order is important (b/417070498)
 -include device/generic/goldfish/build/tasks.workaround/emu_img_zip.mk
 
+# Include art.mk here because build/core/tasks/art-host-tests.mk need it.
+-include art/art.mk
+
 # Build bootloader.img/radio.img, and unpack the partitions.
 -include vendor/google_devices/$(TARGET_SOC)/prebuilts/misc_bins/update_bootloader_radio_image.mk
 -include $(UPDATE_BOOTLOADER_RADIO_IMAGE_MAKEFILE)
@@ -1484,10 +1487,6 @@ else ifeq ($(TARGET_BUILD_UNBUNDLED),$(TARGET_BUILD_UNBUNDLED_IMAGE))
   # We dist the following targets only for droidcore full build. These items
   # can include java-related targets that would cause building framework java
   # sources in a droidcore full build.
-
-  $(call dist-for-goals, droidcore, \
-    $(APPCOMPAT_ZIP) \
-  )
 
   # We dist the following targets for droidcore-unbundled (and droidcore since
   # droidcore depends on droidcore-unbundled). The droidcore-unbundled target

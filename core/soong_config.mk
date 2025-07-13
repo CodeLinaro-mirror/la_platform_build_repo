@@ -166,6 +166,7 @@ $(call add_json_bool, Malloc_zero_contents,              $(call invert_bool,$(fi
 $(call add_json_bool, Malloc_pattern_fill_contents,      $(MALLOC_PATTERN_FILL_CONTENTS))
 $(call add_json_str,  Override_rs_driver,                $(OVERRIDE_RS_DRIVER))
 $(call add_json_str,  DeviceMaxPageSizeSupported,        $(TARGET_MAX_PAGE_SIZE_SUPPORTED))
+$(call add_json_bool, DeviceCheckPrebuiltMaxPageSize,    $(filter true,$(TARGET_CHECK_PREBUILT_MAX_PAGE_SIZE)))
 $(call add_json_bool, DeviceNoBionicPageSizeMacro,       $(filter true,$(TARGET_NO_BIONIC_PAGE_SIZE_MACRO)))
 
 $(call add_json_bool, UncompressPrivAppDex,              $(call invert_bool,$(filter true,$(DONT_UNCOMPRESS_PRIV_APPS_DEXS))))
@@ -324,6 +325,7 @@ $(call add_json_bool, BuildBrokenIncorrectPartitionImages, $(filter true,$(BUILD
 $(call add_json_list, BuildBrokenInputDirModules,          $(BUILD_BROKEN_INPUT_DIR_MODULES))
 $(call add_json_bool, BuildBrokenDontCheckSystemSdk,       $(filter true,$(BUILD_BROKEN_DONT_CHECK_SYSTEMSDK)))
 $(call add_json_bool, BuildBrokenDupSysprop,               $(filter true,$(BUILD_BROKEN_DUP_SYSPROP)))
+$(call add_json_bool, BuildBrokenPrebuiltELFFiles,         $(filter true,$(BUILD_BROKEN_PREBUILT_ELF_FILES)))
 
 $(call add_json_bool, BuildDebugfsRestrictionsEnabled, $(filter true,$(PRODUCT_SET_DEBUGFS_RESTRICTIONS)))
 
@@ -487,6 +489,8 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, BoardPrebuiltDtboImage16kb, $(BOARD_PREBUILT_DTBOIMAGE_16KB))
   $(call add_json_bool, Board16kOtaUseIncremental, $(BOARD_16K_OTA_USE_INCREMENTAL))
   $(call add_json_str, BoardPrebuiltDtbDir, $(BOARD_PREBUILT_DTBIMAGE_DIR))
+  $(call add_json_list, BoardKernelModules16K, $(BOARD_KERNEL_MODULES_16K))
+  $(call add_json_list, BoardKernelModulesLoad16K, $(BOARD_KERNEL_MODULES_LOAD_16K))
 
   # radio
   $(call add_json_str, RadioFilePath, $(RADIO_FILE_PATH))
@@ -508,6 +512,8 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_bool, ProductBuildSuperPartition, $(filter true,$(PRODUCT_BUILD_SUPER_PARTITION)))
   $(call add_json_bool, BuildingSuperEmptyImage, $(filter true,$(BUILDING_SUPER_EMPTY_IMAGE)))
   $(call add_json_str, BoardSuperPartitionSize, $(BOARD_SUPER_PARTITION_SIZE))
+  $(call add_json_str, BoardSuperPartitionWarnLimit, $(BOARD_SUPER_PARTITION_WARN_LIMIT))
+  $(call add_json_str, BoardSuperPartitionErrorLimit, $(BOARD_SUPER_PARTITION_ERROR_LIMIT))
   $(call add_json_str, BoardSuperPartitionMetadataDevice, $(BOARD_SUPER_PARTITION_METADATA_DEVICE))
   $(call add_json_list, BoardSuperPartitionBlockDevices, $(BOARD_SUPER_PARTITION_BLOCK_DEVICES))
   $(call add_json_map, BoardSuperPartitionGroups)
@@ -669,7 +675,7 @@ $(call add_json_list, ProductHostPackages, $(PRODUCT_HOST_PACKAGES))
 
 $(call add_json_bool, EnforceSELinuxTrebleLabeling, $(filter true,$(PRODUCT_ENFORCE_SELINUX_TREBLE_LABELING)))
 
-$(call add_json_str, SELinuxTrebleLabelingTrackingListFile, $(filter true,$(PRODUCT_SELINUX_TREBLE_LABELING_TRACKING_LIST_FILE)))
+$(call add_json_str, SELinuxTrebleLabelingTrackingListFile, $(PRODUCT_SELINUX_TREBLE_LABELING_TRACKING_LIST_FILE))
 
 $(call add_json_bool, BuildOTAPackage, $(call invert_bool,$(filter true,$(TARGET_SKIP_OTA_PACKAGE))))
 

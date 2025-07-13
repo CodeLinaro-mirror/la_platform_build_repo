@@ -158,6 +158,10 @@ ifeq ($(RELEASE_TELEPHONY_MODULE),true)
     PRODUCT_APEX_BOOT_JARS += \
         com.android.telephony2:framework-telephony \
 
+else
+    PRODUCT_BOOT_JARS += \
+        framework-platformtelephony \
+
 endif
 
 # List of system_server classpath jars delivered via apex.

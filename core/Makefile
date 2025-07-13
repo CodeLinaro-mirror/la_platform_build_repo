@@ -7208,26 +7208,6 @@ endif # BOARD_PARTIAL_OTA_UPDATE_PARTITIONS_LIST
 
 endif    # build_ota_package
 
-# -----------------------------------------------------------------
-# A zip of the appcompat directory containing logs
-APPCOMPAT_ZIP := $(PRODUCT_OUT)/appcompat.zip
-# For apps_only build we'll establish the dependency later in build/make/core/main.mk.
-ifeq (,$(TARGET_BUILD_UNBUNDLED))
-$(APPCOMPAT_ZIP): $(FULL_SYSTEMIMAGE_DEPS) \
-	    $(INTERNAL_RAMDISK_FILES) \
-	    $(INTERNAL_USERDATAIMAGE_FILES) \
-	    $(INTERNAL_VENDORIMAGE_FILES) \
-	    $(INTERNAL_PRODUCTIMAGE_FILES) \
-	    $(INTERNAL_SYSTEM_EXTIMAGE_FILES)
-endif
-$(APPCOMPAT_ZIP): PRIVATE_LIST_FILE := $(call intermediates-dir-for,PACKAGING,appcompat)/filelist
-$(APPCOMPAT_ZIP): $(SOONG_ZIP)
-	@echo "appcompat logs: $@"
-	$(hide) rm -rf $@ $(PRIVATE_LIST_FILE)
-	$(hide) mkdir -p $(dir $@) $(PRODUCT_OUT)/appcompat $(dir $(PRIVATE_LIST_FILE))
-	$(hide) find $(PRODUCT_OUT)/appcompat | sort >$(PRIVATE_LIST_FILE)
-	$(hide) $(SOONG_ZIP) -d -o $@ -C $(PRODUCT_OUT)/appcompat -l $(PRIVATE_LIST_FILE)
-
 DEXPREOPT_CONFIG_ZIP := $(PRODUCT_OUT)/dexpreopt_config.zip
 
 $(DEXPREOPT_CONFIG_ZIP): $(INSTALLED_SYSTEMIMAGE_TARGET) \
