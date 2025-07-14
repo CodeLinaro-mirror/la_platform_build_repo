@@ -23,8 +23,8 @@ $(call declare-1p-target,$(test_suite_readme),cts)
 include $(BUILD_SYSTEM)/tasks/tools/compatibility.mk
 
 .PHONY: cts
-cts: $(compatibility_zip) $(compatibility_tests_list_zip)
-$(call dist-for-goals, cts, $(compatibility_zip) $(compatibility_tests_list_zip))
+cts: $(compatibility_zip) $(compatibility_tests_list_zip) $(compatibility_files_metadata)
+$(call dist-for-goals, cts, $(compatibility_zip) $(compatibility_tests_list_zip) $(compatibility_files_metadata))
 
 .PHONY: cts_v2
 cts_v2: cts
@@ -98,20 +98,6 @@ $(verifier-zip): $(SOONG_ANDROID_CTS_VERIFIER_ZIP) $(cts-v-host-zip) $(SOONG_ZIP
 	$(SOONG_ZIP) -d -o $@ -C $(PRIVATE_DIR) -D $(PRIVATE_verifier_dir)
 endif
 $(call dist-for-goals, cts, $(verifier-zip))
-
-cts_files_metadata := $(HOST_OUT)/cts/cts_files_metadata.textproto
-file_metadata_generation_tool := $(HOST_OUT_EXECUTABLES)/file_metadata_generation$(HOST_EXECUTABLE_SUFFIX)
-aapt2_tool := $(HOST_OUT_EXECUTABLES)/aapt2$(HOST_EXECUTABLE_SUFFIX)
-$(cts_files_metadata): PRIVATE_TESTCASES_DIR := $(HOST_OUT)/cts/android-cts/testcases
-$(cts_files_metadata): PRIVATE_AAPT2_TOOL := $(aapt2_tool)
-$(cts_files_metadata): PRIVATE_METADATA_TOOL := $(file_metadata_generation_tool)
-$(cts_files_metadata): PRIVATE_SDK_VERSION := $(PLATFORM_SDK_VERSION)
-$(cts_files_metadata): $(file_metadata_generation_tool) $(aapt2_tool) $(compatibility_zip)
-	$(PRIVATE_METADATA_TOOL) --testcases_dir $(PRIVATE_TESTCASES_DIR)\
-	--aapt2 $(PRIVATE_AAPT2_TOOL) --sdk_version $(PRIVATE_SDK_VERSION) --output $@
-
-ALL_TARGETS.$(cts_files_metadata).META_LIC:=$(module_license_metadata)
-$(call dist-for-goals, cts-api-coverage, $(cts_files_metadata))
 
 # For producing CTS coverage reports.
 # Run "make cts-test-coverage" in the $ANDROID_BUILD_TOP directory.

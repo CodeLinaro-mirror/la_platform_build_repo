@@ -60,9 +60,6 @@ ALL_SDK_FILES:=
 # Files for dalvik.  This is often build without building the rest of the OS.
 INTERNAL_DALVIK_MODULES:=
 
-# All findbugs xml files
-ALL_FINDBUGS_FILES:=
-
 # Packages with certificate violation
 CERTIFICATE_VIOLATION_MODULES :=
 

@@ -19,7 +19,7 @@ test_suite_readme := test/vts/tools/vts-core-tradefed/README
 include $(BUILD_SYSTEM)/tasks/tools/compatibility.mk
 
 .PHONY: vts
-vts: $(compatibility_zip) $(compatibility_tests_list_zip)
-$(call dist-for-goals, vts, $(compatibility_zip) $(compatibility_tests_list_zip))
+vts: $(compatibility_zip) $(compatibility_tests_list_zip) $(compatibility_files_metadata)
+$(call dist-for-goals, vts, $(compatibility_zip) $(compatibility_tests_list_zip) $(compatibility_files_metadata))
 
 tests: vts

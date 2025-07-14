@@ -575,6 +575,7 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_list, SystemKernelLoadModules, $(BOARD_SYSTEM_KERNEL_MODULES_LOAD))
   $(call add_json_bool, BuildingVendorDlkmImage,               $(BUILDING_VENDOR_DLKM_IMAGE))
   $(call add_json_list, VendorKernelModules, $(BOARD_VENDOR_KERNEL_MODULES))
+  $(call add_json_list, VendorKernelModulesLoad, $(notdir $(BOARD_VENDOR_KERNEL_MODULES_LOAD)))
   $(call add_json_str, VendorKernelBlocklistFile, $(BOARD_VENDOR_KERNEL_MODULES_BLOCKLIST_FILE))
   $(call add_json_list, VendorKernelModules2ndStage16kbMode, $(foreach k,$(BOARD_VENDOR_KERNEL_MODULES_2ND_STAGE_16KB_MODE),$(TARGET_KERNEL_DIR_16K)/$(k)))
   $(call add_json_bool, BuildingOdmDlkmImage,               $(BUILDING_ODM_DLKM_IMAGE))
@@ -602,6 +603,9 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
 
   # Used to generate recovery partition
   $(call add_json_str, TargetScreenDensity, $(TARGET_SCREEN_DENSITY))
+  $(call add_json_str, TargetRecoveryFstab, $(TARGET_RECOVERY_FSTAB))
+  $(call add_json_str, TargetRecoveryFstabGenrule, $(TARGET_RECOVERY_FSTAB_GENRULE))
+  $(call add_json_str, TargetRecoveryFstabDefault, $(strip $(wildcard $(TARGET_DEVICE_DIR)/recovery.fstab)))
 
   # Used to generate /recovery/root/build.prop
   $(call add_json_map, PrivateRecoveryUiProperties)
