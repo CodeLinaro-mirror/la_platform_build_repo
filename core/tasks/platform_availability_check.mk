@@ -29,28 +29,28 @@ $(strip $(foreach m,$(product_MODULES),\
       $(if $(filter true,$(ALL_MODULES.$(m).NOT_AVAILABLE_FOR_PLATFORM)),\
         $(m))))))
 
-ifndef ALLOW_MISSING_DEPENDENCIES
+#ifndef ALLOW_MISSING_DEPENDENCIES
   _violators_with_path := $(foreach m,$(sort $(_modules_not_available_for_platform)),\
     $(m):$(word 1,$(ALL_MODULES.$(m).PATH))\
   )
 
-else
+#else
 
 # Don't error out immediately when ALLOW_MISSING_DEPENDENCIES is set.
 # Instead, add a dependency on a rule that prints the error message.
-  define not_available_for_platform_rule
-    not_installable_file := $(patsubst $(OUT_DIR)/%,$(OUT_DIR)/NOT_AVAILABLE_FOR_PLATFORM/%,$(1))
-    $(1): $$(not_installable_file)
-    $$(not_installable_file):
-	$(call echo-error,$(2),Module is requested to be installed but is not \
-available for platform because it does not have "//apex_available:platform" or \
-it depends on other modules that are not available for platform.)
-	exit 1
-  endef
+#  define not_available_for_platform_rule
+#    not_installable_file := $(patsubst $(OUT_DIR)/%,$(OUT_DIR)/NOT_AVAILABLE_FOR_PLATFORM/%,$(1))
+#    $(1): $$(not_installable_file)
+#    $$(not_installable_file):
+#	$(call echo-error,$(2),Module is requested to be installed but is not \
+#available for platform because it does not have "//apex_available:platform" or \
+#it depends on other modules that are not available for platform.)
+#	exit 1
+#  endef
 
-  $(foreach m,$(_modules_not_available_for_platform),\
-    $(foreach i,$(filter-out $(HOST_OUT)/%,$(ALL_MODULES.$(m).INSTALLED)),\
-      $(eval $(call not_available_for_platform_rule,$(i),$(m)))))
-endif
+#  $(foreach m,$(_modules_not_available_for_platform),\
+#    $(foreach i,$(filter-out $(HOST_OUT)/%,$(ALL_MODULES.$(m).INSTALLED)),\
+#      $(eval $(call not_available_for_platform_rule,$(i),$(m)))))
+#endif
 
 endif
