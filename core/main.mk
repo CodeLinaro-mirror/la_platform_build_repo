@@ -1638,9 +1638,6 @@ tests : host-tests target-tests
 # Phony target to run all java compilations that use javac
 .PHONY: javac-check
 
-.PHONY: findbugs
-findbugs: $(INTERNAL_FINDBUGS_HTML_TARGET) $(INTERNAL_FINDBUGS_XML_TARGET)
-
 .PHONY: check-elf-files
 check-elf-files:
 

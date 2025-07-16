@@ -754,9 +754,6 @@ PROFMAN := $(HOST_OUT_EXECUTABLES)/profman
 
 GEN_SBOM := $(HOST_OUT_EXECUTABLES)/generate-sbom
 
-FINDBUGS_DIR := external/owasp/sanitizer/tools/findbugs/bin
-FINDBUGS := $(FINDBUGS_DIR)/findbugs
-
 JETIFIER := prebuilts/sdk/tools/jetifier/jetifier-standalone/bin/jetifier-standalone
 
 EXTRACT_KERNEL := build/make/tools/extract_kernel.py

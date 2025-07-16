@@ -254,6 +254,7 @@ class GeneralTestsOptimizer(OptimizedBuildTarget):
       'cts-tradefed',
       'vts-tradefed',
       'compatibility-host-util',
+      'module-info',
   ])
 
   def get_build_targets_impl(self) -> set[str]:

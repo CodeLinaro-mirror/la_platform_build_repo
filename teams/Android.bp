@@ -4437,5 +4437,12 @@ team {
     trendy_team_id: "5667398129909760",
 }
 
+team {
+    name: "trendy_team_desktop_manufacturing_and_serviceability",
+
+    // go/trendy/manage/engineers/4630910416027648
+    trendy_team_id: "4630910416027648",
+}
+
 // DON'T ADD NEW RULES HERE. For more details refer to
 // go/new-android-ownership-model

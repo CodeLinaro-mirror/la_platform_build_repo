@@ -608,7 +608,6 @@ mod tests {
             .into_iter()
             .filter(should_include_flag)
             .map(|flag| flag.name.unwrap())
-            .map(String::from)
             .collect::<Vec<_>>();
         let result_from_names = compute_flags_fingerprint(&mut flag_names_vec);
 
