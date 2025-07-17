@@ -35,10 +35,14 @@ $(call add_soong_config_var,ANDROID,BOARD_SUPPORTS_RAMDISK_EARLY_INIT)
 $(call add_soong_config_var,ANDROID,TARGET_ANDROID_BELOW_V15)
 
 $(call add_soong_config_var,ANDROID,IS_ANDROID_VER_U)
-
+$(call add_soong_config_var,ANDROID,IS_ANDROID_VER_W)
 ifneq (,$(filter VanillaIceCream V 35, $(PLATFORM_VNDK_VERSION)))
 $(call soong_config_set,ANDROID,IS_ANDROID_VER_U,false)
 endif
+ifneq (,$(filter W Baklava 36, $(PLATFORM_VNDK_VERSION)))
+$(call soong_config_set,ANDROID,IS_ANDROID_VER_W,true)
+endif
+
 $(call soong_config_set_bool,ANDROID,HAS_BOARD_SYSTEM_EXT_PREBUILT_DIR,$(if $(BOARD_SYSTEM_EXT_PREBUILT_DIR),true,false))
 $(call soong_config_set_bool,ANDROID,HAS_BOARD_PRODUCT_PREBUILT_DIR,$(if $(BOARD_PRODUCT_PREBUILT_DIR),true,false))
 $(call add_soong_config_var,ANDROID,PLATFORM_SEPOLICY_VERSION)
