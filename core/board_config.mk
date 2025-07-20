@@ -667,6 +667,15 @@ else ifeq ($(PRODUCT_BUILD_SUPER_EMPTY_IMAGE),true)
 endif
 .KATI_READONLY := BUILDING_SUPER_EMPTY_IMAGE
 
+# Allow the release config to override the board super partition error limit, setting
+# it to the full size of the superpartition.  This build flag is only enabled on eng builds.
+# See b/428178183.
+ifneq (,$(RELEASE_SUPER_PARTITION_ERROR_LIMIT_IS_SIZE))
+  ifneq (,$(BOARD_SUPER_PARTITION_ERROR_LIMIT))
+    BOARD_SUPER_PARTITION_ERROR_LIMIT:=$(BOARD_SUPER_PARTITION_SIZE)
+  endif
+endif
+
 ###########################################
 # Now we can substitute with the real value of TARGET_COPY_OUT_VENDOR
 ifeq ($(TARGET_COPY_OUT_VENDOR),$(_vendor_path_placeholder))
