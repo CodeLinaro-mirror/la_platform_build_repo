@@ -1905,7 +1905,7 @@ $(4):
 	echo /$(_path_on_device),$(_module_path),$(_soong_module_type),,,,,$(3),,, >> $$@
 	$(if $(filter %.apex,$(3)),\
 	  $(foreach m,$(_dep_modules),\
-	    echo $(patsubst $(PRODUCT_OUT)/apex/$(_module_name)/%,%,$(ALL_MODULES.$m.INSTALLED)),$(sort $(ALL_MODULES.$m.PATH)),$(sort $(ALL_MODULES.$m.SOONG_MODULE_TYPE)),,,,,$(strip $(ALL_MODULES.$m.BUILT)),,, >> $$@;))
+	    echo $(patsubst $(PRODUCT_OUT)/apex/$(_module_name)/%,%,$(ALL_MODULES.$m.INSTALLED)),$(sort $(ALL_MODULES.$m.PATH)),$(sort $(ALL_MODULES.$m.SOONG_MODULE_TYPE)),,,,,$(strip $(ALL_MODULES.$m.INSTALLED)),,, >> $$@;))
 
 $(2): $(1)
 $(1): $(4) $(3) $(GEN_SBOM) $(installed_files) $(metadata_list) $(metadata_files)

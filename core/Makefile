@@ -1761,7 +1761,7 @@ ifeq ($(BOARD_AVB_ENABLE),true)
 $(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH)
 	$(call pretty,"Target vendor_boot image: $@")
 	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
-	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
+	$(call assert-max-image-size,$@,$(call get-hash-image-max-size,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)))
 	$(AVBTOOL) add_hash_footer \
            --image $@ \
 	   $(call get-partition-size-argument,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)) \
@@ -3157,7 +3157,6 @@ $(AVBTOOL) add_hash_footer \
   --salt $$(sha256sum $(BUILD_NUMBER_FILE) $(BUILD_DATETIME_FILE) | cut -d " " -f 1 | tr -d '\n') \
   --partition_name vendor_boot $(INTERNAL_AVB_VENDOR_BOOT_TEST_SIGNING_ARGS) \
   $(BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS)
-$(call assert-max-image-size,$(1),$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
 endef
 $(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET): $(AVBTOOL)
 endif # BOARD_AVB_ENABLE
@@ -3167,7 +3166,7 @@ $(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INSTALLED_VENDOR_BOOT
 $(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS)
 	$(call pretty,"Target vendor_boot debug image: $@")
 	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
-	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
+	$(call assert-max-image-size,$@,$(call get-hash-image-max-size,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)))
 ifeq ($(BOARD_AVB_ENABLE),true)
 	$(call test-key-sign-vendor-bootimage,$@)
 endif
