@@ -55,10 +55,7 @@ rust_test_host {
         "libaconfig_storage_file_with_test_utils",
     ],
     data: [
-        "tests/data/v1/package_v1.map",
-        "tests/data/v1/flag_v1.map",
-        "tests/data/v1/flag_v1.val",
-        "tests/data/v1/flag_v1.info",
+        ":test_storage_files",
     ],
 }
 

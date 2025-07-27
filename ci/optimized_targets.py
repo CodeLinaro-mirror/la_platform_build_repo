@@ -288,6 +288,64 @@ class GeneralTestsOptimizer(OptimizedBuildTarget):
       self._general_tests_target_outputs = general_tests_list_file.readlines()
     return general_tests_list
 
+  def _get_base_module_names(self, manifest_files: list[str], module_with_manifest_files: set[str]) -> set[str]:
+    if not manifest_files:
+      return set()
+    extra_files = set()
+    base_module_names = set()
+    for manifest_file in manifest_files:
+      with open(manifest_file, 'r') as file:
+        data = json.load(file)
+        base_module_names.add(data['base'])
+
+    for module in module_with_manifest_files:
+      module_path = pathlib.Path(module)
+      file_set = {
+        str(item) + '\n' for item in module_path.rglob('*') if (item.is_file() and item.name != 'test_module_config.manifest')
+      }
+      extra_files.update(file_set)
+
+    main_directory = pathlib.Path(manifest_files[0]).parent.parent
+    for base_module_name in base_module_names:
+      module_path = main_directory / base_module_name
+      if os.path.exists(module_path):
+        file_set = {
+          str(item) + '\n' for item in module_path.rglob('*') if item.is_file()
+        }
+        extra_files.update(file_set)
+
+    return extra_files
+
+  def _get_manifest_files(self, outputs: list[str]) -> tuple[list[str], set[str]]:
+    module_outputs_set = set()
+    for file in outputs:
+      for module in self.modules_to_build:
+        # Construct the pattern we are looking for (e.g., '/module_a/')
+        search_pattern = f'/{module}/'
+
+        if search_pattern in file:
+          # Find the end position of the search pattern
+          end_index = file.find(search_pattern) + len(search_pattern)
+
+          # Slice the file string up to that point
+          module_directory = file[:end_index]
+
+          # Construct the full path and add it to our set
+          module_outputs_set.add(module_directory)
+
+          # Optimization: once we find a match for this file,
+          # we can move to the next file.
+          break
+    module_with_manifest_files = set()
+    manifest_files = []
+    for output in module_outputs_set:
+      manifest_file = output + 'test_module_config.manifest'
+      if os.path.exists(manifest_file):
+        manifest_files.append(manifest_file)
+        module_with_manifest_files.add(output)
+    logging.info(manifest_files)
+    logging.info(module_with_manifest_files)
+    return manifest_files, module_with_manifest_files
 
   def _get_test_discovery_modules(self) -> set[str]:
     change_info = ChangeInfo(os.environ.get('CHANGE_INFO'))
@@ -332,7 +390,15 @@ class GeneralTestsOptimizer(OptimizedBuildTarget):
     print(f'modules: {self.modules_to_build}')
 
     host_outputs = [str(src_top) + '/' + file for file in self._general_tests_host_outputs if any('/'+module+'/' in file for module in self.modules_to_build)]
+    host_manifest_files, host_module_with_manifest_files = self._get_manifest_files(host_outputs)
+    extra_host_files = self._get_base_module_names(host_manifest_files, host_module_with_manifest_files)
+    host_outputs.extend(extra_host_files)
+
     target_outputs = [str(src_top) + '/' + file for file in self._general_tests_target_outputs if any('/'+module+'/' in file for module in self.modules_to_build)]
+    target_manifest_files, target_module_with_manifest_files = self._get_manifest_files(target_outputs)
+    extra_target_files = self._get_base_module_names(target_manifest_files, target_module_with_manifest_files)
+    target_outputs.extend(extra_target_files)
+
     host_config_files = [file for file in host_outputs if file.endswith('.config\n')]
     target_config_files = [file for file in target_outputs if file.endswith('.config\n')]
     logging.info(host_outputs)

@@ -31,4 +31,10 @@
         <install-in user-type="PROFILE" />
         <do-not-install-in user-type="android.os.usertype.profile.CLONE" />
     </install-in-user-type>
+
+    <!--  Blocked Number Provider (BlockedNumberProvider) -->
+    <install-in-user-type package="com.android.providers.blockednumber">
+        <install-in user-type="FULL" />
+        <install-in user-type="android.os.usertype.profile.MANAGED" />
+    </install-in-user-type>
 </config>
