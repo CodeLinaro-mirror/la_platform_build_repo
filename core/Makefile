@@ -3423,12 +3423,10 @@ ES_DEFAULT_LKMS := \
 # Default modules - first set; Last set auto-generated modules_end.order
 define ES_MOD_ORDER
 gcc-kalama qnoc-kalama dispcc-kalama pinctrl-kalama clk-dummy pinctrl-spmi-gpio
-tcsrcc-kalama camcc-kalama dispcc-crow videocc-kalama phy-qcom-ufs-qmp-v4-kalama
-
-spmi-pmic-arb qcom_hwspinlock qcom-cpufreq-hw rtc-pm8xxx regmap-spmi qnoc-qos qcom_ipc_logging qcom-scm  proxy-consumer nvmem_qcom-spmi-sdam msm_dma_iommu_mapping iommu-logger icc-debug gh_msgq debug-regulator cmd-db
-pinctrl-msm smem gh_rm_drv secure_buffer qcom_rpmh qcom_aoss  qti-fixed-regulator gdsc-regulator qcom-pdc proxy-consumer  qcom_iommu_util soc_sleep_stats socinfo icc-bcm-voter minidump crypto-qti-common rpmh-regulator clk-qcom clk-rpmh
-ufshcd-crypto-qti arm_smmu boot_stats icc-rpmh phy-qcom-ufs ufs_qcom  phy-qcom-ufs-qmp-v4 stub-regulator
-
+tcsrcc-kalama camcc-kalama dispcc-crow videocc-kalama
+spmi-pmic-arb qcom_hwspinlock qcom-cpufreq-hw rtc-pm8xxx mem_buf regmap-spmi qnoc-qos qcom_ipc_logging qcom-scm proxy-consumer nvmem_qcom-spmi-sdam msm_dma_iommu_mapping iommu-logger icc-debug gh_msgq debug-regulator stub-regulator cmd-db
+pinctrl-msm smem gh_rm_drv secure_buffer qcom_rpmh qcom_aoss qti-fixed-regulator gdsc-regulator qcom-pdc proxy-consumer qcom_iommu_util soc_sleep_stats socinfo icc-bcm-voter minidump crypto-qti-common rpmh-regulator clk-qcom clk-rpmh qcom-spmi-pmic
+arm_smmu boot_stats icc-rpmh crypto-qti-tz crypto-qti-common phy-qcom-ufs phy-qcom-ufs-qmp-v4 phy-qcom-ufs-qmp-v4-kalama ufshcd-crypto-qti ufs_qcom
 coresight qcom_va_minidump plh_vendor plh_scmi msm_performance nvmem_qfprom gpucc-kalama qcom-pmu-lib qcom_rimps dcvs_fp qcom_llcc_pmu mdt_loader qcom-dcvs qcom_ipcc tmecom-intf
 
 endef
@@ -3436,7 +3434,7 @@ endef
 # Default modules - second set
 define ES_MOD_ORDER_2
 reboot-mode qcom_cpu_vendor_hooks llcc-qcom mem_buf_dev mem-hooks qcom_logbuf_vh  mdt_loader qcom_va_minidump qcom_wdt_core qcom_llcc_pmu
-qcom-pon qcom_dma_heaps qcom-spmi-pmic qcom-pdc msm_gpi mem_buf_msgq qrtr msm_qmp sched-walt qcom-pmu-lib
+qcom-pon qcom_dma_heaps qcom-pdc msm_gpi mem_buf_msgq qrtr msm_qmp sched-walt qcom-pmu-lib
 clk-dummy qcom-dload-mode  mem_buf  msm_performance
 
 endef
