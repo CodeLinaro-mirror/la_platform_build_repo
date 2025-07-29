@@ -3499,7 +3499,16 @@ endef
 
 # MM AIS modules
 define ES_MOD_ORDER_AIS
-camcc-sm8150 ais
+camcc-kalama
+qcom_ipc_lite
+synx-driver
+qti_battery_charger
+leds-qti-flash
+mem_buf_dev
+llcc_qcom
+mdt_loader
+qcom_rpmh
+camera
 
 endef
 
@@ -3715,6 +3724,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
 	        $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/msm_kgsl.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/msm_kgsl.ko;\
         $(foreach fn, $(ES_MOD_ORDER_R_AU), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
 		$(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/camera.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/camera.ko;\
+        $(foreach fn, $(ES_MOD_ORDER_AIS), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
 	echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ;\
   $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
   echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ;\
@@ -3733,6 +3743,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_R_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_r_au.order ;\
   mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH); \
   $(foreach fn, $(ES_MOD_ORDER_R_AU), cp $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH);)\
+  $(foreach fn, $(ES_MOD_ORDER_AIS), cp $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH);)\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_QCX})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_qcx.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_DI_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di_gen4.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_gen4.order ;\
@@ -3861,6 +3872,11 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libdiag.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libpdmapper.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libpdnotifier.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libais*.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libmmosal_vendor.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libC2D2.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/ais_server $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/qcarcam_edrm_rvc $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libexpat.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/acdbdata/kalama_cdp/; \
   cp -rf $(PRODUCT_OUT)/vendor/etc/acdbdata/kalama_cdp/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/acdbdata/kalama_cdp/ ;\
