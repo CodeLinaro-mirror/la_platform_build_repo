@@ -125,7 +125,11 @@ mod tests {
         // build performance to enable everywhere)
         let next = &RELEASE_CONFIGS.aliases["next"];
         let value = &RELEASE_CONFIGS.flags[next]["RELEASE_HIDDEN_API_EXPORTABLE_STUBS"];
-        assert_eq!(value, "true");
+        assert_eq!(
+            value, "true",
+            "expected RELEASE_HIDDEN_API_EXPORTABLE_STUBS to be 'true' in next ({}) but was '{}'",
+            next, value
+        );
     }
 
     #[test]
