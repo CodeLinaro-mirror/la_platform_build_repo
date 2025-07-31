@@ -6985,6 +6985,8 @@ endif # BOARD_CUSTOMIMAGES_PARTITION_LIST
 ifdef BUILDING_SYSTEM_IMAGE
 	$(hide) $(call copy-image-and-generate-map,$(BUILT_SYSTEMIMAGE),$(zip_root)/IMAGES,system)
 	$(hide) $(call fs_config,$(zip_root)/SYSTEM,system/) > $(zip_root)/META/filesystem_config.txt
+	@# ROOT always contains the files for the root under normal boot.
+	$(hide) $(call fs_config,$(zip_root)/ROOT,) > $(zip_root)/META/root_filesystem_config.txt
 endif
 ifdef BUILDING_VENDOR_IMAGE
 	$(hide) $(call copy-image-and-generate-map,$(BUILT_VENDORIMAGE_TARGET),$(zip_root)/IMAGES,vendor)
@@ -7014,8 +7016,6 @@ ifdef BUILDING_SYSTEM_DLKM_IMAGE
 	$(hide) $(call copy-image-and-generate-map,$(BUILT_SYSTEM_DLKMIMAGE_TARGET),$(zip_root)/IMAGES,system_dlkm)
 	$(hide) $(call fs_config,$(zip_root)/SYSTEM_DLKM,system_dlkm/) > $(zip_root)/META/system_dlkm_filesystem_config.txt
 endif
-	@# ROOT always contains the files for the root under normal boot.
-	$(hide) $(call fs_config,$(zip_root)/ROOT,) > $(zip_root)/META/root_filesystem_config.txt
 	@# BOOT/RAMDISK contains the first stage and recovery ramdisk.
 	$(hide) $(call fs_config,$(zip_root)/BOOT/RAMDISK,) > $(zip_root)/META/boot_filesystem_config.txt
 ifdef BUILDING_INIT_BOOT_IMAGE

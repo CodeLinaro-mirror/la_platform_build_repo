@@ -290,6 +290,8 @@ PRODUCT_PACKAGES_SHIPPING_API_LEVEL_33 := $(sort $(PRODUCT_PACKAGES_SHIPPING_API
 PRODUCT_PACKAGES_SHIPPING_API_LEVEL_34 := $(sort $(PRODUCT_PACKAGES_SHIPPING_API_LEVEL_34))
 
 ############################################################################
+PRODUCT_MAKEFILE_PATH := $(current_product_makefile)
+$(KATI_visibility_prefix PRODUCT_MAKEFILE_PATH,build/make/core/product_config.mk build/make/core/dumpvar.mk)
 
 current_product_makefile :=
 

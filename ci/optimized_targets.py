@@ -317,6 +317,7 @@ class GeneralTestsOptimizer(OptimizedBuildTarget):
     return extra_files
 
   def _get_manifest_files(self, outputs: list[str]) -> tuple[list[str], set[str]]:
+    logging.info('looking for manifest files in outputs')
     module_outputs_set = set()
     for file in outputs:
       for module in self.modules_to_build:
@@ -389,18 +390,35 @@ class GeneralTestsOptimizer(OptimizedBuildTarget):
     tmp_dir = pathlib.Path(os.environ.get('TMPDIR'))
     print(f'modules: {self.modules_to_build}')
 
-    host_outputs = [str(src_top) + '/' + file for file in self._general_tests_host_outputs if any('/'+module+'/' in file for module in self.modules_to_build)]
+    logging.info('Getting host outputs')
+    deduplicated_host_outputs = set(self._general_tests_host_outputs)
+    intermediate_host_outputs = [p for p in deduplicated_host_outputs if pathlib.Path(str(src_top) + '/' + p.strip()).exists()]
+    host_outputs = [str(src_top) + '/' + file for file in intermediate_host_outputs if any('/'+module+'/' in file for module in self.modules_to_build)]
+    logging.info('host_outputs size: %d', len(host_outputs))
     host_manifest_files, host_module_with_manifest_files = self._get_manifest_files(host_outputs)
     extra_host_files = self._get_base_module_names(host_manifest_files, host_module_with_manifest_files)
     host_outputs.extend(extra_host_files)
 
-    target_outputs = [str(src_top) + '/' + file for file in self._general_tests_target_outputs if any('/'+module+'/' in file for module in self.modules_to_build)]
+    logging.info('Getting target outputs')
+    deduplicated_target_outputs = set(self._general_tests_target_outputs)
+    intermediate_target_outputs = [p for p in deduplicated_target_outputs if pathlib.Path(str(src_top) + '/' + p.strip()).exists()]
+    target_outputs = [str(src_top) + '/' + file for file in intermediate_target_outputs if any('/'+module+'/' in file for module in self.modules_to_build)]
+    logging.info('target_outputs size: %d', len(target_outputs))
     target_manifest_files, target_module_with_manifest_files = self._get_manifest_files(target_outputs)
     extra_target_files = self._get_base_module_names(target_manifest_files, target_module_with_manifest_files)
     target_outputs.extend(extra_target_files)
+    # Dedup final entries in output and remove non-existent files.
+    logging.info('Handling host and target outputs')
+    host_outputs = set(host_outputs)
+    host_outputs = [p for p in host_outputs if pathlib.Path(p.strip()).exists()]
+    target_outputs = set(target_outputs)
+    target_outputs = [p for p in target_outputs if pathlib.Path(p.strip()).exists()]
+    logging.info('host_outputs final size: %d', len(host_outputs))
+    logging.info('target_outputs final size: %d', len(target_outputs))
 
     host_config_files = [file for file in host_outputs if file.endswith('.config\n')]
     target_config_files = [file for file in target_outputs if file.endswith('.config\n')]
+    logging.info('final outputs:')
     logging.info(host_outputs)
     logging.info(target_outputs)
     with open(f"{tmp_dir / 'host.list'}", 'w') as host_list_file:
@@ -473,6 +491,7 @@ class GeneralTestsOptimizer(OptimizedBuildTarget):
     zip_command.append('-sha256')
 
     zip_commands.append(zip_command)
+    logging.info(zip_commands)
     return zip_commands
 
   def _get_zip_test_configs_zips_commands(

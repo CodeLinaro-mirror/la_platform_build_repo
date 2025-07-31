@@ -406,7 +406,7 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str,  ProductDirectory,    $(dir $(INTERNAL_PRODUCT)))
 
   $(call add_json_map,PartitionQualifiedVariables)
-  $(foreach image_type,INIT_BOOT BOOT VENDOR_BOOT VENDOR_KERNEL_BOOT SYSTEM VENDOR CACHE USERDATA PRODUCT SYSTEM_EXT OEM ODM VENDOR_DLKM ODM_DLKM SYSTEM_DLKM VBMETA VBMETA_SYSTEM VBMETA_SYSTEM_DLKM VBMETA_VENDOR_DLKM, \
+  $(foreach image_type,INIT_BOOT BOOT VENDOR_BOOT VENDOR_KERNEL_BOOT SYSTEM VENDOR CACHE USERDATA PRODUCT SYSTEM_EXT OEM ODM VENDOR_DLKM ODM_DLKM SYSTEM_DLKM VBMETA VBMETA_SYSTEM VBMETA_VENDOR VBMETA_SYSTEM_DLKM VBMETA_VENDOR_DLKM, \
     $(call add_json_map,$(call to-lower,$(image_type))) \
     $(call add_json_bool, BuildingImage, $(filter true,$(BUILDING_$(image_type)_IMAGE))) \
     $(call add_json_bool, PrebuiltImage, $(filter true,$(BOARD_PREBUILT_$(image_type)IMAGE))) \
@@ -554,15 +554,32 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_bool, ProductUseDynamicPartitionSize, $(filter true,$(PRODUCT_USE_DYNAMIC_PARTITION_SIZE)))
   $(call add_json_bool, CopyImagesForTargetFilesZip, $(filter true,$(COPY_IMAGES_FOR_TARGET_FILES_ZIP)))
 
-  $(call add_json_list, ProductPackages, $(PRODUCT_PACKAGES))
-  $(call add_json_list, ProductPackagesDebug, $(PRODUCT_PACKAGES_DEBUG))
-  $(call add_json_list, ProductPackagesEng, $(PRODUCT_PACKAGES_ENG))
-  $(call add_json_list, ProductPackagesDebugAsan, $(PRODUCT_PACKAGES_DEBUG_ASAN))
-  $(call add_json_list, ProductPackagesDebugJavaCoverage, $(PRODUCT_PACKAGES_DEBUG_JAVA_COVERAGE))
-  $(call add_json_list, ProductPackagesArm64, $(PRODUCT_PACKAGES_ARM64))
-  $(call add_json_list, ProductPackagesShippingApiLevel29, $(PRODUCT_PACKAGES_SHIPPING_API_LEVEL_29))
-  $(call add_json_list, ProductPackagesShippingApiLevel33, $(PRODUCT_PACKAGES_SHIPPING_API_LEVEL_33))
-  $(call add_json_list, ProductPackagesShippingApiLevel34, $(PRODUCT_PACKAGES_SHIPPING_API_LEVEL_34))
+  $(call add_json_map, ProductPackagesSet)
+    $(call add_json_map, all)
+      $(call add_json_list, ProductPackages, $(PRODUCT_PACKAGES))
+      $(call add_json_list, ProductPackagesDebug, $(PRODUCT_PACKAGES_DEBUG))
+      $(call add_json_list, ProductPackagesEng, $(PRODUCT_PACKAGES_ENG))
+      $(call add_json_list, ProductPackagesDebugAsan, $(PRODUCT_PACKAGES_DEBUG_ASAN))
+      $(call add_json_list, ProductPackagesDebugJavaCoverage, $(PRODUCT_PACKAGES_DEBUG_JAVA_COVERAGE))
+      $(call add_json_list, ProductPackagesArm64, $(PRODUCT_PACKAGES_ARM64))
+      $(call add_json_list, ProductPackagesShippingApiLevel29, $(PRODUCT_PACKAGES_SHIPPING_API_LEVEL_29))
+      $(call add_json_list, ProductPackagesShippingApiLevel33, $(PRODUCT_PACKAGES_SHIPPING_API_LEVEL_33))
+      $(call add_json_list, ProductPackagesShippingApiLevel34, $(PRODUCT_PACKAGES_SHIPPING_API_LEVEL_34))
+    $(call end_json_map)
+    # Used to verify artifact_path_requirements
+    $(foreach makefile, $(ARTIFACT_PATH_REQUIREMENT_PRODUCTS),\
+      $(call add_json_map, $(makefile)) \
+        $(call add_json_list, ProductPackages, $(PRODUCTS.$(makefile).PRODUCT_PACKAGES)) \
+        $(call add_json_list, ProductPackagesDebug, $(PRODUCTS.$(makefile).PRODUCT_PACKAGES_DEBUG)) \
+        $(call add_json_list, ProductPackagesEng, $(PRODUCTS.$(makefile).PRODUCT_PACKAGES_ENG)) \
+        $(call add_json_list, ProductPackagesDebugAsan, $(PRODUCTS.$(makefile).PRODUCT_PACKAGES_DEBUG_ASAN)) \
+        $(call add_json_list, ProductPackagesDebugJavaCoverage, $(PRODUCTS.$(makefile).PRODUCT_PACKAGES_DEBUG_JAVA_COVERAGE)) \
+        $(call add_json_list, ProductPackagesArm64, $(PRODUCTS.$(makefile).PRODUCT_PACKAGES_ARM64)) \
+        $(call add_json_list, ProductPackagesShippingApiLevel29, $(PRODUCTS.$(makefile).PRODUCT_PACKAGES_SHIPPING_API_LEVEL_29)) \
+        $(call add_json_list, ProductPackagesShippingApiLevel33, $(PRODUCTS.$(makefile).PRODUCT_PACKAGES_SHIPPING_API_LEVEL_33)) \
+        $(call add_json_list, ProductPackagesShippingApiLevel34, $(PRODUCTS.$(makefile).PRODUCT_PACKAGES_SHIPPING_API_LEVEL_34)) \
+      $(call end_json_map))
+  $(call end_json_map)
 
   # Used to generate /vendor/linker.config.pb
   $(call add_json_list, VendorLinkerConfigSrcs, $(PRODUCT_VENDOR_LINKER_CONFIG_FRAGMENTS))
@@ -597,6 +614,23 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, BootLoaderBoardName, $(TARGET_BOOTLOADER_BOARD_NAME))
 
   $(call add_json_list, ProductCopyFiles, $(PRODUCT_COPY_FILES))
+
+  # Used to verify artifact_path_requirements
+  $(call add_json_str, EnforceArtifactPathRequirements, $(PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS))
+  $(call add_json_list, ArtifactPathRequirementAllowedList, $(PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST))
+  $(call add_json_list, ArtifactPathRequirementProducts, $(ARTIFACT_PATH_REQUIREMENT_PRODUCTS))
+  define add_json_list_map_from_makefiles
+    $(call add_json_map, $(1))
+      $(foreach makefile, $(3),\
+        $(call add_json_list, $(makefile), $(PRODUCTS.$(makefile).$(strip $(2)))))
+    $(call end_json_map)
+  endef
+  $(call add_json_list_map_from_makefiles, ArtifactPathRequirementsOfMakefile, ARTIFACT_PATH_REQUIREMENTS, $(ARTIFACT_PATH_REQUIREMENT_PRODUCTS))
+  $(call add_json_list_map_from_makefiles, ArtifactPathAllowedListOfMakefile, ARTIFACT_PATH_ALLOWED_LIST, $(ARTIFACT_PATH_REQUIREMENT_PRODUCTS))
+  $(call add_json_map, ArtifactPathRequirementsIsRelaxedOfMakefile)
+    $(foreach makefile, $(ARTIFACT_PATH_REQUIREMENT_PRODUCTS),\
+      $(call add_json_bool, $(makefile), $(PRODUCTS.$(makefile).ARTIFACT_PATH_REQUIREMENT_IS_RELAXED)))
+  $(call end_json_map)
 
   # Used to generate fsv meta
   $(call add_json_bool, ProductFsverityGenerateMetadata,               $(PRODUCT_FSVERITY_GENERATE_METADATA))
