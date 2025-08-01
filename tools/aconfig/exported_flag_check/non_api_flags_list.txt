@@ -187,7 +187,6 @@ com.android.bluetooth.flags.allow_switching_hid_and_hogp
 com.android.bluetooth.flags.bt_offload_socket_api
 com.android.bluetooth.flags.channel_sounding
 com.android.bluetooth.flags.fix_started_module_race
-com.android.bluetooth.flags.le_subrate_api
 com.android.bluetooth.flags.leaudio_broadcast_monitor_source_sync_status
 com.android.bluetooth.flags.leaudio_broadcast_volume_control_for_connected_devices
 com.android.bluetooth.flags.leaudio_multiple_vocs_instances_api

@@ -518,6 +518,7 @@ mod tests {
     public class FakeFeatureFlagsImpl extends CustomFeatureFlags {
         private final Map<String, Boolean> mFlagMap = new HashMap<>();
         private final FeatureFlags mDefaults;
+        private final boolean IS_EXPORTED = {};
 
         public FakeFeatureFlagsImpl() {
             this(null);
@@ -545,7 +546,7 @@ mod tests {
         }
 
         public void setFlag(String flagName, boolean value) {
-            if (!this.mFlagMap.containsKey(flagName)) {
+            if (!this.mFlagMap.containsKey(flagName) && !IS_EXPORTED) {
                 throw new IllegalArgumentException("no such flag " + flagName);
             }
             this.mFlagMap.put(flagName, value);
@@ -783,6 +784,7 @@ mod tests {
             + r#"
             private static FeatureFlags FEATURE_FLAGS = new FeatureFlagsImpl();
         }"#;
+        let expect_fake_feature_impl = EXPECTED_FAKEFEATUREFLAGSIMPL_CONTENT.replace("{}", "false");
 
         let mut file_set = HashMap::from([
             ("com/android/aconfig/test/Flags.java", expect_flags_content.as_str()),
@@ -795,10 +797,7 @@ mod tests {
                 "com/android/aconfig/test/CustomFeatureFlags.java",
                 EXPECTED_CUSTOMFEATUREFLAGS_CONTENT,
             ),
-            (
-                "com/android/aconfig/test/FakeFeatureFlagsImpl.java",
-                EXPECTED_FAKEFEATUREFLAGSIMPL_CONTENT,
-            ),
+            ("com/android/aconfig/test/FakeFeatureFlagsImpl.java", &expect_fake_feature_impl),
         ]);
 
         for file in generated_files {
@@ -856,6 +855,7 @@ mod tests {
             private static FeatureFlags FEATURE_FLAGS = new FeatureFlagsImpl();
         }"#;
 
+        let expect_fake_feature_impl = EXPECTED_FAKEFEATUREFLAGSIMPL_CONTENT.replace("{}", "false");
         let mut file_set = HashMap::from([
             ("com/android/aconfig/test/Flags.java", expect_flags_content.as_str()),
             (
@@ -867,10 +867,7 @@ mod tests {
                 "com/android/aconfig/test/CustomFeatureFlags.java",
                 EXPECTED_CUSTOMFEATUREFLAGS_CONTENT,
             ),
-            (
-                "com/android/aconfig/test/FakeFeatureFlagsImpl.java",
-                EXPECTED_FAKEFEATUREFLAGSIMPL_CONTENT,
-            ),
+            ("com/android/aconfig/test/FakeFeatureFlagsImpl.java", &expect_fake_feature_impl),
         ]);
 
         for file in generated_files {
@@ -1064,6 +1061,7 @@ mod tests {
             }
         }
     "#;
+        let expect_fake_feature_impl = EXPECTED_FAKEFEATUREFLAGSIMPL_CONTENT.replace("{}", "true");
 
         let mut file_set = HashMap::from([
             ("com/android/aconfig/test/Flags.java", expect_flags_content),
@@ -1073,10 +1071,7 @@ mod tests {
                 "com/android/aconfig/test/CustomFeatureFlags.java",
                 expect_custom_feature_flags_content,
             ),
-            (
-                "com/android/aconfig/test/FakeFeatureFlagsImpl.java",
-                EXPECTED_FAKEFEATUREFLAGSIMPL_CONTENT,
-            ),
+            ("com/android/aconfig/test/FakeFeatureFlagsImpl.java", &expect_fake_feature_impl),
         ]);
 
         for file in generated_files {
@@ -1287,7 +1282,7 @@ mod tests {
             }
         }
     "#;
-
+        let expect_fake_feature_impl = EXPECTED_FAKEFEATUREFLAGSIMPL_CONTENT.replace("{}", "true");
         let mut file_set = HashMap::from([
             ("com/android/aconfig/test/Flags.java", expect_flags_content),
             ("com/android/aconfig/test/FeatureFlags.java", expect_feature_flags_content),
@@ -1296,10 +1291,7 @@ mod tests {
                 "com/android/aconfig/test/CustomFeatureFlags.java",
                 expect_custom_feature_flags_content,
             ),
-            (
-                "com/android/aconfig/test/FakeFeatureFlagsImpl.java",
-                EXPECTED_FAKEFEATUREFLAGSIMPL_CONTENT,
-            ),
+            ("com/android/aconfig/test/FakeFeatureFlagsImpl.java", &expect_fake_feature_impl),
         ]);
 
         for file in generated_files {
@@ -1463,7 +1455,7 @@ mod tests {
             }
         }
         "#;
-
+        let expect_fake_feature_impl = EXPECTED_FAKEFEATUREFLAGSIMPL_CONTENT.replace("{}", "false");
         let mut file_set = HashMap::from([
             ("com/android/aconfig/test/Flags.java", expect_flags_content.as_str()),
             ("com/android/aconfig/test/FeatureFlags.java", EXPECTED_FEATUREFLAGS_COMMON_CONTENT),
@@ -1472,10 +1464,7 @@ mod tests {
                 "com/android/aconfig/test/CustomFeatureFlags.java",
                 EXPECTED_CUSTOMFEATUREFLAGS_CONTENT,
             ),
-            (
-                "com/android/aconfig/test/FakeFeatureFlagsImpl.java",
-                EXPECTED_FAKEFEATUREFLAGSIMPL_CONTENT,
-            ),
+            ("com/android/aconfig/test/FakeFeatureFlagsImpl.java", &expect_fake_feature_impl),
         ]);
 
         for file in generated_files {
@@ -1720,15 +1709,13 @@ mod tests {
         }
         "#;
 
+        let expect_fake_feature_impl = EXPECTED_FAKEFEATUREFLAGSIMPL_CONTENT.replace("{}", "false");
         let mut file_set = HashMap::from([
             ("com/android/aconfig/test/Flags.java", expect_flags_content),
             ("com/android/aconfig/test/FeatureFlagsImpl.java", expect_featureflagsimpl_content),
             ("com/android/aconfig/test/FeatureFlags.java", expect_featureflags_content),
             ("com/android/aconfig/test/CustomFeatureFlags.java", expect_customfeatureflags_content),
-            (
-                "com/android/aconfig/test/FakeFeatureFlagsImpl.java",
-                EXPECTED_FAKEFEATUREFLAGSIMPL_CONTENT,
-            ),
+            ("com/android/aconfig/test/FakeFeatureFlagsImpl.java", &expect_fake_feature_impl),
         ]);
 
         for file in generated_files {

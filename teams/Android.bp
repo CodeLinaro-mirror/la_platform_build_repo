@@ -581,7 +581,7 @@ team {
 }
 
 team {
-    name: "trendy_team_performance",
+    name: "trendy_team_system_ui_performance",
 
     // go/trendy/manage/engineers/5842000521625600
     trendy_team_id: "5842000521625600",
