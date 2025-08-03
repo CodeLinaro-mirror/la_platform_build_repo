@@ -3460,14 +3460,30 @@ endif  # PRODUCT_FSVERITY_GENERATE_METADATA
 
 
 # Treble Labeling Test
-platform-preinstalled-apps-patterns := \
+platform-preinstalled-apps-patterns :=
+platform-seapp-contexts-patterns :=
+vendor-preinstalled-apps-patterns :=
+vendor-seapp-contexts-patterns :=
+vendor-file-contexts-patterns :=
+sepolicy-binary-patterns :=
+
+ifdef BUILDING_SYSTEM_IMAGE
+platform-preinstalled-apps-patterns += \
   $(TARGET_OUT)/priv-app/%.apk \
   $(TARGET_OUT)/app/%.apk \
+
+platform-seapp-contexts-patterns += \
+  $(TARGET_OUT)/etc/selinux/plat_seapp_contexts \
+
+endif
 
 ifdef BUILDING_SYSTEM_EXT_IMAGE
 platform-preinstalled-apps-patterns += \
   $(TARGET_OUT_SYSTEM_EXT)/priv-app/%.apk \
   $(TARGET_OUT_SYSTEM_EXT)/app/%.apk \
+
+platform-seapp-contexts-patterns += \
+  $(TARGET_OUT_SYSTEM_EXT)/etc/selinux/system_ext_seapp_contexts \
 
 endif
 
@@ -3476,55 +3492,97 @@ platform-preinstalled-apps-patterns += \
   $(TARGET_OUT_PRODUCT)/priv-app/%.apk \
   $(TARGET_OUT_PRODUCT)/app/%.apk \
 
+platform-seapp-contexts-patterns += \
+  $(TARGET_OUT_PRODUCT)/etc/selinux/product_seapp_contexts \
+
 endif
 
-platform-preinstalled-apps := $(sort $(filter \
-  $(platform-preinstalled-apps-patterns), \
-  $(ALL_DEFAULT_INSTALLED_MODULES)))
-
-
-vendor-preinstalled-apps-patterns := \
+ifdef BUILDING_VENDOR_IMAGE
+vendor-preinstalled-apps-patterns += \
   $(TARGET_OUT_VENDOR)/priv-app/%.apk \
   $(TARGET_OUT_VENDOR)/app/%.apk \
+
+vendor-seapp-contexts-patterns += \
+  $(TARGET_OUT_VENDOR)/etc/selinux/vendor_seapp_contexts
+
+vendor-file-contexts-patterns += \
+  $(TARGET_OUT_VENDOR)/etc/selinux/vendor_file_contexts
+
+sepolicy-binary-patterns += \
+  $(TARGET_OUT_VENDOR)/etc/selinux/precompiled_sepolicy \
+
+endif
 
 ifdef BUILDING_ODM_IMAGE
 vendor-preinstalled-apps-patterns += \
   $(TARGET_OUT_ODM)/priv-app/%.apk \
   $(TARGET_OUT_ODM)/app/%.apk \
 
+vendor-seapp-contexts-patterns += \
+  $(TARGET_OUT_ODM)/etc/selinux/odm_seapp_contexts
+
+vendor-file-contexts-patterns += \
+  $(TARGET_OUT_ODM)/etc/selinux/odm_file_contexts
+
+sepolicy-binary-patterns += \
+  $(TARGET_OUT_ODM)/etc/selinux/precompiled_sepolicy \
+
 endif
+
+platform-preinstalled-apps := $(sort $(filter \
+  $(platform-preinstalled-apps-patterns), \
+  $(ALL_DEFAULT_INSTALLED_MODULES)))
+
+platform-seapp-contexts := $(sort $(filter \
+  $(platform-seapp-contexts-patterns), \
+  $(ALL_DEFAULT_INSTALLED_MODULES)))
 
 vendor-preinstalled-apps := $(sort $(filter \
   $(vendor-preinstalled-apps-patterns), \
   $(ALL_DEFAULT_INSTALLED_MODULES)))
 
+vendor-seapp-contexts := $(sort $(filter \
+  $(vendor-seapp-contexts-patterns), \
+  $(ALL_DEFAULT_INSTALLED_MODULES)))
+
+vendor-file-contexts := $(sort $(filter \
+  $(vendor-file-contexts-patterns), \
+  $(ALL_DEFAULT_INSTALLED_MODULES)))
+
+sepolicy-binary := $(sort $(filter \
+  $(sepolicy-binary-patterns), \
+  $(ALL_DEFAULT_INSTALLED_MODULES)))
+
 sepolicy-binary-without-vendor := $(call intermediates-dir-for,ETC,precompiled_sepolicy_without_vendor)/precompiled_sepolicy_without_vendor
-sepolicy-binary := $(call intermediates-dir-for,ETC,precompiled_sepolicy)/precompiled_sepolicy
-
-platform-seapp-contexts := $(call intermediates-dir-for,ETC,plat_seapp_contexts)/plat_seapp_contexts
-
-ifdef BUILDING_SYSTEM_EXT_IMAGE
-platform-seapp-contexts += $(call intermediates-dir-for,ETC,system_ext_seapp_contexts)/system_ext_seapp_contexts
-endif
-
-ifdef BUILDING_PRODUCT_IMAGE
-platform-seapp-contexts += $(call intermediates-dir-for,ETC,product_seapp_contexts)/product_seapp_contexts
-endif
-
-vendor-seapp-contexts := $(call intermediates-dir-for,ETC,vendor_seapp_contexts)/vendor_seapp_contexts
-
-ifdef BUILDING_ODM_IMAGE
-vendor-seapp-contexts += $(call intermediates-dir-for,ETC,odm_seapp_contexts)/odm_seapp_contexts
-endif
-
-vendor-file-contexts := $(call intermediates-dir-for,ETC,vendor_file_contexts)/vendor_file_contexts
-
-ifdef BUILDING_ODM_IMAGE
-vendor-file-contexts += $(call intermediates-dir-for,ETC,odm_file_contexts)/odm_file_contexts
-endif
 
 check-selinux-treble-labeling.timestamp := $(call intermediates-dir-for,PACKAGING,check-selinux-treble-labeling)/check-selinux-treble-labeling.timestamp
 
+ifeq ($(call math_gt,$(words $(sepolicy-binary)),1),true)
+$(check-selinux-treble-labeling.timestamp): PRIVATE_SEPOLICY := $(sepolicy-binary)
+$(check-selinux-treble-labeling.timestamp):
+	@echo "Error: number of precompiled_sepolicy must not be greater than one but was \"$(PRIVATE_SEPOLICY)\"" >&2
+	@exit 1
+else ifeq ($(and \
+  $(strip $(platform-seapp-contexts)), \
+  $(strip $(vendor-seapp-contexts)), \
+  $(strip $(vendor-file-contexts)), \
+  $(strip $(sepolicy-binary-without-vendor)), \
+  $(strip $(sepolicy-binary))),)
+$(check-selinux-treble-labeling.timestamp): PRIVATE_SEPOLICY := $(sepolicy-binary)
+$(check-selinux-treble-labeling.timestamp): PRIVATE_PLATFORM_SEAPP_CONTEXTS := $(platform-seapp-contexts)
+$(check-selinux-treble-labeling.timestamp): PRIVATE_VENDOR_SEAPP_CONTEXTS := $(vendor-seapp-contexts)
+$(check-selinux-treble-labeling.timestamp): PRIVATE_VENDOR_FILE_CONTEXTS := $(vendor-file-contexts)
+$(check-selinux-treble-labeling.timestamp): PRIVATE_SEPOLICY_WITHOUT_VENDOR := $(sepolicy-binary-without-vendor)
+$(check-selinux-treble-labeling.timestamp): PRIVATE_SEPOLICY := $(sepolicy-binary)
+$(check-selinux-treble-labeling.timestamp):
+	@rm -rf $@
+	@echo "cannot find necessary artifacts. skipping tests." > $@
+	@echo "platformSeappContexts: \"$(PRIVATE_PLATFORM_SEAPP_CONTEXTS)\"" >> $@
+	@echo "vendorSeappContexts: \"$(PRIVATE_VENDOR_SEAPP_CONTEXTS)\"" >> $@
+	@echo "vendorFileContexts: \"$(PRIVATE_VENDOR_FILE_CONTEXTS)\"" >> $@
+	@echo "precompiledSepolicies: \"$(PRIVATE_SEPOLICY)\"" >> $@
+	@echo "precompiled_sepolicy_without_vendor: \"$(PRIVATE_SEPOLICY_WITHOUT_VENDOR)\"" >> $@
+else
 $(check-selinux-treble-labeling.timestamp): PRIVATE_PLATFORM_APPS := $(platform-preinstalled-apps)
 $(check-selinux-treble-labeling.timestamp): PRIVATE_VENDOR_APPS := $(vendor-preinstalled-apps)
 $(check-selinux-treble-labeling.timestamp): PRIVATE_SEPOLICY_WITHOUT_VENDOR := $(sepolicy-binary-without-vendor)
@@ -3537,7 +3595,7 @@ $(check-selinux-treble-labeling.timestamp): PRIVATE_TREAT_AS_WARNINGS := $(if $(
 $(check-selinux-treble-labeling.timestamp): PRIVATE_DEBUGGABLE := $(if $(filter user,$(TARGET_BUILD_VARIANT)),,--debuggable)
 $(check-selinux-treble-labeling.timestamp): $(HOST_OUT_EXECUTABLES)/treble_labeling_tests \
     $(platform-preinstalled-apps) $(vendor-preinstalled-apps) \
-    $(platform-sepolicy-binary) $(sepolicy-binary) $(sepolicy-binary-without-vendor) \
+    $(sepolicy-binary) $(sepolicy-binary-without-vendor) \
     $(platform-seapp-contexts) $(vendor-seapp-contexts) $(vendor-file-contexts) \
     $(PRODUCT_SELINUX_TREBLE_LABELING_TRACKING_LIST_FILE) $(AAPT2)
 	@rm -rf $@
@@ -3552,6 +3610,7 @@ $(check-selinux-treble-labeling.timestamp): $(HOST_OUT_EXECUTABLES)/treble_label
     $(if $(PRIVATE_TRACKING_LIST_FILE),--tracking_list_file $(PRIVATE_TRACKING_LIST_FILE)) \
     $(PRIVATE_TREAT_AS_WARNINGS) $(PRIVATE_DEBUGGABLE) \
     --aapt2_path $(AAPT2) > $@
+endif
 
 .PHONY: check-selinux-treble-labeling
 check-selinux-treble-labeling: $(check-selinux-treble-labeling.timestamp)
@@ -3566,10 +3625,15 @@ platform-preinstalled-apps :=
 vendor-preinstalled-apps-patterns :=
 vendor-preinstalled-apps :=
 check-selinux-treble-labeling.timestamp :=
-platform-sepolicy-binary :=
+sepolicy-binary-without-vendor :=
+sepolicy-binary-patterns :=
 sepolicy-binary :=
+platform-seapp-contexts-patterns :=
 platform-seapp-contexts :=
+vendor-seapp-contexts-patterns :=
 vendor-seapp-contexts :=
+vendor-file-contexts-patterns :=
+vendor-file-contexts :=
 
 # -----------------------------------------------------------------
 # system image
@@ -6670,9 +6734,6 @@ endif # not (BUILDING_VENDOR_BOOT_IMAGE and BOARD_USES_RECOVERY_AS_BOOT)
 endif # INSTALLED_RECOVERYIMAGE_TARGET defined or BOARD_USES_RECOVERY_AS_BOOT is true
 	@# Components of the boot image
 	$(hide) mkdir -p $(zip_root)/BOOT
-	$(hide) mkdir -p $(zip_root)/ROOT
-	$(hide) $(call package_files-copy-root, \
-	    $(TARGET_ROOT_OUT),$(zip_root)/ROOT)
 	@# If we are using recovery as boot, this is already done when processing recovery.
 ifneq ($(BOARD_USES_RECOVERY_AS_BOOT),true)
 	$(hide) $(call package_files-copy-root, \
@@ -6754,6 +6815,10 @@ else
 	$(hide) $(call package_files-copy-root, \
 	    $(SYSTEMIMAGE_SOURCE_DIR),$(zip_root)/SYSTEM)
 endif
+	@# Content of the root folder
+	$(hide) mkdir -p $(zip_root)/ROOT
+	$(hide) $(call package_files-copy-root, \
+	    $(TARGET_ROOT_OUT),$(zip_root)/ROOT)
 else ifdef INSTALLED_BUILD_PROP_TARGET
 	@# Copy the system build.prop even if not building a system image
 	@# because add_img_to_target_files may need it to build other partition
