@@ -1785,8 +1785,8 @@ metadata_files := $(subst $(newline),$(space),$(file <$(metadata_list)))
 # Create metadata for compliance support in Soong
 .PHONY: make-compliance-metadata
 make-compliance-metadata: \
-    $(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make-metadata.csv \
-    $(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make-modules.csv
+    $(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make_metadata.csv \
+    $(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make_modules.csv
 
 
 # Precompute these as an optimization to not do $(findstring).
@@ -1827,7 +1827,7 @@ $(foreach f,$(ALL_ROOTDIR_SYMLINKS),\
 )
 $(foreach m,$(ALL_NON_MODULES),$(eval _is_non_module.$(m):=Y))
 
-$(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make-metadata.csv:
+$(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make_metadata.csv:
 	rm -f $@
 	echo 'installed_file,module_path,is_soong_module,is_prebuilt_make_module,product_copy_files,kernel_module_copy_files,is_platform_generated,static_libs,whole_static_libs,license_text' >> $@
 	$(foreach f,$(installed_files),\
@@ -1858,7 +1858,7 @@ $(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make-metadata.csv:
 	  echo '$(_build_output_path),$(_module_path),$(_is_soong_module),$(_is_prebuilt_make_module),$(_product_copy_files),$(_kernel_module_copy_files),$(_is_platform_generated),$(_static_libs),$(_whole_static_libs),$(_license_text)' >> $@; \
 	)
 
-$(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make-modules.csv:
+$(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make_modules.csv:
 	rm -f $@
 	echo 'name,module_path,module_class,module_type,static_libs,whole_static_libs,built_files,installed_files' >> $@
 	$(foreach m,$(ALL_MODULES), \
