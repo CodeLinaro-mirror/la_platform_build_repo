@@ -1792,7 +1792,7 @@ team {
 }
 
 team {
-    name: "trendy_team_android_profile_experiences",
+    name: "trendy_team_android_data_aegis",
 
     // go/trendy/manage/engineers/5914919462404096
     trendy_team_id: "5914919462404096",
