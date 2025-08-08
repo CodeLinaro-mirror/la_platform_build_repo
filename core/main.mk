@@ -1884,53 +1884,6 @@ $(shell rm -f $(PRODUCT_OUT)/always_dirty_file.txt)
 $(PRODUCT_OUT)/always_dirty_file.txt:
 	touch $@
 
-.PHONY: sbom
-ifneq ($(TARGET_BUILD_APPS),)
-# Create build rules for generating SBOMs of unbundled APKs and APEXs
-# $1: sbom file
-# $2: sbom fragment file
-# $3: installed file
-# $4: sbom-metadata.csv file
-define generate-app-sbom
-$(eval _path_on_device := $(patsubst $(PRODUCT_OUT)/%,%,$(3)))
-$(eval _module_name := $(ALL_INSTALLED_FILES.$(3)))
-$(eval _module_path := $(strip $(sort $(ALL_MODULES.$(_module_name).PATH))))
-$(eval _soong_module_type := $(strip $(sort $(ALL_MODULES.$(_module_name).SOONG_MODULE_TYPE))))
-$(eval _dep_modules := $(filter %.$(_module_name),$(ALL_MODULES)) $(filter %.$(_module_name)$(TARGET_2ND_ARCH_MODULE_SUFFIX),$(ALL_MODULES)))
-$(eval _is_apex := $(filter %.apex,$(3)))
-
-$(4):
-	rm -rf $$@
-	echo installed_file,module_path,soong_module_type,is_prebuilt_make_module,product_copy_files,kernel_module_copy_files,is_platform_generated,build_output_path,static_libraries,whole_static_libraries,is_static_lib >> $$@
-	echo /$(_path_on_device),$(_module_path),$(_soong_module_type),,,,,$(3),,, >> $$@
-	$(if $(filter %.apex,$(3)),\
-	  $(foreach m,$(_dep_modules),\
-	    echo $(patsubst $(PRODUCT_OUT)/apex/$(_module_name)/%,%,$(ALL_MODULES.$m.INSTALLED)),$(sort $(ALL_MODULES.$m.PATH)),$(sort $(ALL_MODULES.$m.SOONG_MODULE_TYPE)),,,,,$(strip $(ALL_MODULES.$m.INSTALLED)),,, >> $$@;))
-
-$(2): $(1)
-$(1): $(4) $(3) $(GEN_SBOM) $(installed_files) $(metadata_list) $(metadata_files)
-	rm -rf $$@
-	$(GEN_SBOM) --output_file $$@ --metadata $(4) --build_version $$(BUILD_FINGERPRINT_FROM_FILE) --product_mfr "$(PRODUCT_MANUFACTURER)" --json $(if $(filter %.apk,$(3)),--unbundled_apk,--unbundled_apex)
-endef
-
-apps_only_sbom_files :=
-apps_only_fragment_files :=
-$(foreach f,$(filter %.apk %.apex,$(installed_files)), \
-  $(eval _metadata_csv_file := $(patsubst %,%-sbom-metadata.csv,$f)) \
-  $(eval _sbom_file := $(patsubst %,%.spdx.json,$f)) \
-  $(eval _fragment_file := $(patsubst %,%-fragment.spdx,$f)) \
-  $(eval apps_only_sbom_files += $(_sbom_file)) \
-  $(eval apps_only_fragment_files += $(_fragment_file)) \
-  $(eval $(call generate-app-sbom,$(_sbom_file),$(_fragment_file),$f,$(_metadata_csv_file))) \
-)
-
-sbom: $(apps_only_sbom_files)
-
-$(foreach f,$(apps_only_fragment_files),$(eval apps_only_fragment_dist_files += :sbom/$(notdir $f)))
-$(foreach f,$(apps_only_sbom_files),$(eval apps_only_sbom_dist_files += :sbom/$(notdir $f)))
-$(call dist-for-goals,apps_only,$(join $(apps_only_sbom_files),$(apps_only_sbom_dist_files)) $(join $(apps_only_fragment_files),$(apps_only_fragment_dist_files)))
-endif
-
 $(call dist-write-file,$(KATI_PACKAGE_MK_DIR)/dist.mk)
 
 $(info [$(include_makefiles_total)/$(include_makefiles_total)] writing make module actions ...)

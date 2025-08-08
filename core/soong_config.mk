@@ -493,10 +493,10 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_list, BoardKernelModulesLoad16K, $(BOARD_KERNEL_MODULES_LOAD_16K))
 
   # radio
-  $(call add_json_str, RadioFilePath, $(RADIO_FILE_PATH))
   $(call add_json_list, AbOtaRadioPartitions, $(AB_OTA_RADIO_PARTITIONS))
   $(call add_json_str, BootloaderFilePath, $(BOOTLOADER_FILE_PATH))
   $(call add_json_list, AbOtaBootloaderPartitions, $(AB_OTA_BOOTLOADER_PARTITIONS))
+  $(call add_json_str, BoardRadioImagePath, $(BOARD_RADIO_IMAGE_PATH))
 
   # pvmfw
   $(call add_json_bool, BoardUsesPvmfwImage, $(BOARD_USES_PVMFWIMAGE))
@@ -674,6 +674,8 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
 
   # Fastboot
   $(call add_json_str, BoardFastbootInfoFile, $(TARGET_BOARD_FASTBOOT_INFO_FILE))
+
+  $(call add_json_str, VendorBlobsLicense, $(VENDOR_BLOBS_LICENSE))
 
 $(call end_json_map)
 

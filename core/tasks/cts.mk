@@ -99,14 +99,8 @@ $(verifier-zip): $(SOONG_ANDROID_CTS_VERIFIER_ZIP) $(cts-v-host-zip) $(SOONG_ZIP
 endif
 $(call dist-for-goals, cts, $(verifier-zip))
 
-# For producing CTS coverage reports.
-# Run "make cts-test-coverage" in the $ANDROID_BUILD_TOP directory.
-
-cts_api_coverage_exe := $(HOST_OUT_EXECUTABLES)/cts-api-coverage
-dexdeps_exe := $(HOST_OUT_EXECUTABLES)/dexdeps
 cts_api_map_exe := $(HOST_OUT_EXECUTABLES)/cts-api-map
 
-coverage_out := $(HOST_OUT)/cts-api-coverage
 api_map_out := $(HOST_OUT)/cts-api-map
 
 cts_jar_files := $(api_map_out)/cts_jar_files.txt
@@ -133,13 +127,6 @@ $(cts_all_jar_files): $(SOONG_ANDROID_CTS_VERIFIER_APP_LIST)
 
 api_xml_description := $(TARGET_OUT_COMMON_INTERMEDIATES)/api.xml
 
-napi_text_description := cts/tools/cts-api-coverage/etc/ndk-api.xml
-napi_xml_description := $(coverage_out)/ndk-api.xml
-$(napi_xml_description) : $(napi_text_description) $(ACP)
-		$(hide) echo "Preparing NDK API XML: $@"
-		$(hide) mkdir -p $(dir $@)
-		$(hide) $(ACP)  $< $@
-
 system_api_xml_description := $(TARGET_OUT_COMMON_INTERMEDIATES)/system-api.xml
 module_lib_api_xml_description := $(TARGET_OUT_COMMON_INTERMEDIATES)/module-lib-api.xml
 system_service_api_description := $(TARGET_OUT_COMMON_INTERMEDIATES)/system-server-api.xml
@@ -148,16 +135,6 @@ combined_api_xml_description := $(api_xml_description) \
   $(system_api_xml_description) \
   $(module_lib_api_xml_description) \
   $(system_service_api_description)
-
-cts-test-coverage-report := $(coverage_out)/test-coverage.html
-cts-system-api-coverage-report := $(coverage_out)/system-api-coverage.html
-cts-system-api-xml-coverage-report := $(coverage_out)/system-api-coverage.xml
-cts-verifier-coverage-report := $(coverage_out)/verifier-coverage.html
-cts-combined-coverage-report := $(coverage_out)/combined-coverage.html
-cts-combined-xml-coverage-report := $(coverage_out)/combined-coverage.xml
-
-cts_api_coverage_dependencies := $(cts_api_coverage_exe) $(dexdeps_exe) $(api_xml_description) $(napi_xml_description)
-cts_system_api_coverage_dependencies := $(cts_api_coverage_exe) $(dexdeps_exe) $(system_api_xml_description)
 
 cts-api-map-xml-report := $(api_map_out)/cts-api-map.xml
 cts-v-host-api-map-xml-report := $(api_map_out)/cts-v-host-api-map.xml
@@ -172,80 +149,7 @@ cts_combined_api_map_dependencies := $(cts_api_map_exe) $(combined_api_xml_descr
 android_cts_zip := $(HOST_OUT)/cts/android-cts.zip
 cts_verifier_apk := $(call intermediates-dir-for,APPS,CtsVerifier)/package.apk
 
-$(cts-test-coverage-report): PRIVATE_TEST_CASES := $(COMPATIBILITY_TESTCASES_OUT_cts)
-$(cts-test-coverage-report): PRIVATE_CTS_API_COVERAGE_EXE := $(cts_api_coverage_exe)
-$(cts-test-coverage-report): PRIVATE_DEXDEPS_EXE := $(dexdeps_exe)
-$(cts-test-coverage-report): PRIVATE_API_XML_DESC := $(api_xml_description)
-$(cts-test-coverage-report): PRIVATE_NAPI_XML_DESC := $(napi_xml_description)
-$(cts-test-coverage-report) : $(android_cts_zip) $(cts_api_coverage_dependencies) | $(ACP)
-	$(call generate-coverage-report-cts,"CTS Tests API-NDK Coverage Report",\
-			$(PRIVATE_TEST_CASES),html)
-
-$(cts-system-api-coverage-report): PRIVATE_TEST_CASES := $(COMPATIBILITY_TESTCASES_OUT_cts)
-$(cts-system-api-coverage-report): PRIVATE_CTS_API_COVERAGE_EXE := $(cts_api_coverage_exe)
-$(cts-system-api-coverage-report): PRIVATE_DEXDEPS_EXE := $(dexdeps_exe)
-$(cts-system-api-coverage-report): PRIVATE_API_XML_DESC := $(system_api_xml_description)
-$(cts-system-api-coverage-report): PRIVATE_NAPI_XML_DESC := ""
-$(cts-system-api-coverage-report) : $(android_cts_zip) $(cts_system_api_coverage_dependencies) | $(ACP)
-	$(call generate-coverage-report-cts,"CTS System API Coverage Report",\
-			$(PRIVATE_TEST_CASES),html)
-
-$(cts-system-api-xml-coverage-report): PRIVATE_TEST_CASES := $(COMPATIBILITY_TESTCASES_OUT_cts)
-$(cts-system-api-xml-coverage-report): PRIVATE_CTS_API_COVERAGE_EXE := $(cts_api_coverage_exe)
-$(cts-system-api-xml-coverage-report): PRIVATE_DEXDEPS_EXE := $(dexdeps_exe)
-$(cts-system-api-xml-coverage-report): PRIVATE_API_XML_DESC := $(system_api_xml_description)
-$(cts-system-api-xml-coverage-report): PRIVATE_NAPI_XML_DESC := ""
-$(cts-system-api-xml-coverage-report) : $(android_cts_zip) $(cts_system_api_coverage_dependencies) | $(ACP)
-	$(call generate-coverage-report-cts,"CTS System API Coverage Report - XML",\
-			$(PRIVATE_TEST_CASES),xml)
-
-$(cts-verifier-coverage-report): PRIVATE_TEST_CASES := $(foreach c, $(cts_verifier_apk) $(verifier-dir), $(c))
-$(cts-verifier-coverage-report): PRIVATE_CTS_API_COVERAGE_EXE := $(cts_api_coverage_exe)
-$(cts-verifier-coverage-report): PRIVATE_DEXDEPS_EXE := $(dexdeps_exe)
-$(cts-verifier-coverage-report): PRIVATE_API_XML_DESC := $(api_xml_description)
-$(cts-verifier-coverage-report): PRIVATE_NAPI_XML_DESC := $(napi_xml_description)
-$(cts-verifier-coverage-report) : $(cts_verifier_apk) $(verifier-zip) $(cts_api_coverage_dependencies) | $(ACP)
-	$(call generate-coverage-report-cts,"CTS Verifier API Coverage Report",\
-			$(PRIVATE_TEST_CASES),html)
-
-$(cts-combined-coverage-report): PRIVATE_TEST_CASES := $(foreach c, $(cts_verifier_apk) $(COMPATIBILITY_TESTCASES_OUT_cts) $(verifier-dir), $(c))
-$(cts-combined-coverage-report): PRIVATE_CTS_API_COVERAGE_EXE := $(cts_api_coverage_exe)
-$(cts-combined-coverage-report): PRIVATE_DEXDEPS_EXE := $(dexdeps_exe)
-$(cts-combined-coverage-report): PRIVATE_API_XML_DESC := $(api_xml_description)
-$(cts-combined-coverage-report): PRIVATE_NAPI_XML_DESC := $(napi_xml_description)
-$(cts-combined-coverage-report) : $(android_cts_zip) $(cts_verifier_apk) $(verifier-zip) $(cts_api_coverage_dependencies) | $(ACP)
-	$(call generate-coverage-report-cts,"CTS Combined API Coverage Report",\
-			$(PRIVATE_TEST_CASES),html)
-
-$(cts-combined-xml-coverage-report): PRIVATE_TEST_CASES := $(foreach c, $(cts_verifier_apk) $(COMPATIBILITY_TESTCASES_OUT_cts) $(verifier-dir), $(c))
-$(cts-combined-xml-coverage-report): PRIVATE_CTS_API_COVERAGE_EXE := $(cts_api_coverage_exe)
-$(cts-combined-xml-coverage-report): PRIVATE_DEXDEPS_EXE := $(dexdeps_exe)
-$(cts-combined-xml-coverage-report): PRIVATE_API_XML_DESC := $(api_xml_description)
-$(cts-combined-xml-coverage-report): PRIVATE_NAPI_XML_DESC := $(napi_xml_description)
-$(cts-combined-xml-coverage-report) : $(android_cts_zip) $(cts_verifier_apk) $(verifier-zip) $(cts_api_coverage_dependencies) | $(ACP)
-	$(call generate-coverage-report-cts,"CTS Combined API Coverage Report - XML",\
-			$(PRIVATE_TEST_CASES),xml)
-
-.PHONY: cts-test-coverage
-cts-test-coverage : $(cts-test-coverage-report)
-
-.PHONY: cts-system-api-coverage
-cts-system-api-coverage : $(cts-system-api-coverage-report)
-
-.PHONY: cts-system-api-xml-coverage
-cts-system-api-xml-coverage : $(cts-system-api-xml-coverage-report)
-
-.PHONY: cts-verifier-coverage
-cts-verifier-coverage : $(cts-verifier-coverage-report)
-
-.PHONY: cts-combined-coverage
-cts-combined-coverage : $(cts-combined-coverage-report)
-
-.PHONY: cts-combined-xml-coverage
-cts-combined-xml-coverage : $(cts-combined-xml-coverage-report)
-
-.PHONY: cts-coverage-report-all cts-api-coverage
-cts-coverage-report-all: cts-test-coverage cts-verifier-coverage cts-combined-coverage cts-combined-xml-coverage
+.PHONY: cts-api-coverage
 
 $(cts-api-map-xml-report): PRIVATE_CTS_API_MAP_EXE := $(cts_api_map_exe)
 $(cts-api-map-xml-report): PRIVATE_API_XML_DESC := $(combined_api_xml_description)
@@ -294,13 +198,6 @@ cts-combined-api-map-xml : $(cts-combined-api-map-xml-report)
 .PHONY: cts-combined-api-inherit-xml
 cts-combined-api-inherit-xml : $(cts-combined-api-inherit-xml-report)
 
-ALL_TARGETS.$(cts-test-coverage-report).META_LIC:=$(module_license_metadata)
-ALL_TARGETS.$(cts-system-api-coverage-report).META_LIC:=$(module_license_metadata)
-ALL_TARGETS.$(cts-system-api-xml-coverage-report).META_LIC:=$(module_license_metadata)
-ALL_TARGETS.$(cts-verifier-coverage-report).META_LIC:=$(module_license_metadata)
-ALL_TARGETS.$(cts-combined-coverage-report).META_LIC:=$(module_license_metadata)
-ALL_TARGETS.$(cts-combined-xml-coverage-report).META_LIC:=$(module_license_metadata)
-
 # Put the test api map report in the dist dir if "cts-api-coverage" is among the build goals.
 $(call dist-for-goals, cts-api-coverage, $(cts-combined-api-map-xml-report):cts-api-map-report.xml)
 $(call dist-for-goals, cts-api-coverage, $(cts-combined-api-inherit-xml-report):cts-api-inherit-report.xml)
@@ -310,16 +207,6 @@ ALL_TARGETS.$(cts-v-host-api-map-xml-report).META_LIC:=$(module_license_metadata
 ALL_TARGETS.$(cts-combined-api-map-xml-report).META_LIC:=$(module_license_metadata)
 ALL_TARGETS.$(cts-combined-api-map-html-report).META_LIC:=$(module_license_metadata)
 ALL_TARGETS.$(cts-combined-api-map-inherit-report).META_LIC:=$(module_license_metadata)
-
-# Arguments;
-#  1 - Name of the report printed out on the screen
-#  2 - List of apk files that will be scanned to generate the report
-#  3 - Format of the report
-define generate-coverage-report-cts
-	$(hide) mkdir -p $(dir $@)
-	$(hide) $(PRIVATE_CTS_API_COVERAGE_EXE) -j 8 -d $(PRIVATE_DEXDEPS_EXE) -a $(PRIVATE_API_XML_DESC) -n $(PRIVATE_NAPI_XML_DESC) -f $(3) -o $@ $(2)
-	@ echo $(1): file://$$(cd $(dir $@); pwd)/$(notdir $@)
-endef
 
 # Arguments;
 #  1 - Name of the report printed out on the screen
@@ -343,17 +230,9 @@ define generate-api-inherit-report-cts
 endef
 
 # Reset temp vars
-cts_api_coverage_dependencies :=
-cts_system_api_coverage_dependencies :=
 cts_api_map_dependencies :=
 cts_v_host_api_map_dependencies :=
 cts_combined_api_map_dependencies :=
-cts-combined-coverage-report :=
-cts-combined-xml-coverage-report :=
-cts-verifier-coverage-report :=
-cts-test-coverage-report :=
-cts-system-api-coverage-report :=
-cts-system-api-xml-coverage-report :=
 cts-api-map-xml-report :=
 cts-v-host-api-map-xml-report :=
 cts-combined-api-map-xml-report :=
@@ -365,11 +244,8 @@ system_api_xml_description :=
 combined_api_xml_description :=
 napi_xml_description :=
 napi_text_description :=
-coverage_out :=
 api_map_out :=
 cts_jar_files :=
-dexdeps_exe :=
-cts_api_coverage_exe :=
 cts_api_map_exe :=
 cts_verifier_apk :=
 android_cts_zip :=
