@@ -9,11 +9,11 @@
             "allow_exported": true
         },
         "com_android_networkstack": {
-            "container": "com.android.networkstack",
+            "container": "NetworkStack",
             "allow_exported": false
         },
         "com_android_captiveportallogin": {
-            "container": "com.android.captiveportallogin",
+            "container": "CaptivePortalLogin",
             "allow_exported": false
         },
         "com_android_healthfitness": {

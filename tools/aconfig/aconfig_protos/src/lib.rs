@@ -100,7 +100,7 @@ pub fn is_valid_package_ident(s: &str) -> bool {
 
 /// Check if the container identifier is valid
 pub fn is_valid_container_ident(s: &str) -> bool {
-    s.split('.').all(is_valid_name_ident)
+    s.split('.').all(|s| is_valid_name_ident(&s.to_lowercase()))
 }
 
 fn try_from_text_proto<T>(s: &str) -> Result<T>
