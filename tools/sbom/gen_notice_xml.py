@@ -144,7 +144,12 @@ def main():
     notice_xml_file.write(FILE_HEADER)
 
     all_license_files = {}
-    for metadata in db.get_installed_file_in_dir(args.product_out + '/' + args.partition):
+    files_on_partition = db.get_installed_file_in_dir(args.product_out + '/' + args.partition)
+    if args.partition == 'system':
+      # NOTICE file for system partition should include files on system_other
+      files_on_system_other = db.get_installed_file_in_dir(args.product_out + '/system_other')
+      files_on_partition.extend(files_on_system_other)
+    for metadata in files_on_partition:
       soong_module = db.get_soong_module_of_installed_file(metadata['installed_file'])
       if soong_module:
         metadata.update(soong_module)
