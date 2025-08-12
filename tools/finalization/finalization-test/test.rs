@@ -30,16 +30,14 @@ mod tests {
         if !s.is_empty() {
             s.parse::<f32>().unwrap_or_else(|_| {
                 panic!(
-                    "failed to parse RELEASE_PLATFORM_SDK_VERSION_FULL for {} ({}) as f32",
-                    release_config, s
+                    "failed to parse RELEASE_PLATFORM_SDK_VERSION_FULL for {release_config} ({s}) as f32"
                 )
             })
         } else {
             let s = &RELEASE_CONFIGS.flags[release_config]["RELEASE_PLATFORM_SDK_VERSION"];
             s.parse::<f32>().unwrap_or_else(|_| {
                 panic!(
-                    "failed to parse RELEASE_PLATFORM_SDK_VERSION for {} ({}) as f32",
-                    release_config, s
+                    "failed to parse RELEASE_PLATFORM_SDK_VERSION for {release_config} ({s}) as f32"
                 )
             })
         }
@@ -54,8 +52,7 @@ mod tests {
         for flag in FLAGS_WE_CARE_ABOUT {
             assert_eq!(
                 RELEASE_CONFIGS.flags["trunk"][flag], RELEASE_CONFIGS.flags["trunk_staging"][flag],
-                "flag {} differenct across trunk and trunk_staging",
-                flag,
+                "flag {flag} differenct across trunk and trunk_staging",
             );
         }
     }
@@ -106,11 +103,9 @@ mod tests {
             }
             assert!(
                 version_full.parse::<f32>().is_ok(),
-                "failed to convert value ({}) of RELEASE_PLATFORM_SDK_VERSION_FULL for {} to f32",
-                version_full,
-                release_config
+                "failed to convert value ({version_full}) of RELEASE_PLATFORM_SDK_VERSION_FULL for {release_config} to f32"
             );
-            let (integer_part, _) = version_full.split_once(".").unwrap_or_else(|| panic!("value of RELEASE_PLATFORM_SDK_VERSION_FULL ({}) for {} doesn't have expected format", version_full, release_config));
+            let (integer_part, _) = version_full.split_once(".").unwrap_or_else(|| panic!("value of RELEASE_PLATFORM_SDK_VERSION_FULL ({version_full}) for {release_config} doesn't have expected format"));
             assert_eq!(
                 integer_part,
                 RELEASE_CONFIGS.flags[release_config]["RELEASE_PLATFORM_SDK_VERSION"]
@@ -127,8 +122,7 @@ mod tests {
         let value = &RELEASE_CONFIGS.flags[next]["RELEASE_HIDDEN_API_EXPORTABLE_STUBS"];
         assert_eq!(
             value, "true",
-            "expected RELEASE_HIDDEN_API_EXPORTABLE_STUBS to be 'true' in next ({}) but was '{}'",
-            next, value
+            "expected RELEASE_HIDDEN_API_EXPORTABLE_STUBS to be 'true' in next ({next}) but was '{value}'"
         );
     }
 
