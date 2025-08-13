@@ -802,15 +802,14 @@ mod tests {
 
         for file in generated_files {
             let file_path = file.path.to_str().unwrap();
-            assert!(file_set.contains_key(file_path), "Cannot find {}", file_path);
+            assert!(file_set.contains_key(file_path), "Cannot find {file_path}");
             assert_eq!(
                 None,
                 crate::test::first_significant_code_diff(
                     file_set.get(file_path).unwrap(),
                     &String::from_utf8(file.contents).unwrap()
                 ),
-                "File {} content is not correct",
-                file_path
+                "File {file_path} content is not correct"
             );
             file_set.remove(file_path);
         }
@@ -872,7 +871,7 @@ mod tests {
 
         for file in generated_files {
             let file_path = file.path.to_str().unwrap();
-            assert!(file_set.contains_key(file_path), "Cannot find {}", file_path);
+            assert!(file_set.contains_key(file_path), "Cannot find {file_path}");
             crate::test::assert_no_significant_code_diff(
                 file_set.get(file_path).unwrap(),
                 &String::from_utf8(file.contents).unwrap(),
@@ -1076,15 +1075,14 @@ mod tests {
 
         for file in generated_files {
             let file_path = file.path.to_str().unwrap();
-            assert!(file_set.contains_key(file_path), "Cannot find {}", file_path);
+            assert!(file_set.contains_key(file_path), "Cannot find {file_path}");
             assert_eq!(
                 None,
                 crate::test::first_significant_code_diff(
                     file_set.get(file_path).unwrap(),
                     &String::from_utf8(file.contents).unwrap()
                 ),
-                "File {} content is not correct",
-                file_path
+                "File {file_path} content is not correct"
             );
             file_set.remove(file_path);
         }
@@ -1296,15 +1294,14 @@ mod tests {
 
         for file in generated_files {
             let file_path = file.path.to_str().unwrap();
-            assert!(file_set.contains_key(file_path), "Cannot find {}", file_path);
+            assert!(file_set.contains_key(file_path), "Cannot find {file_path}");
             assert_eq!(
                 None,
                 crate::test::first_significant_code_diff(
                     file_set.get(file_path).unwrap(),
                     &String::from_utf8(file.contents).unwrap()
                 ),
-                "File {} content is not correct",
-                file_path
+                "File {file_path} content is not correct"
             );
             file_set.remove(file_path);
         }
@@ -1469,15 +1466,14 @@ mod tests {
 
         for file in generated_files {
             let file_path = file.path.to_str().unwrap();
-            assert!(file_set.contains_key(file_path), "Cannot find {}", file_path);
+            assert!(file_set.contains_key(file_path), "Cannot find {file_path}");
             assert_eq!(
                 None,
                 crate::test::first_significant_code_diff(
                     file_set.get(file_path).unwrap(),
                     &String::from_utf8(file.contents).unwrap()
                 ),
-                "File {} content is not correct",
-                file_path
+                "File {file_path} content is not correct"
             );
             file_set.remove(file_path);
         }
@@ -1720,15 +1716,14 @@ mod tests {
 
         for file in generated_files {
             let file_path = file.path.to_str().unwrap();
-            assert!(file_set.contains_key(file_path), "Cannot find {}", file_path);
+            assert!(file_set.contains_key(file_path), "Cannot find {file_path}");
             assert_eq!(
                 None,
                 crate::test::first_significant_code_diff(
                     file_set.get(file_path).unwrap(),
                     &String::from_utf8(file.contents).unwrap()
                 ),
-                "File {} content is not correct",
-                file_path
+                "File {file_path} content is not correct"
             );
             file_set.remove(file_path);
         }
@@ -1867,7 +1862,7 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(
-            format!("{:?}", error),
+            format!("{error:?}"),
             "Package com.android.aconfig.test cannot contain both device_config and new storage stored flags",
         );
     }

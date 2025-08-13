@@ -25,6 +25,7 @@ include $(BUILD_SYSTEM)/tasks/tools/compatibility.mk
 .PHONY: cts
 cts: $(compatibility_zip) $(compatibility_tests_list_zip) $(compatibility_files_metadata)
 $(call dist-for-goals, cts, $(compatibility_zip) $(compatibility_tests_list_zip) $(compatibility_files_metadata))
+cts: cts-verifier
 
 .PHONY: cts_v2
 cts_v2: cts
@@ -63,41 +64,6 @@ ifneq (,$(wildcard cts/))
   endif
 endif
 
-# Creates a "cts-verifier" directory that will contain:
-#
-# 1. Out directory with a "android-cts-verifier" containing the CTS Verifier
-#    and other binaries it needs.
-#
-# 2. Zipped version of the android-cts-verifier directory to be included with
-#    the build distribution.
-##
-cts-dir := $(HOST_OUT)/cts-verifier
-verifier-dir-name := android-cts-verifier
-verifier-dir := $(cts-dir)/$(verifier-dir-name)
-verifier-zip-name := $(verifier-dir-name).zip
-verifier-zip := $(cts-dir)/$(verifier-zip-name)
-cts-v-host-zip := $(HOST_OUT)/cts-v-host/android-cts-v-host.zip
-
-cts : $(verifier-zip)
-ifeq ($(wildcard cts/tools/cts-v-host/README),)
-$(verifier-zip): PRIVATE_DIR := $(cts-dir)
-$(verifier-zip): $(SOONG_ANDROID_CTS_VERIFIER_ZIP)
-	rm -rf $(PRIVATE_DIR)
-	mkdir -p $(PRIVATE_DIR)
-	unzip -q -d $(PRIVATE_DIR) $<
-	$(copy-file-to-target)
-else
-$(verifier-zip): PRIVATE_DIR := $(cts-dir)
-$(verifier-zip): PRIVATE_verifier_dir := $(verifier-dir)
-$(verifier-zip): PRIVATE_host_zip := $(cts-v-host-zip)
-$(verifier-zip): $(SOONG_ANDROID_CTS_VERIFIER_ZIP) $(cts-v-host-zip) $(SOONG_ZIP)
-	rm -rf $(PRIVATE_DIR)
-	mkdir -p $(PRIVATE_DIR)
-	unzip -q -d $(PRIVATE_DIR) $<
-	unzip -q -d $(PRIVATE_verifier_dir) $(PRIVATE_host_zip)
-	$(SOONG_ZIP) -d -o $@ -C $(PRIVATE_DIR) -D $(PRIVATE_verifier_dir)
-endif
-$(call dist-for-goals, cts, $(verifier-zip))
 
 cts_api_map_exe := $(HOST_OUT_EXECUTABLES)/cts-api-map
 

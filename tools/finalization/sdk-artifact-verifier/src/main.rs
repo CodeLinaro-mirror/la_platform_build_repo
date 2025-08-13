@@ -136,15 +136,15 @@ fn validate_sdk_int(sdk: &String) -> Option<String> {
     match (major, minor) {
         (Ok(major), Ok(minor)) => {
             if major > max_sdk_int_major {
-                Some(format!("Bad sdk version: \"{}\": Major version to larger.", sdk))
+                Some(format!("Bad sdk version: \"{sdk}\": Major version to larger."))
             } else if major == max_sdk_int_major && minor <= max_sdk_int_minor {
-                Some(format!("Bad sdk version: \"{}\": Minor version to larger.", sdk))
+                Some(format!("Bad sdk version: \"{sdk}\": Minor version to larger."))
             } else {
                 None
             }
         }
-        (Err(_), _) => Some(format!("Bad sdk version: \"{}\": Failed to parse major version", sdk)),
-        (_, Err(_)) => Some(format!("Bad sdk version: \"{}\": Failed to parse minor version", sdk)),
+        (Err(_), _) => Some(format!("Bad sdk version: \"{sdk}\": Failed to parse major version")),
+        (_, Err(_)) => Some(format!("Bad sdk version: \"{sdk}\": Failed to parse minor version")),
     }
 }
 
@@ -181,7 +181,7 @@ fn validate_sdk_string(sdks: &String) -> Result<String> {
         let mut s = sdk.split(":");
         let extension = s.next().unwrap();
         let version = s.next().unwrap();
-        assert!(s.next().is_none(), "Malformed sdks value: {}", sdks);
+        assert!(s.next().is_none(), "Malformed sdks value: {sdks}");
         assert!(
             sdk_map.insert(extension, version).is_none(),
             "Extension {extension} already in map"

@@ -266,12 +266,22 @@ def get_metadata_file_path(file_metadata):
   return metadata_path
 
 
-def get_package_version(metadata_file_path):
+def get_package_version(metadata_file_path, is_src_package):
   """Return a package's version in its METADATA file."""
   if not metadata_file_path:
     return None
   metadata_proto = metadata_file_protos[metadata_file_path]
-  return metadata_proto.third_party.version
+
+  if is_src_package:
+    if metadata_proto.third_party.version:
+      return metadata_proto.third_party.version
+    for identifier in metadata_proto.third_party.identifier:
+      if identifier.primary_source:
+        return identifier.version
+    if metadata_proto.third_party.identifier:
+      return metadata_proto.third_party.identifier[0].version
+  else:  # prebuilt packages
+    return metadata_proto.third_party.version
 
 
 def get_package_homepage(metadata_file_path):
@@ -327,7 +337,6 @@ def get_sbom_fragments(installed_file_metadata, metadata_file_path):
 
   # Info from METADATA file
   homepage = get_package_homepage(metadata_file_path)
-  version = get_package_version(metadata_file_path)
   download_location = get_package_download_location(metadata_file_path)
 
   lics = db.get_package_licenses(installed_file_metadata['module_path'])
@@ -345,6 +354,7 @@ def get_sbom_fragments(installed_file_metadata, metadata_file_path):
 
   if is_source_package(installed_file_metadata):
     # Source fork packages
+    version = get_package_version(metadata_file_path, True)
     name, external_refs = get_source_package_info(installed_file_metadata, metadata_file_path)
     source_package_id = new_package_id(name, PKG_SOURCE)
     source_package = sbom_data.Package(id=source_package_id, name=name, version=args.build_version,
@@ -368,6 +378,7 @@ def get_sbom_fragments(installed_file_metadata, metadata_file_path):
 
   elif is_prebuilt_package(installed_file_metadata):
     # Prebuilt fork packages
+    version = get_package_version(metadata_file_path, False)
     name = get_prebuilt_package_name(installed_file_metadata, metadata_file_path)
     prebuilt_package_id = new_package_id(name, PKG_PREBUILT)
     prebuilt_package = sbom_data.Package(id=prebuilt_package_id,
