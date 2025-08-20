@@ -222,7 +222,7 @@ def main():
     notice_xml_file.write(FILE_FOOTER)
 
   # NOTICE.xml.gz
-  with open(notice_xml_file_path, 'rb') as notice_xml_file, gzip.open(args.output_file, 'wb') as gz_file:
+  with open(notice_xml_file_path, 'rb') as notice_xml_file, gzip.GzipFile(args.output_file, 'wb', mtime=0) as gz_file:
     gz_file.writelines(notice_xml_file)
 
 if __name__ == '__main__':

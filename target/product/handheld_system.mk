@@ -74,6 +74,10 @@ PRODUCT_PACKAGES += \
     VpnDialogs \
     vr \
 
+ifeq ($(RELEASE_ACONFIG_INCLUDE_CONTACTS_PICKER_APP),true)
+  PRODUCT_PACKAGES += ContactsPicker
+endif
+
 # Choose the correct products based on HSUM status
 ifeq ($(PRODUCT_USE_HSUM),true)
   PRODUCT_PACKAGES += TelephonyProviderHsum
