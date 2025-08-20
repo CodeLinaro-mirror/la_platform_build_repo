@@ -327,7 +327,9 @@ $(call add_json_bool, BuildBrokenDontCheckSystemSdk,       $(filter true,$(BUILD
 $(call add_json_bool, BuildBrokenDupSysprop,               $(filter true,$(BUILD_BROKEN_DUP_SYSPROP)))
 $(call add_json_bool, BuildBrokenPrebuiltELFFiles,         $(filter true,$(BUILD_BROKEN_PREBUILT_ELF_FILES)))
 
-$(call add_json_bool, BuildDebugfsRestrictionsEnabled, $(filter true,$(PRODUCT_SET_DEBUGFS_RESTRICTIONS)))
+ifdef PRODUCT_SET_DEBUGFS_RESTRICTIONS
+  $(call add_json_bool, BuildDebugfsRestrictionsEnabled, $(filter true,$(PRODUCT_SET_DEBUGFS_RESTRICTIONS)))
+endif
 
 $(call add_json_bool, RequiresInsecureExecmemForSwiftshader, $(filter true,$(PRODUCT_REQUIRES_INSECURE_EXECMEM_FOR_SWIFTSHADER)))
 
