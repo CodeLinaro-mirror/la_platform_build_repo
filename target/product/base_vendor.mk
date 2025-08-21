@@ -94,8 +94,11 @@ ifneq ($(TARGET_SUPPORTS_OMX_SERVICE),false)
 endif
 
 # Base modules when shipping api level is less than or equal to 33
-PRODUCT_PACKAGES_SHIPPING_API_LEVEL_33 += \
-    android.hardware.cas@1.2-service \
+ifneq ($(TARGET_REQUIRES_HIDL_CAS_HAL),false)
+    PRODUCT_PACKAGES_SHIPPING_API_LEVEL_33 += \
+        android.hardware.cas@1.2-service \
+
+endif
 
 # Base modules when shipping api level is less than or equal to 29
 PRODUCT_PACKAGES_SHIPPING_API_LEVEL_29 += \
