@@ -11,6 +11,7 @@ rust_defaults {
     srcs: [
         ":finalized_flags_record.json",
         "templates/*.template",
+
     ],
     rustlibs: [
         "libaconfig_protos",
@@ -56,6 +57,10 @@ rust_test_host {
     rustlibs: [
         "libaconfig_storage_file_with_test_utils",
         "libitertools",
+    ],
+    srcs: [
+        "tests/*.aconfig",
+        "tests/*.values",
     ],
     test_suites: ["general-tests"],
     data: [

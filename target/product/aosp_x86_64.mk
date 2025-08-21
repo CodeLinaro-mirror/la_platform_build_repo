@@ -78,7 +78,6 @@ PRODUCT_SOONG_NAMESPACES += vendor/qcom/opensource/commonsys/system/bt/conf
 
 PRODUCT_SOONG_DEFINED_SYSTEM_IMAGE := aosp_system_image
 USE_SOONG_DEFINED_SYSTEM_IMAGE := true
-PRODUCT_USE_SOONG_NOTICE_XML := true
 
 endif
 
