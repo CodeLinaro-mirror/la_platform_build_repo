@@ -37,4 +37,9 @@
         <install-in user-type="FULL" />
         <install-in user-type="android.os.usertype.profile.MANAGED" />
     </install-in-user-type>
+
+    <!-- Contactspicker App, only install in full users -->
+    <install-in-user-type package="com.android.contactspicker">
+        <install-in user-type="FULL" />
+    </install-in-user-type>
 </config>
