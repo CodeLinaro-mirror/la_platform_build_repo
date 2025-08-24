@@ -963,6 +963,18 @@ def ProcessTargetFiles(input_tf_zip: zipfile.ZipFile, output_tf_zip: zipfile.Zip
         ReplaceKeyInAvbHashtreeFooter(image, vendor_key, vendor_algorithm,
             misc_info)
         common.ZipWrite(output_tf_zip, image.name, filename)
+    elif filename == "SYSTEM_EXT/etc/vm/trusty_vm/desktop_trusty_signed.elf":
+      desktop_key = OPTIONS.extra_apex_payload_keys["com.google.android.virt.apex"]
+      desktop_algorithm = OPTIONS.avb_algorithms.get("desktop_trusty")
+      if desktop_algorithm is None:
+          desktop_algorithm = "SHA256_RSA4096"
+      with tempfile.NamedTemporaryFile() as image:
+        image.write(data)
+        image.flush()
+        extra_args = OPTIONS.avb_extra_args.get("apex")
+        ResignDesktopTrusty(image, desktop_key, desktop_algorithm,
+            misc_info, extra_args)
+        common.ZipWrite(output_tf_zip, image.name, filename)
     # A non-APK file; copy it verbatim.
     else:
       try:
@@ -980,6 +992,16 @@ def ProcessTargetFiles(input_tf_zip: zipfile.ZipFile, output_tf_zip: zipfile.Zip
 
   # Write back misc_info with the latest values.
   ReplaceMiscInfoTxt(input_tf_zip, output_tf_zip, misc_info)
+
+def ResignDesktopTrusty(image, new_key, new_algorithm, misc_info, extra_args):
+    avbtool = misc_info["avb_avbtool"]
+    cmd = ["desktop_trusty_signing_tool",
+      "--avbtool", avbtool,
+      "--key", new_key,
+      "--algorithm", new_algorithm,
+      "--elf-file", image.name,
+    ] + shlex.split(extra_args)
+    common.RunAndCheckOutput(cmd)
 
 # Parse string output of `avbtool info_image`.
 def ParseAvbInfo(info_raw):
@@ -1727,6 +1749,8 @@ def main(argv):
       OPTIONS.override_apex_keys = a
     elif o in ("--gki_signing_key",  "--gki_signing_algorithm",  "--gki_signing_extra_args"):
       print(f"{o} is deprecated and does nothing")
+    elif o == "--avb_desktop_trusty_algorithm":
+      OPTIONS.avb_algorithms['desktop_trusty'] = a
     else:
       return False
     return True
@@ -1753,6 +1777,7 @@ def main(argv):
           "avb_boot_algorithm=",
           "avb_boot_key=",
           "avb_boot_extra_args=",
+          "avb_desktop_trusty_algorithm=",
           "avb_dtbo_algorithm=",
           "avb_dtbo_key=",
           "avb_dtbo_extra_args=",

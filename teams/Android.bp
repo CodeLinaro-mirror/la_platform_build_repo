@@ -4444,5 +4444,19 @@ team {
     trendy_team_id: "4630910416027648",
 }
 
+team {
+    name: "trendy_team_desktop_apps",
+
+    // go/trendy/manage/engineers/5126495820677120
+    trendy_team_id: "5126495820677120",
+}
+
+team {
+    name: "trendy_team_private_compute_core",
+
+    // go/trendy/manage/engineers/6240132656365568
+    trendy_team_id: "6240132656365568",
+}
+
 // DON'T ADD NEW RULES HERE. For more details refer to
 // go/new-android-ownership-model
