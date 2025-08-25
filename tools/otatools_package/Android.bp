@@ -139,6 +139,7 @@ cc_genrule {
         ":deapexer",
         ":debugfs_static",
         ":delta_generator",
+        ":desktop_trusty_signing_tool",
         ":e2fsck",
         ":e2fsdroid",
         ":fc_sort",

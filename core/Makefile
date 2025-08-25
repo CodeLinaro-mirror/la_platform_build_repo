@@ -1999,22 +1999,6 @@ else
   installed_system_dlkm_notice_xml_gz :=
 endif
 
-ALL_INSTALLED_NOTICE_FILES := \
-  $(installed_notice_html_or_xml_gz) \
-  $(installed_vendor_notice_xml_gz) \
-  $(installed_product_notice_xml_gz) \
-  $(installed_system_ext_notice_xml_gz) \
-  $(installed_odm_notice_xml_gz) \
-  $(installed_vendor_dlkm_notice_xml_gz) \
-  $(installed_odm_dlkm_notice_xml_gz) \
-  $(installed_system_dlkm_notice_xml_gz) \
-
-# $1 installed file path, e.g. out/target/product/vsoc_x86_64/system_ext/etc/NOTICE.xml.gz
-define is-notice-file
-$(if $(filter true,$(PRODUCT_USE_SOONG_NOTICE_XML)),, \
-  $(if $(findstring $1,$(ALL_INSTALLED_NOTICE_FILES)),Y))
-endef
-
 # Notice files are copied to TARGET_OUT_NOTICE_FILES as a side-effect of their module
 # being built. A notice xml file must depend on all modules that could potentially
 # install a license file relevant to it.
@@ -3178,24 +3162,8 @@ VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET)
 
 endif # BUILDING_DEBUG_VENDOR_BOOT_IMAGE
 
-# Appends a few test harness specific properties into the adb_debug.prop.
-ADDITIONAL_TEST_HARNESS_PROPERTIES := ro.audio.silent=1
-ADDITIONAL_TEST_HARNESS_PROPERTIES += ro.test_harness=1
-
 INTERNAL_DEBUG_RAMDISK_ADB_DEBUG_PROP_TARGET := $(strip $(filter $(TARGET_DEBUG_RAMDISK_OUT)/adb_debug.prop,$(INTERNAL_DEBUG_RAMDISK_FILES)))
 INTERNAL_TEST_HARNESS_RAMDISK_ADB_DEBUG_PROP_TARGET := $(TARGET_TEST_HARNESS_RAMDISK_OUT)/adb_debug.prop
-$(INTERNAL_TEST_HARNESS_RAMDISK_ADB_DEBUG_PROP_TARGET): $(INTERNAL_DEBUG_RAMDISK_ADB_DEBUG_PROP_TARGET)
-	$(hide) rm -f $@
-	$(hide) mkdir -p $(dir $@)
-ifdef INTERNAL_DEBUG_RAMDISK_ADB_DEBUG_PROP_TARGET
-	$(hide) cp $(INTERNAL_DEBUG_RAMDISK_ADB_DEBUG_PROP_TARGET) $@
-endif
-	$(hide) echo "" >> $@
-	$(hide) echo "#" >> $@
-	$(hide) echo "# ADDITIONAL TEST HARNESS PROPERTIES" >> $@
-	$(hide) echo "#" >> $@
-	$(hide) $(foreach line,$(ADDITIONAL_TEST_HARNESS_PROPERTIES), \
-	          echo "$(line)" >> $@;)
 
 $(call declare-1p-target,$(INTERNAL_TEST_HARNESS_RAMDISK_ADB_DEBUG_PROP_TARGET))
 
@@ -4650,25 +4618,6 @@ INSTALLED_PVMFW_BINARY_TARGET := $(call module-target-built-files,pvmfw_bin)
 INTERNAL_PVMFWIMAGE_FILES := $(call module-target-built-files,pvmfw_img)
 INTERNAL_PVMFW_EMBEDDED_AVBKEY := $(call module-target-built-files,pvmfw_embedded_key_pub_bin)
 INTERNAL_PVMFW_SYMBOL := $(TARGET_OUT_EXECUTABLES_UNSTRIPPED)/pvmfw
-
-# If pvmfw target is not available and there is a prebuilt available use prebuilt
-# NOTE: This is only a temporary feature for x86_64 and is not meant to be supported for long.
-# TODO(b/391333413): Don't allow use of pvmfw prebuilts as soon as it is possible
-ifeq ($(INTERNAL_PVMFWIMAGE_FILES),)
-ifneq ($(PRODUCT_PVMFW_IMAGE_PREBUILT),)
-INTERNAL_PVMFWIMAGE_FILES := $(call module-target-built-files,$(PRODUCT_PVMFW_IMAGE_PREBUILT))
-INTERNAL_PVMFW_SYMBOL :=
-
-ifneq ($(PRODUCT_PVMFW_BIN_PREBUILT),)
-INSTALLED_PVMFW_BINARY_TARGET := $(call module-target-built-files,$(PRODUCT_PVMFW_BIN_PREBUILT))
-endif # PRODUCT_PVMFW_BIN_PREBUILT
-
-ifneq ($(PRODUCT_PVMFW_EMBEDDED_AVBKEY_PREBUILT),)
-INTERNAL_PVMFW_EMBEDDED_AVBKEY := $(call module-target-built-files,$(PRODUCT_PVMFW_EMBEDDED_AVBKEY_PREBUILT))
-endif # PRODUCT_PVMFW_EMBEDDED_AVBKEY_PREBUILT
-
-endif # PRODUCT_PVMFW_IMAGE_PREBUILT
-endif # INTERNAL_PVMFWIMAGE_FILES
 
 $(call declare-1p-container,$(INSTALLED_PVMFWIMAGE_TARGET),)
 $(call declare-container-license-deps,$(INSTALLED_PVMFWIMAGE_TARGET),$(INTERNAL_PVMFWIMAGE_FILES),$(PRODUCT_OUT)/:/)
