@@ -63,6 +63,26 @@ function require_lunch
 }
 fi
 
+function set_network_file_system_type_env_var() {
+  local top=$(gettop)
+  local out_dir=$(getoutdir)
+  local cartfs_mount_point=$(cartfs_mount_point)
+
+  local nfs_type=local
+
+  if [[ "$top" =~ ^/google/cog ]]; then
+    nfs_type=cog-symlink
+  fi
+
+  # If CartFS is mounted and the 'out' directory is a symlink pointing to a
+  # CartFS path.
+  if [[ -n "$cartfs_mount_point" && -L "$out_dir" && "$(readlink "$out_dir")" =~ ^/google/cartfs/mount ]]; then
+    nfs_type=cog-cartfs-symlink
+  fi
+
+  export NETWORK_FILE_SYSTEM_TYPE=$nfs_type
+}
+
 # This function sets up the build environment to be appropriate for Cog.
 function setup_cog_env_if_needed() {
   local top=$(gettop)
