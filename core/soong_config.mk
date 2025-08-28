@@ -490,6 +490,7 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_list, BoardKernelModulesLoad16K, $(BOARD_KERNEL_MODULES_LOAD_16K))
   $(call add_json_bool, BuildingDebugBootImage, $(filter true,$(BUILDING_DEBUG_BOOT_IMAGE)))
   $(call add_json_bool, BuildingDebugVendorBootImage, $(filter true,$(BUILDING_DEBUG_VENDOR_BOOT_IMAGE)))
+  $(call add_json_list, BoardVendorRamdiskFragments, $(BOARD_VENDOR_RAMDISK_FRAGMENTS))
 
   # radio
   $(call add_json_list, AbOtaRadioPartitions, $(AB_OTA_RADIO_PARTITIONS))
