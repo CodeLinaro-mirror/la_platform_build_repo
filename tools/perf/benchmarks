@@ -751,7 +751,7 @@ benchmarks:
             Benchmark(id="modify_bp",
                       title="Modify Android.bp",
                       change=Modify("bionic/libc/Android.bp", Comment("//")),
-                      modules=["droid"],
+                      modules=["libc"],
                       preroll=1,
                       postroll=3,
                       ),

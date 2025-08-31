@@ -55,6 +55,9 @@ $(call add_json_bool, Product16KDeveloperOption, $(filter true,$(PRODUCT_16K_DEV
 $(call add_json_str, RecoveryDefaultRotation, $(TARGET_RECOVERY_DEFAULT_ROTATION))
 $(call add_json_str, RecoveryOverscanPercent, $(TARGET_RECOVERY_OVERSCAN_PERCENT))
 $(call add_json_str, RecoveryPixelFormat, $(TARGET_RECOVERY_PIXEL_FORMAT))
+ifdef TARGET_RECOVERY_NO_INITIAL_MODSET_FLUSH
+$(call add_json_bool, RecoveryNoInitialModsetFlush, $(filter true,$(TARGET_RECOVERY_NO_INITIAL_MODSET_FLUSH)))
+endif
 
 ifdef AB_OTA_UPDATER
 $(call add_json_bool, AbOtaUpdater, $(filter true,$(AB_OTA_UPDATER)))
