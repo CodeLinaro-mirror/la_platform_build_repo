@@ -926,6 +926,21 @@ system_image_defaults {
                     "ContactsPicker", // handheld_system (RELEASE_ACONFIG_INCLUDE_CONTACTS_PICKER_APP)
                 ],
                 default: [],
+            }) + select(release_flag("RELEASE_PACKAGE_COMPUTER_CONTROL"), {
+                true: [
+                    "VirtualDeviceManager", // media_system (RELEASE_PACKAGE_COMPUTER_CONTROL)
+                ],
+                default: [],
+            }) + select(release_flag("RELEASE_CROSS_DEVICE_SYNC"), {
+                true: [
+                    "CrossDeviceSync", // base_system (RELEASE_CROSS_DEVICE_SYNC)
+                ],
+                default: [],
+            }) + select(release_flag("RELEASE_ACONFIG_INCLUDE_EYE_DROPPER_APP"), {
+                true: [
+                    "EyeDropper", // handheld_system (RELEASE_ACONFIG_INCLUDE_EYE_DROPPER_APP)
+                ],
+                default: [],
             }),
         },
         prefer32: {

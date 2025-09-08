@@ -303,6 +303,11 @@ PRODUCT_PACKAGES += \
     wifi.rc \
     wm \
 
+ifeq ($(RELEASE_CROSS_DEVICE_SYNC),true)
+  PRODUCT_PACKAGES += \
+        CrossDeviceSync
+endif
+
 # Once Telecom is APEX, we will consolidate all deps
 ifeq ($(RELEASE_TELECOM_MAINLINE_MODULE),true)
   PRODUCT_PACKAGES += \

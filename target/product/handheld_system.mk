@@ -78,6 +78,10 @@ ifeq ($(RELEASE_ACONFIG_INCLUDE_CONTACTS_PICKER_APP),true)
   PRODUCT_PACKAGES += ContactsPicker
 endif
 
+ifeq ($(RELEASE_ACONFIG_INCLUDE_EYE_DROPPER_APP),true)
+  PRODUCT_PACKAGES += EyeDropper
+endif
+
 # Choose the correct products based on HSUM status
 ifeq ($(PRODUCT_USE_HSUM),true)
   PRODUCT_PACKAGES += TelephonyProviderHsum

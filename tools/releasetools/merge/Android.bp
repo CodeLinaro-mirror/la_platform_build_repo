@@ -74,3 +74,22 @@ python_binary_host {
         "releasetools_common",
     ],
 }
+
+python_library_host {
+    name: "merge_compatibility_checks",
+    srcs: [
+        "merge_compatibility_checks.py",
+    ],
+    libs: [
+        "releasetools_check_target_files_vintf",
+        "releasetools_common",
+        "releasetools_find_shareduid_violation",
+    ],
+    required: [
+        "aapt2",
+        "checkvintf",
+        "host_init_verifier",
+        "secilc",
+        "treble_labeling_tests",
+    ],
+}

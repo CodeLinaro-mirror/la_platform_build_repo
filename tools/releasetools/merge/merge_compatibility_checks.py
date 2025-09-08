@@ -113,22 +113,35 @@ def CheckInitRcFiles(target_files_dir, partition_map):
   return []
 
 
-def CheckCombinedSepolicy(target_files_dir, partition_map, execute=True):
+def make_file_getter(target_files_dir, partition_map):
+  """Creates and returns a function to retrieve file paths.
+
+  This factory function generates a closure, `get_file`, which is configured
+  with a target files dir and a map of partition names to their subdirectories.
+  The returned function can be used to retrieved a file given its partition
+  and relative path within that partition's subdirectory.
+  """
+  def get_file(partition, path):
+    if partition not in partition_map:
+      logger.warning('Cannot load SEPolicy files for missing partition %s',
+                      partition)
+      return None
+    file_path = os.path.join(target_files_dir, partition_map[partition], path)
+    if os.path.exists(file_path):
+      return file_path
+    return None
+
+  return get_file
+
+
+def CheckCombinedSepolicy(target_files_dir, partition_map, execute=True, get_file=None):
   """Uses secilc to compile a split sepolicy file.
 
   Depends on various */etc/selinux/* and */etc/vintf/* files within partitions.
   """
   errors = []
 
-  def get_file(partition, path):
-    if partition not in partition_map:
-      logger.warning('Cannot load SEPolicy files for missing partition %s',
-                     partition)
-      return None
-    file_path = os.path.join(target_files_dir, partition_map[partition], path)
-    if os.path.exists(file_path):
-      return file_path
-    return None
+  get_file = make_file_getter(target_files_dir, partition_map) if get_file is None else get_file
 
   # Load the kernel sepolicy version from the FCM. This is normally provided
   # directly to selinux.cpp as a build flag, but is also available in this file.

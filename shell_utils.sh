@@ -70,14 +70,16 @@ function set_network_file_system_type_env_var() {
 
   local nfs_type=local
 
-  if [[ "$top" =~ ^/google/cog ]]; then
-    nfs_type=cog-symlink
-  fi
-
-  # If CartFS is mounted and the 'out' directory is a symlink pointing to a
-  # CartFS path.
+  # The options are:
+  # - cog-cartfs-symlink: out is a symlink pointing to a CartFS path.
+  # - cog-symlink: $top starts with /google/cog.
+  # - abfs: .abfs.sock exists in the workspace.
   if [[ -n "$cartfs_mount_point" && -L "$out_dir" && "$(readlink "$out_dir")" =~ ^/google/cartfs/mount ]]; then
     nfs_type=cog-cartfs-symlink
+  elif [[ "$top" =~ ^/google/cog ]]; then
+    nfs_type=cog-symlink
+  elif [[ -f "$top/.abfs.sock" ]]; then
+    nfs_type=abfs
   fi
 
   export NETWORK_FILE_SYSTEM_TYPE=$nfs_type

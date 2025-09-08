@@ -4368,6 +4368,13 @@ team {
 }
 
 team {
+    name: "trendy_team_desktop_biometrics",
+
+    // go/trendy/manage/engineers/6163282303221760
+    trendy_team_id: "6163282303221760",
+}
+
+team {
     name: "trendy_team_desktop_connectivity",
 
     // go/trendy/manage/engineers/4563545867255808
