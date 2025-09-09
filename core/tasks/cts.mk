@@ -12,11 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cts: cts-verifier
-
-.PHONY: cts_v2
-cts_v2: cts
-
 # platform version check (b/32056228)
 # ============================================================
 ifneq (,$(wildcard cts/))

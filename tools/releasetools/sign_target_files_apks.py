@@ -386,7 +386,7 @@ def GetMicrodroidVbmetaKey(virt_apex_path, avbtool_path):
     avbtool_path: The path to the avbtool executable.
 
   Returns:
-    The AVB public key (bytes).
+    The AVB public key (bytes), or None if microdroid_vbmeta.img is not found.
   """
   # Creates an ApexApkSigner to extract microdroid_vbmeta.img.
   # No need to set key_passwords/codename_to_api_level_map since
@@ -398,6 +398,10 @@ def GetMicrodroidVbmetaKey(virt_apex_path, avbtool_path):
   payload_dir = apex_signer.ExtractApexPayload(virt_apex_path)
   microdroid_vbmeta_image = os.path.join(
       payload_dir, 'etc', 'fs', 'microdroid_vbmeta.img')
+
+  # If microdroid_vbmeta.img doesn't exist (e.g. AVF disabled), return None.
+  if not os.path.exists(microdroid_vbmeta_image):
+    return None
 
   # Extracts the avb public key from microdroid_vbmeta.img.
   with tempfile.NamedTemporaryFile() as microdroid_pubkey:
@@ -900,10 +904,8 @@ def ProcessTargetFiles(input_tf_zip: zipfile.ZipFile, output_tf_zip: zipfile.Zip
       virt_apex_path = next(
         (a for a in apex_gen if virt_apex_re.match(a)), None)
       if not virt_apex_path:
-        print("Removing %s from ramdisk: virt APEX not found" % filename)
+        print("Skip updating public key in %s: virt APEX not found" % filename)
       else:
-        print("Replacing %s embedded key with %s key" % (filename,
-                                                         virt_apex_path))
         # Get the current and new embedded keys.
         virt_apex = GetApexFilename(virt_apex_path)
         payload_key, container_key, sign_tool = apex_keys[virt_apex]
@@ -921,19 +923,25 @@ def ProcessTargetFiles(input_tf_zip: zipfile.ZipFile, output_tf_zip: zipfile.Zip
           with open(new_pubkey_path, 'rb') as f:
             new_pubkey = f.read()
 
-        pubkey_info = copy.copy(
-            input_tf_zip.getinfo("PREBUILT_IMAGES/pvmfw_embedded.avbpubkey"))
-        old_pubkey = input_tf_zip.read(pubkey_info.filename)
-        # Validate the keys and image.
-        if len(old_pubkey) != len(new_pubkey):
-          raise common.ExternalError("pvmfw embedded public key size mismatch")
-        pos = data.find(old_pubkey)
-        if pos == -1:
-          raise common.ExternalError("pvmfw embedded public key not found")
-        # Replace the key and copy new files.
-        new_data = data[:pos] + new_pubkey + data[pos+len(old_pubkey):]
-        common.ZipWriteStr(output_tf_zip, out_info, new_data)
-        common.ZipWriteStr(output_tf_zip, pubkey_info, new_pubkey)
+        if new_pubkey:
+          print("Replacing %s embedded key with %s key" % (filename,
+                                                           virt_apex_path))
+          pubkey_info = copy.copy(
+              input_tf_zip.getinfo("PREBUILT_IMAGES/pvmfw_embedded.avbpubkey"))
+          old_pubkey = input_tf_zip.read(pubkey_info.filename)
+          # Validate the keys and image.
+          if len(old_pubkey) != len(new_pubkey):
+            raise common.ExternalError("pvmfw embedded public key size mismatch")
+          pos = data.find(old_pubkey)
+          if pos == -1:
+            raise common.ExternalError("pvmfw embedded public key not found")
+          # Replace the key and copy new files.
+          new_data = data[:pos] + new_pubkey + data[pos+len(old_pubkey):]
+          common.ZipWriteStr(output_tf_zip, out_info, new_data)
+          common.ZipWriteStr(output_tf_zip, pubkey_info, new_pubkey)
+        else:
+          print("Skip updating public key in %s: no new_pubkey" % filename)
+
     elif filename == "PREBUILT_IMAGES/pvmfw_embedded.avbpubkey":
       pass
 
