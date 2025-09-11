@@ -898,6 +898,7 @@ def ProcessTargetFiles(input_tf_zip: zipfile.ZipFile, output_tf_zip: zipfile.Zip
     # Updates pvmfw embedded public key with the virt APEX payload key.
     elif filename == "PREBUILT_IMAGES/pvmfw.img":
       # Find the path of the virt APEX in the target files.
+      copy_pvmfw_verbatim = True
       namelist = input_tf_zip.namelist()
       apex_gen = (f for f in namelist if IsApexFile(f))
       virt_apex_re = re.compile("^.*com\.([^\.]+\.)?android\.virt\.apex$")
@@ -926,6 +927,7 @@ def ProcessTargetFiles(input_tf_zip: zipfile.ZipFile, output_tf_zip: zipfile.Zip
         if new_pubkey:
           print("Replacing %s embedded key with %s key" % (filename,
                                                            virt_apex_path))
+          copy_pvmfw_verbatim = False
           pubkey_info = copy.copy(
               input_tf_zip.getinfo("PREBUILT_IMAGES/pvmfw_embedded.avbpubkey"))
           old_pubkey = input_tf_zip.read(pubkey_info.filename)
@@ -942,8 +944,29 @@ def ProcessTargetFiles(input_tf_zip: zipfile.ZipFile, output_tf_zip: zipfile.Zip
         else:
           print("Skip updating public key in %s: no new_pubkey" % filename)
 
+        if copy_pvmfw_verbatim:
+          common.ZipWriteStr(output_tf_zip, out_info, data)
+
+
     elif filename == "PREBUILT_IMAGES/pvmfw_embedded.avbpubkey":
       pass
+
+    elif filename == "VENDOR/firmware/ap-ec-fw.zip":
+      signed_firmware_data = None
+      try:
+        signed_firmware_data = input_tf_zip.read("SIGNED_PREBUILTS/ap-ec-fw-signed.zip")
+        print("Found signed AP/EC firmware.")
+      except KeyError:
+        # TODO(b/435006163): Remove this branch once all target_files.zip
+        # contain signed firmware.
+        print("No signed AP/EC firmware found, using existing.")
+        signed_firmware_data = data
+
+      common.ZipWriteStr(output_tf_zip, out_info, signed_firmware_data)
+
+    elif filename == "SIGNED_PREBUILTS/ap-ec-fw-signed.zip":
+      # Skip the signed file since it was copied above.
+      continue
 
     # Should NOT sign boot-debug.img.
     elif filename in (

@@ -1038,6 +1038,22 @@ $(foreach device,$(call to-upper,$(BOARD_SUPER_PARTITION_BLOCK_DEVICES)), \
 
 endif # PRODUCT_USE_DYNAMIC_PARTITIONS
 
+ifneq ($(BOARD_KERNEL_MODULES_16K),)
+# BOARD_KERNEL_MODULES_16K might contain duplicate modules under different path.
+# for example, foo/bar/wifi.ko and foo/wifi.ko . To avoid build issues, de-dup
+# module list on basename first.
+BOARD_KERNEL_MODULES_16K := $(foreach \
+  pattern,\
+  $(sort $(foreach \
+    path,\
+    $(BOARD_KERNEL_MODULES_16K),\
+    %/$(notdir $(path)))\
+  ),\
+  $(firstword $(filter $(pattern),$(BOARD_KERNEL_MODULES_16K))) \
+)
+endif # BOARD_KERNEL_MODULES_16K
+
+
 # By default, we build the hidden API csv files from source. You can use
 # prebuilt hiddenapi files by setting BOARD_PREBUILT_HIDDENAPI_DIR to the name
 # of a directory containing both prebuilt hiddenapi-flags.csv and

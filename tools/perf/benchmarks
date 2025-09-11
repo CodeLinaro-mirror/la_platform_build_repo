@@ -184,6 +184,21 @@ class FileSnapshot:
             f.write(self.contents)
 
 
+def MultiChange(label, changes):
+    """Returns a single change object that runs all the given changes."""
+    def changeImpl():
+        for c in changes:
+            c.change()
+    def undoImpl():
+        for c in reversed(changes):
+            c.undo()
+    return Change(
+        label = label,
+        change = changeImpl,
+        undo = undoImpl,
+    )
+
+
 def Snapshot(filename):
     """Return a FileSnapshot with the file's current contents."""
     with open(filename) as f:
@@ -264,18 +279,21 @@ def Modify(filename, contents, before=None):
         )
 
 def ChangePublicApi():
-    change = AddJavaField("frameworks/base/core/java/android/provider/Settings.java",
-                 "@android.annotation.SuppressLint(\"UnflaggedApi\") public")
-    orig_current_text = Snapshot("frameworks/base/core/api/current.txt")
+    value = random.randint(0, 1000000)
+    change1 = Modify(
+        "frameworks/base/core/java/android/provider/Settings.java",
+        lambda: f"@android.annotation.SuppressLint(\"UnflaggedApi\") public static final int BENCHMARK = {value};\n",
+        before="}",
+    )
+    change2 = Modify(
+        "frameworks/base/core/api/current.txt",
+        lambda: f"    field public static final int BENCHMARK = {value}; // 0x{value:x}\n",
+        before="    field public static final String EXTRA_ACCOUNT_TYPES =",
+    )
 
-    def undo():
-        change.undo()
-        orig_current_text.write()
-
-    return Change(
-        label=change.label,
-        change=change.change,
-        undo=lambda: undo()
+    return MultiChange(
+        label="Modify public api",
+        changes=[change1, change2],
     )
 
 def AddJavaField(filename, prefix):
@@ -819,7 +837,7 @@ benchmarks:
             Benchmark(id="framework_api",
                       title="Add API to Settings.java",
                       change=ChangePublicApi(),
-                      modules=["api-stubs-docs-non-updatable-update-current-api", "framework-minus-apex"],
+                      modules=["framework-minus-apex"],
                       preroll=1,
                       postroll=2,
                       ),

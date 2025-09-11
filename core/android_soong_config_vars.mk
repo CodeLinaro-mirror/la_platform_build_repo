@@ -423,7 +423,6 @@ $(call soong_config_set_bool,qcom_bluetooth,TARGET_BLUETOOTH_HCI_V1_1,$(if $(fil
 $(call soong_config_set_bool,qcom_bluetooth,TARGET_BLUETOOTH_SUPPORT_QMI_ADDRESS,$(if $(filter true,$(TARGET_BLUETOOTH_SUPPORT_QMI_ADDRESS)),true,false))
 $(call soong_config_set_bool,qcom_bluetooth,TARGET_DROP_BYTES_BEFORE_SSR_DUMP,$(if $(filter true,$(TARGET_DROP_BYTES_BEFORE_SSR_DUMP)),true,false))
 $(call soong_config_set_bool,qcom_bluetooth,TARGET_USE_QTI_BT_CHANNEL_AVOIDANCE,$(if $(filter true,$(TARGET_USE_QTI_BT_CHANNEL_AVOIDANCE)),true,false))
-$(call soong_config_set_bool,qcom_bluetooth,TARGET_USE_QTI_BT_EXT,$(if $(filter true,$(TARGET_USE_QTI_BT_EXT)),true,false))
 $(call soong_config_set_bool,qcom_bluetooth,TARGET_USE_QTI_BT_CONFIGSTORE,$(if $(filter true,$(TARGET_USE_QTI_BT_CONFIGSTORE)),true,false))
 $(call soong_config_set_bool,qcom_bluetooth,TARGET_USE_QTI_BT_IBS,$(if $(filter true,$(TARGET_USE_QTI_BT_IBS)),true,false))
 $(call soong_config_set_bool,qcom_bluetooth,TARGET_USE_QTI_BT_OBS,$(if $(filter true,$(TARGET_USE_QTI_BT_OBS)),true,false))
@@ -471,6 +470,9 @@ $(call soong_config_set_bool,fp_hal_feature,FPC_CONFIG_TRUSTY_EMULATOR,$(if $(fi
 $(call soong_config_set_bool,fp_hal_feature,FPC_CONFIG_TRUSTY_SC,$(if $(filter 1,$(FPC_CONFIG_TRUSTY_SC)),true,false))
 $(call soong_config_set_bool,fp_hal_feature,GOOGLE_CONFIG_PERFORMANCE,$(if $(filter 1,$(GOOGLE_CONFIG_PERFORMANCE)),true,false))
 $(call soong_config_set_bool,fp_hal_feature,GOOGLE_CONFIG_TOUCH_TO_UNLOCK_ANYTIME,$(if $(filter 1,$(GOOGLE_CONFIG_TOUCH_TO_UNLOCK_ANYTIME)),true,false))
+
+# Flag for building static_apexer_tools
+$(call soong_config_set_bool,ANDROID,BUILD_HOST_static,$(if $(filter true 1,$(BUILD_HOST_static)),true,false))
 
 # Flags for CLOCKWORK
 $(call soong_config_set_bool,CLOCKWORK,CLOCKWORK_EMULATOR_PRODUCT,$(if $(filter true,$(CLOCKWORK_EMULATOR_PRODUCT)),true,false))

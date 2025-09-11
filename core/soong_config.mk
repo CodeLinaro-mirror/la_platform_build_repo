@@ -218,6 +218,7 @@ $(call add_json_str,  UserdataPath,                      $(TARGET_COPY_OUT_DATA)
 $(call add_json_bool, BuildingUserdataImage,             $(BUILDING_USERDATA_IMAGE))
 
 $(call add_json_bool, UseRBE,                            $(filter-out false,$(USE_RBE)))
+$(call add_json_bool, UseREWrapper,                      $(filter-out false,$(USE_REWRAPPER)))
 $(call add_json_bool, UseRBEJAVAC,                       $(filter-out false,$(RBE_JAVAC)))
 $(call add_json_bool, UseRBER8,                          $(filter-out false,$(RBE_R8)))
 $(call add_json_bool, UseRBED8,                          $(filter-out false,$(RBE_D8)))
@@ -499,6 +500,7 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, BootloaderFilePath, $(BOOTLOADER_FILE_PATH))
   $(call add_json_list, AbOtaBootloaderPartitions, $(AB_OTA_BOOTLOADER_PARTITIONS))
   $(call add_json_str, BoardRadioImagePath, $(BOARD_RADIO_IMAGE_PATH))
+  $(call add_json_str, BoardPrebuiltTzswImagePath, $(BOARD_PREBUILT_TZSW_IMAGE_PATH))
 
   # pvmfw
   $(call add_json_bool, BoardUsesPvmfwImage, $(BOARD_USES_PVMFWIMAGE))

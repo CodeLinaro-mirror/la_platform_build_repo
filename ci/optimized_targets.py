@@ -271,6 +271,10 @@ class GeneralTestsOptimizer(OptimizedBuildTarget):
         modules_to_build.add(module)
         self._build_outputs.extend(module_outputs)
 
+    if java_coverage_enabled():
+      # in theory this could be 'optimized' as well, but there is no support currently
+      modules_to_build.add('general-tests-jacoco')
+
     return modules_to_build
 
   def _get_general_tests_outputs(self) -> list[str]:
@@ -440,7 +444,12 @@ class GeneralTestsOptimizer(OptimizedBuildTarget):
     # real symlinks stored in the Build System.
     # https://source.corp.google.com/h/googleplex-android/platform/superproject/main/+/main:build/soong/test_suites/test_suites.go?q=%22pathForPackaging(ctx,%20suiteConfig.name)%22&sq=android
     soong_out = os.path.join(
-        soong_vars.get('OUT_DIR'), "soong", "packaging", "general-tests")
+        soong_vars.get('OUT_DIR'), 'soong', 'packaging', 'general-tests')
+    if java_coverage_enabled():
+      general_tests_jacoco_out = os.path.join(
+          soong_vars.get('OUT_DIR'), 'soong', 'packaging', 'general-tests_jacoco_report_classes.jar')
+      if os.path.exists(general_tests_jacoco_out):
+        shutil.copy(general_tests_jacoco_out, dist_dir)
 
     for p in deduplicated_host_outputs:
       file_path = os.path.join(str(src_top), p)
@@ -691,3 +700,12 @@ class GeneralTestsOptimizer(OptimizedBuildTarget):
 
 OPTIMIZED_BUILD_TARGETS = {}
 OPTIMIZED_BUILD_TARGETS.update(GeneralTestsOptimizer.get_optimized_targets())
+
+# Equivalent to soong's JavaCoverageEnabled()
+def java_coverage_enabled() -> bool:
+  return is_env_true('EMMA_INSTRUMENT') or is_env_true('EMMA_INSTRUMENT_STATIC') or is_env_true('EMMA_INSTRUMENT_FRAMEWORK')
+
+# Equivalent to soong's IsEnvTrue()
+def is_env_true(env: str) -> bool:
+  value = os.environ.get(env, '').lower()
+  return value == '1' or value == 'y' or value == 'yes' or value == 'on' or value == 'true'
