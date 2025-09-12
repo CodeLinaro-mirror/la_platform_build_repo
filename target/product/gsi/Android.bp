@@ -103,7 +103,7 @@ android_filesystem_defaults {
         "SystemUI",
 
         // Allowlist for handheld packages
-        "preinstalled_packages_handheld_system_ext.xml",
+        "preinstalled-packages-handheld-system-ext.xml",
 
         // telephony packages
         "CarrierConfig",
