@@ -4889,6 +4889,11 @@ INTERNAL_AVB_MAKE_VBMETA_IMAGE_ARGS += \
     --chain_partition $(part):$($(_rollback_index_location)):$(AVB_CHAIN_KEY_DIR)/$(part).avbpubkey
 endef
 
+ifdef BOARD_AVB_VBMETA_VM_VBMETA
+INTERNAL_AVB_MAKE_VBMETA_IMAGE_ARGS += \
+    --chain_partition $(BOARD_AVB_VBMETA_VM_VBMETA):$(BOARD_AVB_VBMETA_VM_VBMETA_ROLLBACK_INDEX_LOCATION):$(AVB_CHAIN_KEY_DIR)/$(BOARD_AVB_VBMETA_VM_VBMETA).avbpubkey
+endif
+
 ifdef INSTALLED_BOOTIMAGE_TARGET
 $(eval $(call check-and-set-avb-args,boot))
 endif
@@ -4998,6 +5003,11 @@ BOARD_AVB_MAKE_VBMETA_VENDOR_IMAGE_ARGS += \
     --rollback_index $(BOARD_AVB_VBMETA_VENDOR_ROLLBACK_INDEX)
 endif
 
+ifdef BOARD_AVB_VBMETA_VM_VBMETA_ROLLBACK_INDEX
+BOARD_AVB_VBMETA_VM_VBMETA_ROLLBACK_INDEX += \
+    --rollback_index $(BOARD_AVB_VBMETA_VM_VBMETA_ROLLBACK_INDEX)
+endif
+
 # $(1): the directory to extract public keys to
 define extract-avb-chain-public-keys
   $(if $(BOARD_AVB_BOOT_KEY_PATH),\
@@ -5051,6 +5061,9 @@ define extract-avb-chain-public-keys
   $(if $(BOARD_AVB_VBMETA_VENDOR_KEY_PATH),\
     $(hide) $(AVBTOOL) extract_public_key --key $(BOARD_AVB_VBMETA_VENDOR_KEY_PATH) \
         --output $(1)/vbmeta_vendor.avbpubkey)
+  $(if $(BOARD_AVB_VBMETA_VM_VBMETA_KEY_PATH),\
+    $(hide) $(AVBTOOL) extract_public_key --key $(BOARD_AVB_VBMETA_VM_VBMETA_KEY_PATH) \
+        --output $(1)/vm-vbmeta.avbpubkey)
   $(if $(BOARD_CUSTOMIMAGES_PARTITION_LIST),\
     $(hide) $(foreach partition,$(BOARD_CUSTOMIMAGES_PARTITION_LIST), \
         $(AVBTOOL) extract_public_key --key $(BOARD_AVB_$(call to-upper,$(partition))_KEY_PATH) \
@@ -5142,6 +5155,7 @@ $(INSTALLED_VBMETAIMAGE_TARGET): \
 	    $(INSTALLED_VBMETA_VENDORIMAGE_TARGET) \
 	    $(BOARD_AVB_VBMETA_SYSTEM_KEY_PATH) \
 	    $(BOARD_AVB_VBMETA_VENDOR_KEY_PATH) \
+	    $(BOARD_AVB_VBMETA_VM_VBMETA_KEY_PATH) \
 	    $(BOARD_AVB_KEY_PATH)
 	$(build-vbmetaimage-target)
 
@@ -5829,6 +5843,12 @@ ifdef BOARD_AVB_RECOVERY_KEY_PATH
 	$(hide) echo "avb_recovery_algorithm=$(BOARD_AVB_RECOVERY_ALGORITHM)" >> $@
 	$(hide) echo "avb_recovery_rollback_index_location=$(BOARD_AVB_RECOVERY_ROLLBACK_INDEX_LOCATION)" >> $@
 endif # BOARD_AVB_RECOVERY_KEY_PATH
+ifdef BOARD_AVB_VBMETA_VM_VBMETA_KEY_PATH
+	$(hide) echo "avb_vbmeta_extra_chain_partitions=$(BOARD_AVB_VBMETA_VM_VBMETA)" >> $@
+	$(hide) echo "avb_vm-vbmeta_key_path=$(BOARD_AVB_VBMETA_VM_VBMETA_KEY_PATH)" >> $@
+	$(hide) echo "avb_vm-vbmeta_algorithm=$(BOARD_AVB_VBMETA_VM_VBMETA_ALGORITHM)" >> $@
+	$(hide) echo "avb_vm-vbmeta_rollback_index_location=$(BOARD_AVB_VBMETA_VM_VBMETA_ROLLBACK_INDEX_LOCATION)" >> $@
+endif # BOARD_AVB_VBMETA_VM_VBMETA_KEY_PATH
 ifneq (,$(strip $(BOARD_CUSTOMIMAGES_PARTITION_LIST)))
 	$(hide) echo "avb_custom_images_partition_list=$(BOARD_CUSTOMIMAGES_PARTITION_LIST)" >> $@
 	$(hide) $(foreach partition,$(BOARD_CUSTOMIMAGES_PARTITION_LIST), \
