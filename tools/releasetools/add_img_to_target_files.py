@@ -1175,8 +1175,8 @@ def AddImagesToTargetFiles(filename):
   if os.path.exists(pack_radioimages_txt):
     with open(pack_radioimages_txt) as f:
       AddPackRadioImages(output_zip, f.readlines())
-
-  AddVbmetaDigest(output_zip)
+  # NEW: bypass digest calculation for vbmeta
+  # AddVbmetaDigest(output_zip)
 
   if output_zip:
     common.ZipClose(output_zip)

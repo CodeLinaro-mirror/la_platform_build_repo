@@ -1689,6 +1689,18 @@ def BuildVBMeta(image_path, partitions, name, needed_partitions,
 
     split_args = ResolveAVBSigningPathArgs(split_args)
     cmd.extend(split_args)
+  # NEW: allow extra chained partitions to be specified per-vbmeta
+  # e.g., avb_vbmeta_extra_chain_partitions="vm-vbmeta"
+  extra_chains = OPTIONS.info_dict.get(
+      "avb_{}_extra_chain_partitions".format(name), "").strip()
+  if extra_chains:
+    for p in shlex.split(extra_chains):
+      # Requires: p + avb_<p>_rollback_index_location + avb_<p>_key_path present
+      chained_partition_arg = GetAvbChainedPartitionArg(p, OPTIONS.info_dict)
+      if not isinstance(chained_partition_arg, str):
+        chained_partition_arg = f"{chained_partition_arg.partition}:{chained_partition_arg.rollback_index_location}:{chained_partition_arg.pubkey_path}"
+
+      cmd.extend(["--chain_partition", chained_partition_arg])
 
   RunAndCheckOutput(cmd)
 
