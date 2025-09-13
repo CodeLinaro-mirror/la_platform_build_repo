@@ -23,6 +23,18 @@
         "com_android_mediaprovider": {
             "container": "com.android.mediaprovider",
             "allow_exported": true
+        },
+        "com_android_resolv": {
+            "container": "com.android.resolv",
+            "allow_exported": true
+        },
+        "com_android_sdkext": {
+            "container": "com.android.sdkext",
+            "allow_exported": true
+        },
+        "com_android_extservices": {
+            "container": "com.android.extservices",
+            "allow_exported": true
         }
     }
 }

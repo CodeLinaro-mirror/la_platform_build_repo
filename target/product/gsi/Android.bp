@@ -121,7 +121,6 @@ android_filesystem_defaults {
         ///////////////////////////////////////////
         // VNDK
         ///////////////////////////////////////////
-        "com.android.vndk.v30",
         "com.android.vndk.v31",
         "com.android.vndk.v32",
         "com.android.vndk.v33",

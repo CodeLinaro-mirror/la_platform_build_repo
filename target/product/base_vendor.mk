@@ -33,6 +33,7 @@ PRODUCT_VENDOR_PROPERTIES += \
     ro.recovery.usb.vid?=18D1 \
     ro.recovery.usb.adb.pid?=D001 \
     ro.recovery.usb.fastboot.pid?=4EE0 \
+    ro.zygote?=zygote32 \
 
 # These had been pulled in via init_second_stage.recovery, but may not be needed.
 PRODUCT_HOST_PACKAGES += \

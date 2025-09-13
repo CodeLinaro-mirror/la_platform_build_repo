@@ -7834,7 +7834,7 @@ $(SDK_METADATA): $(TARGET_OUT_COMMON_INTERMEDIATES)/PACKAGING/framework-doc-stub
 framework-doc-stubs: $(SDK_METADATA)
 
 deps := \
-	$(OUT_DOCS)/offline-sdk-timestamp \
+	$(OUT_DOCS)/offline-sdk-docs-docs.zip \
 	$(SDK_METADATA_FILES) \
   $(INSTALLED_SDK_BUILD_PROP_TARGET) \
 	$(ATREE_FILES) \
