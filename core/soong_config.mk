@@ -488,6 +488,7 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, BoardDtboPartitionSize, $(BOARD_DTBOIMG_PARTITION_SIZE))
   $(call add_json_str, BoardPrebuiltDtboImage16kb, $(BOARD_PREBUILT_DTBOIMAGE_16KB))
   $(call add_json_bool, Board16kOtaUseIncremental, $(BOARD_16K_OTA_USE_INCREMENTAL))
+  $(call add_json_bool, Board16kOtaMoveVendor, $(BOARD_16K_OTA_MOVE_VENDOR))
   $(call add_json_str, BoardPrebuiltDtbDir, $(BOARD_PREBUILT_DTBIMAGE_DIR))
   $(call add_json_list, BoardKernelModules16K, $(BOARD_KERNEL_MODULES_16K))
   $(call add_json_list, BoardKernelModulesLoad16K, $(BOARD_KERNEL_MODULES_LOAD_16K))
@@ -623,6 +624,17 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, EnforceArtifactPathRequirements, $(PRODUCT_ENFORCE_ARTIFACT_PATH_REQUIREMENTS))
   $(call add_json_list, ArtifactPathRequirementAllowedList, $(PRODUCT_ARTIFACT_PATH_REQUIREMENT_ALLOWED_LIST))
   $(call add_json_list, ArtifactPathRequirementProducts, $(ARTIFACT_PATH_REQUIREMENT_PRODUCTS))
+  $(call add_json_list, ArtifactPathRequirementSyspropAllowedList, $(PRODUCT_ARTIFACT_PATH_REQUIREMENT_SYSPROP_ALLOWED_LIST))
+
+  # Collapses ?= and = operators for system property variables. Also removes double quotes to prevent
+  # malformed JSON. This change aligns with the existing behavior of sysprop.mk, which passes property
+  # variables to the echo command, effectively discarding surrounding double quotes.
+  define collapse-prop-pairs
+  $(subst ",,$(call collapse-pairs,$(call collapse-pairs,$$($(1)),?=),=))
+  endef
+  $(call add_json_list, ProductSystemProperties, $(call collapse-prop-pairs,PRODUCT_SYSTEM_PROPERTIES))
+  $(call add_json_list, ProductSystemDefaultProperties, $(call collapse-prop-pairs,PRODUCT_SYSTEM_DEFAULT_PROPERTIES))
+
   define add_json_list_map_from_makefiles
     $(call add_json_map, $(1))
       $(foreach makefile, $(3),\
@@ -631,6 +643,9 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   endef
   $(call add_json_list_map_from_makefiles, ArtifactPathRequirementsOfMakefile, ARTIFACT_PATH_REQUIREMENTS, $(ARTIFACT_PATH_REQUIREMENT_PRODUCTS))
   $(call add_json_list_map_from_makefiles, ArtifactPathAllowedListOfMakefile, ARTIFACT_PATH_ALLOWED_LIST, $(ARTIFACT_PATH_REQUIREMENT_PRODUCTS))
+  $(call add_json_list_map_from_makefiles, SystemPropertiesOfMakefile, PRODUCT_SYSTEM_PROPERTIES, $(ARTIFACT_PATH_REQUIREMENT_PRODUCTS))
+  $(call add_json_list_map_from_makefiles, SystemDefaultPropertiesOfMakefile, PRODUCT_SYSTEM_DEFAULT_PROPERTIES, $(ARTIFACT_PATH_REQUIREMENT_PRODUCTS))
+  $(call add_json_list_map_from_makefiles, DeviceFcmFileOfMakefile, DEVICE_FRAMEWORK_COMPATIBILITY_MATRIX_FILE, $(ARTIFACT_PATH_REQUIREMENT_PRODUCTS))
   $(call add_json_map, ArtifactPathRequirementsIsRelaxedOfMakefile)
     $(foreach makefile, $(ARTIFACT_PATH_REQUIREMENT_PRODUCTS),\
       $(call add_json_bool, $(makefile), $(PRODUCTS.$(makefile).ARTIFACT_PATH_REQUIREMENT_IS_RELAXED)))

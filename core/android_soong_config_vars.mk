@@ -423,6 +423,7 @@ $(call soong_config_set_bool,qcom_bluetooth,TARGET_BLUETOOTH_HCI_V1_1,$(if $(fil
 $(call soong_config_set_bool,qcom_bluetooth,TARGET_BLUETOOTH_SUPPORT_QMI_ADDRESS,$(if $(filter true,$(TARGET_BLUETOOTH_SUPPORT_QMI_ADDRESS)),true,false))
 $(call soong_config_set_bool,qcom_bluetooth,TARGET_DROP_BYTES_BEFORE_SSR_DUMP,$(if $(filter true,$(TARGET_DROP_BYTES_BEFORE_SSR_DUMP)),true,false))
 $(call soong_config_set_bool,qcom_bluetooth,TARGET_USE_QTI_BT_CHANNEL_AVOIDANCE,$(if $(filter true,$(TARGET_USE_QTI_BT_CHANNEL_AVOIDANCE)),true,false))
+$(call soong_config_set_bool,qcom_bluetooth,TARGET_USE_QTI_BT_EXT,$(if $(filter true,$(TARGET_USE_QTI_BT_EXT)),true,false))
 $(call soong_config_set_bool,qcom_bluetooth,TARGET_USE_QTI_BT_CONFIGSTORE,$(if $(filter true,$(TARGET_USE_QTI_BT_CONFIGSTORE)),true,false))
 $(call soong_config_set_bool,qcom_bluetooth,TARGET_USE_QTI_BT_IBS,$(if $(filter true,$(TARGET_USE_QTI_BT_IBS)),true,false))
 $(call soong_config_set_bool,qcom_bluetooth,TARGET_USE_QTI_BT_OBS,$(if $(filter true,$(TARGET_USE_QTI_BT_OBS)),true,false))
