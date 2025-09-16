@@ -271,6 +271,11 @@ function import_build_vars()
 }
 
 function cartfs_mount_point() {
+  # Make sure findmnt is installed.
+  if ! command -v findmnt &> /dev/null; then
+    return
+  fi
+
   local cartfs_user_id="$(id -u cartfs 2>/dev/null)"
   local cartfs_mount_point="$(findmnt -t fuse -O "user_id=${cartfs_user_id}" | tail -n +2 | awk '{print $1}')"
   # Making sure $cartfs_user_id is not empty since findmnt will return mounts
