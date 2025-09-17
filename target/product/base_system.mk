@@ -43,7 +43,6 @@ PRODUCT_PACKAGES += \
     bootstat \
     boringssl_self_test \
     bpfloader \
-    bpftool \
     bu \
     bugreport \
     bugreportz \

@@ -554,7 +554,6 @@ system_image_defaults {
         "bootanimation",
         "bootstat",
         "bpfloader",
-        "bpftool",
         "bu",
         "bugreport",
         "bugreportz",
