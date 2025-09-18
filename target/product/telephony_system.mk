@@ -24,11 +24,16 @@ PRODUCT_PACKAGES := \
 
 ifneq ($(TARGET_NO_TELEPHONY), true)
 PRODUCT_PACKAGES += \
-    ONS \
     CarrierDefaultApp \
-    CallLogBackup \
+    CallLogBackup
+
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
+PRODUCT_PACKAGES += \
+    ONS \
     com.android.cellbroadcast \
-    CellBroadcastLegacyApp
+    CellBroadcastLegacyApp \
+
+endif
 endif #TARGET_NO_TELEPHONY
 
 PRODUCT_COPY_FILES := \
