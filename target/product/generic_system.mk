@@ -133,10 +133,10 @@ PRODUCT_BRAND := generic
 
 # Define /system partition-specific product properties to identify that /system
 # partition is generic_system.
-PRODUCT_SYSTEM_NAME := mainline
+PRODUCT_SYSTEM_NAME := generic_system
 PRODUCT_SYSTEM_BRAND := Android
 PRODUCT_SYSTEM_MANUFACTURER := Android
-PRODUCT_SYSTEM_MODEL := mainline
+PRODUCT_SYSTEM_MODEL := Generic System
 PRODUCT_SYSTEM_DEVICE := generic
 
 _base_mk_allowed_list := \

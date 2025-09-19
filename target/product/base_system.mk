@@ -101,6 +101,7 @@ PRODUCT_PACKAGES += \
     framework-location \
     framework-minus-apex \
     framework-minus-apex-install-dependencies \
+    framework-network-security-config \
     framework-sysconfig.xml \
     fsck.erofs \
     fsck_msdos \

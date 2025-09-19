@@ -28,6 +28,7 @@ $(call add_json_str,  BuildId,                           $(BUILD_ID))
 $(call add_json_str,  BuildFingerprintFile,              build_fingerprint-$(TARGET_PRODUCT).txt)
 $(call add_json_str,  BuildNumberFile,                   build_number.txt)
 $(call add_json_str,  BuildHostnameFile,                 build_hostname.txt)
+$(call add_json_str,  BuildSystemFingerprintFile,        build_system_fingerprint-$(TARGET_PRODUCT).txt)
 $(call add_json_str,  BuildThumbprintFile,               build_thumbprint-$(TARGET_PRODUCT).txt)
 $(call add_json_bool, DisplayBuildNumber,                $(filter true,$(DISPLAY_BUILD_NUMBER)))
 
