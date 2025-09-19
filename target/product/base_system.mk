@@ -601,6 +601,15 @@ ifneq (,$(RELEASE_NATIVE_FRAMEWORK_PROTOTYPE))
         zygote_next
 endif
 
+# Whether to use Java or new native (Rust) OMAPI implementation
+ifeq ($(RELEASE_NATIVE_OMAPI),true)
+    PRODUCT_PACKAGES += \
+        omapi
+else
+    PRODUCT_PACKAGES += \
+        SecureElement
+endif
+
 $(call inherit-product, $(SRC_TARGET_DIR)/product/runtime_libart.mk)
 
 # Ensure all trunk-stable flags are available.

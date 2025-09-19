@@ -706,7 +706,12 @@ system_image_defaults {
         "wifi.rc", // base_system
         "wificond", // base_system
         "wm", // base_system
-    ] + select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
+    ] + select(release_flag("RELEASE_NATIVE_OMAPI"), {
+        true: [
+            "omapi",
+        ],
+        default: [],
+    }) + select(release_flag("RELEASE_PLATFORM_VERSION_CODENAME"), {
         "REL": [],
         default: [
             "android.software.preview_sdk.prebuilt.xml", // media_system
@@ -827,7 +832,6 @@ system_image_defaults {
                 "PrintSpooler", // handheld_system
                 "PrivateSpace", // handheld_system
                 "ProxyHandler", // handheld_system
-                "SecureElement", // handheld_system
                 "SettingsProvider", // base_system
                 "SharedStorageBackup", // handheld_system
                 "Shell", // base_system
@@ -885,7 +889,12 @@ system_image_defaults {
                 "system_compatibility_matrix.xml", //base_system
                 "telephony-common", // libs from TeleService
                 "voip-common", // base_system
-            ] + select(soong_config_variable("ANDROID", "release_crashrecovery_module"), {
+            ] + select(release_flag("RELEASE_NATIVE_OMAPI"), {
+                true: [],
+                default: [
+                    "SecureElement", // handheld_system
+                ],
+            }) + select(soong_config_variable("ANDROID", "release_crashrecovery_module"), {
                 "true": [
                     "com.android.crashrecovery", // base_system (RELEASE_CRASHRECOVERY_MODULE)
                 ],
