@@ -51,6 +51,7 @@ PRODUCT_BOOT_JARS += \
     framework-minus-apex \
     framework-graphics \
     framework-location \
+    framework-network-security-config \
     ext \
     telephony-common \
     voip-common \

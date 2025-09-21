@@ -7259,8 +7259,15 @@ SYMBOLS_MAPPING := $(PRODUCT_OUT)/$(name)-symbols-mapping.textproto
 
 _symbols_zip_modules := $(call product-installed-modules,$(INTERNAL_PRODUCT))
 
+ifeq ($(BOARD_USES_PVMFWIMAGE),true)
+_symbols_zip_modules += pvmfw_bin
+endif # BOARD_USES_PVMFWIMAGE
+
 _symbols_zip_modules_symbols_files := $(foreach m,$(_symbols_zip_modules),$(ALL_MODULES.$(m).SYMBOLIC_OUTPUT_PATH))
 _symbols_zip_modules_mapping_files := $(foreach m,$(_symbols_zip_modules),$(ALL_MODULES.$(m).ELF_SYMBOL_MAPPING_PATH))
+
+.PHONY: symbols-zip
+symbols-zip: $(SYMBOLS_ZIP) $(SYMBOLS_MAPPING)
 
 .PHONY: symbols-files
 symbols-files: $(_symbols_zip_modules_symbols_files)
@@ -7999,6 +8006,12 @@ endif # PACK_DESKTOP_FILESYSTEM_IMAGES
 # -----------------------------------------------------------------
 # Desktop pack recovery image hook.
 ifeq ($(BOARD_USES_DESKTOP_RECOVERY_IMAGE),true)
+ifeq ($(GENERATED_FW_IMAGE),)
+$(error The desktop recovery image requires AP and EC firmware. \
+	Please ensure RELEASE_FIRMWARE_$(call to-upper,$(TARGET_PRODUCT))_VERSION is set, \
+	or disable the recovery image by specifying \
+	PRODUCT_BUILD_DESKTOP_RECOVERY_IMAGE := false)
+endif # ($(GENERATED_FW_IMAGE),)
 PACK_RECOVERY_IMAGE_TARGET := $(PRODUCT_OUT)/android-desktop_recovery_image.bin
 PACK_RECOVERY_IMAGE_ARGS := --noarchive --recovery --firmware $(GENERATED_FW_IMAGE) --partition-image $(GENERATED_PARTITION_IMAGE)
 

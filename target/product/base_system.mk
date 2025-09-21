@@ -101,6 +101,7 @@ PRODUCT_PACKAGES += \
     framework-location \
     framework-minus-apex \
     framework-minus-apex-install-dependencies \
+    framework-network-security-config \
     framework-sysconfig.xml \
     fsck.erofs \
     fsck_msdos \
@@ -598,6 +599,15 @@ endif
 ifneq (,$(RELEASE_NATIVE_FRAMEWORK_PROTOTYPE))
     PRODUCT_PACKAGES += \
         zygote_next
+endif
+
+# Whether to use Java or new native (Rust) OMAPI implementation
+ifeq ($(RELEASE_NATIVE_OMAPI),true)
+    PRODUCT_PACKAGES += \
+        omapi
+else
+    PRODUCT_PACKAGES += \
+        SecureElement
 endif
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/runtime_libart.mk)

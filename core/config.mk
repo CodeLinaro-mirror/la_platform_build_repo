@@ -1305,8 +1305,8 @@ endif
 BUILD_VERSION_TAGS += $(BUILD_KEYS)
 BUILD_VERSION_TAGS := $(subst $(space),$(comma),$(sort $(BUILD_VERSION_TAGS)))
 
-# BUILD_FINGERPRINT is used used to uniquely identify the combined build and
-# product; used by the OTA server.
+# BUILD_FINGERPRINT is used to uniquely identify the combined build and product;
+# used by the OTA server.
 ifeq (,$(strip $(BUILD_FINGERPRINT)))
   BUILD_FINGERPRINT := $(PRODUCT_BRAND)/$(TARGET_PRODUCT)/$(TARGET_DEVICE):$(PLATFORM_VERSION)/$(BUILD_ID)/$(BUILD_NUMBER_FROM_FILE):$(TARGET_BUILD_VARIANT)/$(BUILD_VERSION_TAGS)
 endif
@@ -1337,3 +1337,19 @@ endif
 # unset it for safety.
 BUILD_THUMBPRINT_FILE :=
 BUILD_THUMBPRINT :=
+
+# BUILD_SYSTEM_FINGERPRINT is a fingerprint of the system image. Different from
+# the BUILD_THUMBPRINT, it includes system image attributes to uniquely identify
+# the system image; This purposefully excludes any product-specific variables.
+ifeq (,$(strip $(BUILD_SYSTEM_FINGERPRINT)))
+  BUILD_SYSTEM_FINGERPRINT := $(PRODUCT_SYSTEM_BRAND)/$(PRODUCT_SYSTEM_NAME)/$(PRODUCT_SYSTEM_DEVICE):$(PLATFORM_VERSION)/$(BUILD_ID)/$(BUILD_NUMBER_FROM_FILE):$(TARGET_BUILD_VARIANT)/$(BUILD_VERSION_TAGS)
+endif
+
+# In order to allow product-config to be run in parallel for multiple lunch targets, the build_system_fingerprint file is product-specific.
+BUILD_SYSTEM_FINGERPRINT_FILE := $(PRODUCT_OUT)/build_system_fingerprint-$(TARGET_PRODUCT).txt
+ifneq (,$(shell mkdir -p $(PRODUCT_OUT) && echo $(BUILD_SYSTEM_FINGERPRINT) >$(BUILD_SYSTEM_FINGERPRINT_FILE).tmp && (if ! cmp -s $(BUILD_SYSTEM_FINGERPRINT_FILE).tmp $(BUILD_SYSTEM_FINGERPRINT_FILE); then mv $(BUILD_SYSTEM_FINGERPRINT_FILE).tmp $(BUILD_SYSTEM_FINGERPRINT_FILE); else rm $(BUILD_SYSTEM_FINGERPRINT_FILE).tmp; fi) && grep " " $(BUILD_SYSTEM_FINGERPRINT_FILE)))
+  $(error BUILD_SYSTEM_FINGERPRINT cannot contain spaces: "$(file <$(BUILD_SYSTEM_FINGERPRINT_FILE))")
+endif
+# unset it for safety.
+BUILD_SYSTEM_FINGERPRINT_FILE :=
+BUILD_SYSTEM_FINGERPRINT :=
