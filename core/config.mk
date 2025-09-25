@@ -1320,6 +1320,11 @@ BUILD_FINGERPRINT_FROM_FILE := $$(cat $(BUILD_FINGERPRINT_FILE))
 # unset it for safety.
 BUILD_FINGERPRINT :=
 
+BUILD_UUID_FILE := $(SOONG_OUT_DIR)/build_uuid-$(TARGET_PRODUCT).txt
+BUILD_UUID_FROM_FILE := $$(cat $(BUILD_UUID_FILE))
+# unset it for safety.
+BUILD_UUID_FILE :=
+
 # BUILD_THUMBPRINT is used to uniquely identify the system build; used by the
 # OTA server. This purposefully excludes any product-specific variables.
 ifeq (,$(strip $(BUILD_THUMBPRINT)))

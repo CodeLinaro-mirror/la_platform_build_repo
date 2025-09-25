@@ -84,6 +84,7 @@ $(call soong_config_set,art_module,art_debug_opt_flag,$(ART_DEBUG_OPT_FLAG))
 endif
 # The default value of ART_BUILD_HOST_DEBUG is true
 $(call soong_config_set_bool,art_module,art_build_host_debug,$(if $(filter false,$(ART_BUILD_HOST_DEBUG)),false,true))
+$(call soong_config_set_bool,art_module,art_use_simulator,$(ART_USE_SIMULATOR))
 
 # For ART_BUILD_TARGET in art/build/Android.common_build.mk
 # Sets 'art_module_build_target' to true unless both NDEBUG and DEBUG variables are explicitly 'false'.
@@ -274,8 +275,8 @@ $(call soong_config_set,bootclasspath,release_package_profiling_module,$(RELEASE
 $(call soong_config_set,ANDROID,release_anomaly_detector,$(RELEASE_ANOMALY_DETECTOR))
 $(call soong_config_set,bootclasspath,release_anomaly_detector,$(RELEASE_ANOMALY_DETECTOR))
 
-# Move VCN from platform to the Tethering module; used by both platform and module
-$(call soong_config_set,ANDROID,is_vcn_in_mainline,$(RELEASE_MOVE_VCN_TO_MAINLINE))
+# Move Telecom APIs into telephonycore; used by both platform and module
+$(call soong_config_set,ANDROID,release_telecom_mainline_module,$(RELEASE_TELECOM_MAINLINE_MODULE))
 
 # Add telephony build flag to soong
 $(call soong_config_set,ANDROID,release_telephony_module,$(RELEASE_TELEPHONY_MODULE))
@@ -491,5 +492,5 @@ else
 $(call soong_config_set_bool,tradefed,use_prebuilt,false)
 endif
 
-# Add npuscheduler build flag to soong
-$(call soong_config_set,ANDROID,release_npuscheduler_module,$(RELEASE_NPUSCHEDULER_MODULE))
+# Add npumanager build flag to soong
+$(call soong_config_set,ANDROID,release_npumanager_module,$(RELEASE_NPUMANAGER_MODULE))
