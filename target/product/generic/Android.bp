@@ -913,11 +913,6 @@ system_image_defaults {
                     "com.android.profiling", // base_system (RELEASE_PACKAGE_PROFILING_MODULE)
                 ],
                 default: [],
-            }) + select(release_flag("RELEASE_MOVE_VCN_TO_MAINLINE"), {
-                true: [],
-                default: [
-                    "framework-connectivity-b", // base_system
-                ],
             }) + select(release_flag("RELEASE_UPROBESTATS_MODULE"), {
                 true: [
                     "com.android.uprobestats", // base_system (RELEASE_UPROBESTATS_MODULE)
@@ -950,6 +945,11 @@ system_image_defaults {
                     "EyeDropper", // handheld_system (RELEASE_ACONFIG_INCLUDE_EYE_DROPPER_APP)
                 ],
                 default: [],
+            }) + select(release_flag("RELEASE_TELECOM_MAINLINE_MODULE"), {
+                true: [],
+                default: [
+                    "framework-telecom", // base_system
+                ],
             }),
         },
         prefer32: {

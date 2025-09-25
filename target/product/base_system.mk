@@ -309,13 +309,10 @@ ifeq ($(RELEASE_CROSS_DEVICE_SYNC),true)
 endif
 
 # Once Telecom is APEX, we will consolidate all deps
-ifeq ($(RELEASE_TELECOM_MAINLINE_MODULE),true)
-  PRODUCT_PACKAGES += \
-      com.android.telecom \
-
-else
+ifneq ($(RELEASE_TELECOM_MAINLINE_MODULE),true)
   PRODUCT_PACKAGES += \
       telecom \
+      framework-telecom
 
 endif
 
@@ -385,13 +382,6 @@ ifeq ($(RELEASE_USE_WEBVIEW_BOOTSTRAP_MODULE),true)
         com.android.webview.bootstrap
 endif
 
-# Only add the jar when it is not in the Tethering module. Otherwise,
-# it will be added via com.android.tethering
-ifneq ($(RELEASE_MOVE_VCN_TO_MAINLINE),true)
-    PRODUCT_PACKAGES += \
-        framework-connectivity-b
-endif
-
 ifeq ($(RELEASE_TELEPHONY_MODULE),true)
     PRODUCT_PACKAGES += \
        com.android.telephonycore
@@ -426,6 +416,8 @@ PRODUCT_PACKAGES += \
 # are no longer supported for dessert upgrades).
 PRODUCT_PACKAGES += \
     hwservicemanager_compat_symlink_module \
+# Prevent timeouts to check availability of hwservicmanager during boot
+PRODUCT_SYSTEM_PROPERTIES += hwservicemanager.always_sets_disabled=true
 
 PRODUCT_PACKAGES_ARM64 := libclang_rt.hwasan \
  libclang_rt.hwasan.bootstrap \

@@ -146,6 +146,7 @@ function setup_cog_symlink() {
   if [[ -n "$cartfs_mount_point" ]]; then
     local cog_workspace_name="$(basename "$(dirname "${top}")")"
     link_destination="${cartfs_mount_point}/${cog_workspace_name}/out"
+    setup_cartfs_incremental_build "${link_destination}" "${cartfs_mount_point}"
   fi
 
   # remove existing out/ dir if it exists
@@ -307,5 +308,89 @@ function clean_deleted_workspaces_in_cartfs() {
         fi
       done <<< "$folders_list"
     fi
+  fi
+}
+
+# Configure the output directory of the new workspace in Cartfs to be an
+# incremental build by copying the build output of a previous build of the same
+# repo and forking the mtimes in Cog.
+function setup_cartfs_incremental_build() {
+  # Make sure grpc_cli is installed.
+  if ! command -v grpc_cli &> /dev/null; then
+    return
+  fi
+
+  local cartfs_endpoint="127.0.0.1:65001"
+  local cartfs_rpc_copy_directory="cartfs.Cartfs.CopyDirectory"
+
+  # Make sure CartFS is listening on the endpoint and that the CopyDirectory
+  # function is available.
+  if ! grpc_cli ls ${cartfs_endpoint} ${cartfs_rpc_copy_directory} --channel_creds_type=insecure &> /dev/null; then
+    return
+  fi
+
+  local cogfsd_endpoint="unix:///google/cog/status/uds/${UID}"
+  local cogfsd_rpc_forkmtimes="devtools_srcfs.CogLocalRpcService.ForkMtimes"
+
+  # Make sure Cogfsd is listening on the endpoint and that the ForMtimes
+  # function is available.
+  if ! grpc_cli ls ${cogfsd_endpoint} ${cogfsd_rpc_forkmtimes} --channel_creds_type=insecure &> /dev/null; then
+    return
+  fi
+
+  echo "Searching for recent build outputs in CartFS for incremental builds"
+
+  local link_destination=$1
+  local cartfs_mount_point=$2
+  local top=$(gettop)
+  local repo="$(basename "${top}")"
+  local current_cartfs_folder="$(dirname "${link_destination}")"
+  local target_workspace="$(basename "${current_cartfs_folder}")"
+  local source_workspace
+  local copy_from
+  local folders
+
+  folders=$(stat -c "%Y %n" ${cartfs_mount_point}/*/out 2>/dev/null | sort -nr | sed 's/^[0-9]\+ //')
+  if [[ -n "${folders}" ]]; then
+    while read -r cartfs_out; do
+      if [[ "${cartfs_out}" != "${link_destination}" ]]; then
+        local workspace_name="$(basename "$(dirname "${cartfs_out}")")"
+        local workspace_path="$(dirname "$(dirname "${top}")")"
+        local full_path="${workspace_path}/${workspace_name}/${repo}"
+
+        # Make sure the CoG workspace still exists and is of the same repo.
+        if [[ ! -d "${full_path}" ]]; then
+          continue
+        fi
+
+        # Make sure the out directory exists, is not empty, and we can stat it.
+        if [[ -d "${cartfs_out}" && -n "$(ls -A "${cartfs_out}")" ]]; then
+          copy_from="${cartfs_out}"
+          source_workspace="${workspace_name}"
+          break
+        fi
+      fi
+    done <<< "$folders"
+  fi
+
+  if [[ -n "$copy_from" ]]; then
+    echo "Found suitable build output from workspace ${source_workspace}"
+    echo "Copying content from $copy_from to $link_destination"
+    # Filtering output to only include relevant information.
+    local output_filter="connecting to|Rpc succeeded with OK status|Not yet implemented|success|Received trailing metadata from server"
+    grpc_cli call ${cartfs_endpoint} ${cartfs_rpc_copy_directory} \
+    'from_path: "'${copy_from#$cartfs_mount_point/}'"
+     to_path: "'${link_destination#$cartfs_mount_point/}'"' \
+      --channel_creds_type=insecure 2>&1 | grep -v -E "${output_filter}"
+    grpc_cli call ${cogfsd_endpoint} ${cogfsd_rpc_forkmtimes} \
+    'source_workspace: "'${source_workspace}'"
+     target_workspace: "'${target_workspace}'"' \
+      --channel_creds_type=insecure 2>&1 | grep -v -E "${output_filter}"
+    # Adding a file to track that the workspace is an incremental
+    # build from Cartfs. This will be used for metrics.
+    echo "${source_workspace}" > "${link_destination}/.cartfs-copied"
+  else
+    echo "No suitable build outputs matching the same repository found."
+    echo "Starting from a fresh build output directory."
   fi
 }

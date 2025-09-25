@@ -86,6 +86,7 @@ PRODUCT_APEX_BOOT_JARS := \
     com.android.sdkext:framework-sdkextensions \
     com.android.tethering:framework-connectivity \
     com.android.tethering:framework-connectivity-t \
+    com.android.tethering:framework-connectivity-b \
     com.android.tethering:framework-tethering \
     com.android.uwb:framework-uwb \
     com.android.virt:framework-virtualization \
@@ -148,14 +149,13 @@ ifneq (,$(RELEASE_RANGING_STACK))
     $(call soong_config_set,bootclasspath,release_ranging_stack,true)
 endif
 
-# Check if VCN should be built into the tethering module or not
-ifeq ($(RELEASE_MOVE_VCN_TO_MAINLINE),true)
+ifeq ($(RELEASE_TELECOM_MAINLINE_MODULE),true)
     PRODUCT_APEX_BOOT_JARS += \
-        com.android.tethering:framework-connectivity-b \
+        com.android.telephonycore:framework-telecom \
 
 else
     PRODUCT_BOOT_JARS += \
-        framework-connectivity-b \
+        framework-telecom \
 
 endif
 
