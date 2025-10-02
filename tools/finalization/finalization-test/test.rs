@@ -15,29 +15,31 @@
  */
 
 mod build_flags;
+mod sdk_version;
 
 #[cfg(test)]
 mod tests {
     use crate::build_flags::{ReleaseConfigs, FLAGS_WE_CARE_ABOUT};
+    use crate::sdk_version::SdkVersion;
     use std::sync::LazyLock;
 
     // the subset of build flags relevant for SDK finalization
     static RELEASE_CONFIGS: LazyLock<ReleaseConfigs> = LazyLock::new(ReleaseConfigs::init);
 
-    fn sdk_version(release_config: &str) -> f32 {
+    fn sdk_version(release_config: &str) -> SdkVersion {
         // use SDK_INT_FULL if set, otherwise fall back to SDK_INT
         let s = &RELEASE_CONFIGS.flags[release_config]["RELEASE_PLATFORM_SDK_VERSION_FULL"];
         if !s.is_empty() {
-            s.parse::<f32>().unwrap_or_else(|_| {
+            s.parse::<SdkVersion>().unwrap_or_else(|_| {
                 panic!(
-                    "failed to parse RELEASE_PLATFORM_SDK_VERSION_FULL for {release_config} ({s}) as f32"
+                    "failed to parse RELEASE_PLATFORM_SDK_VERSION_FULL for {release_config} ({s}) as SdkVersion"
                 )
             })
         } else {
             let s = &RELEASE_CONFIGS.flags[release_config]["RELEASE_PLATFORM_SDK_VERSION"];
-            s.parse::<f32>().unwrap_or_else(|_| {
+            s.parse::<SdkVersion>().unwrap_or_else(|_| {
                 panic!(
-                    "failed to parse RELEASE_PLATFORM_SDK_VERSION for {release_config} ({s}) as f32"
+                    "failed to parse RELEASE_PLATFORM_SDK_VERSION for {release_config} ({s}) as SdkVersion"
                 )
             })
         }
@@ -137,6 +139,23 @@ mod tests {
         for release_config in RELEASE_CONFIGS.flags.keys().filter(|key| *key != canary) {
             let value = &RELEASE_CONFIGS.flags[release_config]["RELEASE_PLATFORM_VERSION_CODENAME"];
             assert_ne!(value, "CANARY");
+        }
+    }
+
+    #[test]
+    fn test_prospective_sdk_version() {
+        // invariant: if set, RELEASE_PROSPECTIVE_SDK_VERSION_FULL is greater or equal to the
+        // current SDK version
+        for release_config in RELEASE_CONFIGS.flags.keys() {
+            let prospective_version =
+                &RELEASE_CONFIGS.flags[release_config]["RELEASE_PROSPECTIVE_SDK_VERSION_FULL"];
+            if prospective_version.is_empty() {
+                // skip this release config if it doesn't set RELEASE_PROSPECTIVE_SDK_VERSION_FULL
+                continue;
+            }
+            let prospective_version = prospective_version.parse::<SdkVersion>().unwrap();
+            let sdk_version = sdk_version(release_config);
+            assert!(prospective_version >= sdk_version, "in release config {release_config}, expected RELEASE_PROSPECTIVE_SDK_VERSION_FULL ({prospective_version}) to be greater or equal to the SDK version ({sdk_version})");
         }
     }
 }

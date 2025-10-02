@@ -4465,5 +4465,12 @@ team {
     trendy_team_id: "6240132656365568",
 }
 
+team {
+    name: "trendy_team_pixel_health",
+
+    // go/trendy/manage/engineers/6730550418440192
+    trendy_team_id: "6730550418440192",
+}
+
 // DON'T ADD NEW RULES HERE. For more details refer to
 // go/new-android-ownership-model

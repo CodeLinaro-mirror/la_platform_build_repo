@@ -1110,7 +1110,7 @@ function validate_current_shell() {
 function source_vendorsetup() {
     unset VENDOR_PYTHONPATH
     local T="$(gettop)"
-    allowed=
+    local allowed=
     for f in $(cd "$T" && find -L device vendor product -maxdepth 4 -name 'allowed-vendorsetup_sh-files' 2>/dev/null | sort); do
         if [ -n "$allowed" ]; then
             echo "More than one 'allowed_vendorsetup_sh-files' file found, not including any vendorsetup.sh files:"
@@ -1121,16 +1121,24 @@ function source_vendorsetup() {
         allowed="$T/$f"
     done
 
-    allowed_files=
-    [ -n "$allowed" ] && allowed_files=$(cat "$allowed")
+    local allowed_files=
+    [ -n "$allowed" ] && allowed_files=($(cat "$allowed"))
     for dir in device vendor product; do
         for f in $(cd "$T" && test -d $dir && \
             find -L $dir -maxdepth 4 -name 'vendorsetup.sh' 2>/dev/null | sort); do
 
-            if [[ -z "$allowed" || "$allowed_files" =~ $f ]]; then
+            if [[ -z "$allowed" ]]; then
                 echo "including $f"; . "$T/$f"
             else
-                echo "ignoring $f, not in $allowed"
+                local found=
+                for a in "${allowed_files[@]}"; do
+                    if [[ "$T/$f" =~ "$a" ]]; then
+                        echo "including $f"; . "$T/$f"
+                        found=y
+                        break
+                    fi
+                done
+                [[ -n ${found} ]] || echo "ignoring $f, not in $allowed"
             fi
         done
     done
