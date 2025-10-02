@@ -494,3 +494,5 @@ endif
 
 # Add npumanager build flag to soong
 $(call soong_config_set,ANDROID,release_npumanager_module,$(RELEASE_NPUMANAGER_MODULE))
+
+$(call soong_config_set,berberis,target_native_bridge_abi,$(TARGET_NATIVE_BRIDGE_ABI))

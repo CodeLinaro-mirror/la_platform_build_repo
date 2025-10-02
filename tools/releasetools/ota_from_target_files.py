@@ -142,6 +142,9 @@ A/B OTA specific options
   --disable_fec_computation
       Disable the on device FEC data computation for incremental updates. OTA will be larger but installation will be faster.
 
+  --disable_verity_computation
+      Disable the on device verity data computation for incremental updates. OTA will be larger but installation will be faster.
+
   --include_secondary
       Additionally include the payload for secondary slot images (default:
       False). Only meaningful when generating A/B OTAs.
@@ -261,6 +264,8 @@ A/B OTA specific options
   --full_ota_partitions
       Specify list of partitions should be updated in full OTA fashion, even if
       an incremental OTA is about to be generated
+  --disable_ublk
+      Disable ublk based OTA forcing to use dm-user even though device is ublk enabled.
 """
 
 from __future__ import print_function
@@ -333,6 +338,7 @@ OPTIONS.max_threads = None
 OPTIONS.vabc_cow_version = None
 OPTIONS.compression_factor = None
 OPTIONS.full_ota_partitions = None
+OPTIONS.disable_ublk = False
 
 
 POSTINSTALL_CONFIG = 'META/postinstall_config.txt'
@@ -1219,6 +1225,8 @@ def main(argv):
     elif o == "--full_ota_partitions":
       OPTIONS.full_ota_partitions = set(
           a.strip().strip("\"").strip("'").split(","))
+    elif o == "--disable_ublk":
+      OPTIONS.disable_ublk = True
     else:
       return False
     return True
@@ -1269,6 +1277,7 @@ def main(argv):
                                  "vabc_cow_version=",
                                  "compression_factor=",
                                  "full_ota_partitions=",
+                                 "disable_ublk",
                              ], extra_option_handler=[option_handler, payload_signer.signer_options])
   common.InitLogging()
 
@@ -1404,6 +1413,11 @@ def main(argv):
                        " detected. Please only pass in this flag if you want a"
                        " SPL downgrade. Target SPL: {} Source SPL: {}"
                        .format(target_spl, source_spl))
+  if OPTIONS.disable_ublk:
+    logger.info("Disabling UBLK as requested")
+    args[0] = ModifyTargetFilesDynamicPartitionInfo(
+        args[0], "disable_ublk", "true")
+
   if generate_ab:
     GenerateAbOtaPackage(
         target_file=args[0],

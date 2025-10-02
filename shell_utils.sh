@@ -224,7 +224,18 @@ function _wrap_build()
     elif [ $secs -gt 0 ] ; then
         printf "(%d seconds)" $secs
     fi
-    echo " ####${color_reset}"
+    echo " ####"
+    if [[ ${TARGET_BUILD_VARIANT} = eng ]] \
+       && [[ ${SOONG_PARTIAL_COMPILE#true} = ${SOONG_PARTIAL_COMPILE} ]] \
+       && [[ ${SOONG_PARTIAL_COMPILE#all} = ${SOONG_PARTIAL_COMPILE} ]]; then
+      echo "${color_warning}Try enabling partial compilation for significantly faster builds."
+      echo "See http://go/soong-partial-compile"
+    elif [[ $SOONG_USE_PARTIAL_COMPILE == false ]]; then
+      echo "${color_warning}Partial compilation was disabled due to SOONG_USE_PARTIAL_COMPILE=false"
+      echo "See http://go/soong-partial-compile"
+    fi
+    echo -n "${color_reset}"
+
     echo
     return $ret
 }
