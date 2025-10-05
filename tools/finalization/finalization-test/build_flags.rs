@@ -22,11 +22,11 @@ use std::fs;
 #[allow(dead_code)]
 pub const FLAGS_WE_CARE_ABOUT: [&str; 6] = [
     "RELEASE_HIDDEN_API_EXPORTABLE_STUBS",
+    "RELEASE_PLATFORM_PROSPECTIVE_SDK_VERSION_FULL",
     "RELEASE_PLATFORM_SDK_VERSION",
     "RELEASE_PLATFORM_SDK_VERSION_FULL",
     "RELEASE_PLATFORM_VERSION",
     "RELEASE_PLATFORM_VERSION_CODENAME",
-    "RELEASE_PROSPECTIVE_SDK_VERSION_FULL",
 ];
 
 // A map of release-config -name -> map of flag-name -> flag-value

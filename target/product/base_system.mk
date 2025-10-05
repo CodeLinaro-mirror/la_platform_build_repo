@@ -101,7 +101,6 @@ PRODUCT_PACKAGES += \
     framework-location \
     framework-minus-apex \
     framework-minus-apex-install-dependencies \
-    framework-network-security-config \
     framework-sysconfig.xml \
     fsck.erofs \
     fsck_msdos \
@@ -331,6 +330,13 @@ endif
 ifneq ($(RELEASE_ONDEVICE_INTELLIGENCE_MODULE),true)
   PRODUCT_PACKAGES += \
         framework-ondeviceintelligence-platform
+
+endif
+
+# Non-updatable NSC classes. Replaced by framework-conscrypt-nsc.
+ifneq ($(RELEASE_CONSCRYPT_NSC),true)
+  PRODUCT_PACKAGES += \
+        framework-network-security-config \
 
 endif
 

@@ -361,6 +361,7 @@ pub fn create_java_lib(
         single_exported_file,
         finalized_flags,
         support_uau_annotation: !cfg!(enable_jarjar_flags_in_framwork),
+        optimize_read_only_getter: cfg!(optimize_read_only_java),
     };
     generate_java_code(&package, modified_parsed_flags.into_iter(), config)
 }

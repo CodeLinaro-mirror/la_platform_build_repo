@@ -37,14 +37,22 @@ public final class Flags \{
 {{ -endif }}
 {{ -endif }}
     public static boolean {item.method_name}() \{
-        {{ if library_exported- }}
+        {{ -if library_exported }}
         {{ -if item.finalized_sdk_present }}
         if ({item.finalized_sdk_check|unescaped}) \{
           return true;
         }
         {{ -endif}}  {#- end finalized_sdk_present#}
         {{ -endif}}  {#- end library_exported#}
+        {{ -if item.is_read_write }}
         return FEATURE_FLAGS.{item.method_name}();
+        {{ -else }}
+        {{ -if optimize_read_only_getter }}
+        return {item.default_value};
+        {{ -else }}
+        return FEATURE_FLAGS.{item.method_name}();
+        {{ -endif }}
+        {{ -endif }}
     }
 {{ -endfor }}
 {{ -if is_test_mode }}

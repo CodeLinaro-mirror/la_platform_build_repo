@@ -34,4 +34,5 @@ check-cfg = [
     "cfg(enable_fingerprint_rust)",
     "cfg(enable_fingerprint_cpp)",
     "cfg(enable_jarjar_flags_in_framwork)",
+    "cfg(optimize_read_only_java)",
 ]
