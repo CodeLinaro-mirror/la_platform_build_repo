@@ -36,6 +36,10 @@ rust_defaults {
         select(release_flag("RELEASE_JARJAR_FLAGS_IN_FRAMEWORK"), {
             true: ["enable_jarjar_flags_in_framwork"],
             default: [],
+        }) +
+        select(release_flag("RELEASE_ACONFIG_OPTIMIZE_READ_ONLY_JAVA"), {
+            true: ["optimize_read_only_java"],
+            default: [],
         }),
     features: select(release_flag("RELEASE_ACONFIG_DEFAULT_EXPORTED_READS_TO_DISABLED"), {
         true: ["default_exported_reads_to_disabled"],

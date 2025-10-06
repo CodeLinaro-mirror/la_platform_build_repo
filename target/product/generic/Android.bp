@@ -869,7 +869,6 @@ system_image_defaults {
                 "ext", // from runtime_libart
                 "framework-graphics", // base_system
                 "framework-location", // base_system
-                "framework-network-security-config", // base_system
                 "framework-minus-apex-install-dependencies", // base_system
                 "framework_compatibility_matrix.device.xml",
                 "generic_system_fonts", // ok
@@ -945,6 +944,13 @@ system_image_defaults {
                     "EyeDropper", // handheld_system (RELEASE_ACONFIG_INCLUDE_EYE_DROPPER_APP)
                 ],
                 default: [],
+            }) + select(release_flag("RELEASE_CONSCRYPT_NSC"), {
+                true: [
+                    "framework-conscrypt-nsc",
+                ],
+                default: [
+                    "framework-network-security-config", // base_system
+                ],
             }) + select(release_flag("RELEASE_TELECOM_MAINLINE_MODULE"), {
                 true: [],
                 default: [

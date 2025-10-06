@@ -51,7 +51,6 @@ PRODUCT_BOOT_JARS += \
     framework-minus-apex \
     framework-graphics \
     framework-location \
-    framework-network-security-config \
     ext \
     telephony-common \
     voip-common \
@@ -118,7 +117,11 @@ endif
 # When we release NSC in Conscrypt.
 ifeq ($(RELEASE_CONSCRYPT_NSC),true)
     PRODUCT_APEX_BOOT_JARS += \
-    com.android.conscrypt:framework-conscrypt-nsc \
+        com.android.conscrypt:framework-conscrypt-nsc \
+
+else
+    PRODUCT_BOOT_JARS += \
+        framework-network-security-config \
 
 endif
 

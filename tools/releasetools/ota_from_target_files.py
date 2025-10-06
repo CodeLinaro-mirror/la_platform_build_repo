@@ -1297,17 +1297,18 @@ def main(argv):
   else:
     OPTIONS.info_dict = common.LoadInfoDict(args[0])
 
+  target_info = common.BuildInfo(OPTIONS.info_dict, OPTIONS.oem_dicts)
   if OPTIONS.wipe_user_data:
-    if not OPTIONS.vabc_downgrade:
-      logger.info("Detected downgrade/datawipe OTA."
-                  "When wiping userdata, VABC OTA makes the user "
-                  "wait in recovery mode for merge to finish. Disable VABC by "
-                  "default. If you really want to do VABC downgrade, pass "
-                  "--vabc_downgrade")
+    if target_info.vendor_api_level < 33 and not OPTIONS.vabc_downgrade:
+      logger.info("Detected a data wipe OTA to a build older than android T."
+                  "For data wiping OTAs (which includes downgrade OTA), merge must be performed"
+                  "in recovery. In older version of VABC, merge can be really slow if a large"
+                  "chunk of blocks gets shifted by 1 block offset, so we fall back on regular VAB")
       OPTIONS.disable_vabc = True
-    # We should only allow downgrading incrementals (as opposed to full).
-    # Otherwise the device may go back from arbitrary build with this full
-    # OTA package.
+
+  # We should only allow downgrading incrementals (as opposed to full).
+  # Otherwise the device may go back from arbitrary build with this full
+  # OTA package.
   if OPTIONS.incremental_source is None and OPTIONS.downgrade:
     raise ValueError("Cannot generate downgradable full OTAs")
 

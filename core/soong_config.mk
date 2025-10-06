@@ -700,6 +700,12 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
 
   $(call add_json_list, CustomImagesPartitions, $(BOARD_CUSTOMIMAGES_PARTITION_LIST))
 
+  # For vendor_module_check
+  $(call add_json_str, ProductRestrictVendorFiles, $(PRODUCT_RESTRICT_VENDOR_FILES))
+  $(call add_json_str, VendorProductRestrictVendorFiles, $(VENDOR_PRODUCT_RESTRICT_VENDOR_FILES))
+  $(call add_json_list, VendorExceptionPaths, $(VENDOR_EXCEPTION_PATHS))
+  $(call add_json_list, VendorExceptionModules, $(VENDOR_EXCEPTION_MODULES))
+
 $(call end_json_map)
 
 # For converting vintf_data

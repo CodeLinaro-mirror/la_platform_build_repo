@@ -37,6 +37,8 @@ pub struct JavaCodegenConfig {
     pub finalized_flags: FinalizedFlagMap,
     // Whether to add the "@UnsupportedAppUsage" (UAU) annotation in the generated code.
     pub support_uau_annotation: bool,
+    // Whether to optimize read-only flag reads by short-circuiting test override support.
+    pub optimize_read_only_getter: bool,
 }
 
 pub fn generate_java_code<I>(
@@ -86,6 +88,7 @@ where
         single_exported_file: config.single_exported_file,
         use_device_config,
         support_uau_annotation: config.support_uau_annotation,
+        optimize_read_only_getter: config.optimize_read_only_getter,
     };
     let mut template = TinyTemplate::new();
     if library_exported && config.single_exported_file {
@@ -165,6 +168,7 @@ struct Context {
     pub single_exported_file: bool,
     pub use_device_config: bool,
     pub support_uau_annotation: bool,
+    pub optimize_read_only_getter: bool,
 }
 
 #[derive(Serialize, Debug)]
@@ -758,8 +762,7 @@ mod tests {
         }
     "#;
 
-    #[test]
-    fn test_generate_java_code_production() {
+    fn run_generate_java_code_production_test(optimize_read_only_getter: bool) {
         let parsed_flags = crate::test::parse_test_flags();
         let mode = CodegenMode::Production;
         let modified_parsed_flags =
@@ -773,6 +776,7 @@ mod tests {
             single_exported_file: false,
             finalized_flags: FinalizedFlagMap::new(),
             support_uau_annotation: false,
+            optimize_read_only_getter,
         };
         let generated_files = generate_java_code(
             crate::test::TEST_PACKAGE,
@@ -780,8 +784,16 @@ mod tests {
             config,
         )
         .unwrap();
-        let expect_flags_content = EXPECTED_FLAG_COMMON_CONTENT.to_string()
-            + r#"
+        let mut expect_flags_content = EXPECTED_FLAG_COMMON_CONTENT.to_string();
+        if optimize_read_only_getter {
+            expect_flags_content = expect_flags_content
+                .replace("FEATURE_FLAGS.disabledRo()", "false")
+                .replace("FEATURE_FLAGS.enabledRo()", "true")
+                .replace("FEATURE_FLAGS.enabledRoExported()", "true")
+                .replace("FEATURE_FLAGS.enabledFixedRo()", "true")
+                .replace("FEATURE_FLAGS.enabledFixedRoExported()", "true");
+        }
+        expect_flags_content += r#"
             private static FeatureFlags FEATURE_FLAGS = new FeatureFlagsImpl();
         }"#;
         let expect_fake_feature_impl = EXPECTED_FAKEFEATUREFLAGSIMPL_CONTENT.replace("{}", "false");
@@ -818,6 +830,16 @@ mod tests {
     }
 
     #[test]
+    fn test_generate_java_code_production() {
+        run_generate_java_code_production_test(false);
+    }
+
+    #[test]
+    fn test_generate_java_code_production_optimize_ro() {
+        run_generate_java_code_production_test(true);
+    }
+
+    #[test]
     fn test_generate_java_code_mainline_beta_production() {
         let parsed_flags = crate::test::parse_test_flags();
         let mode = CodegenMode::Production;
@@ -842,6 +864,7 @@ mod tests {
             single_exported_file: false,
             finalized_flags: FinalizedFlagMap::new(),
             support_uau_annotation: false,
+            optimize_read_only_getter: false,
         };
         let generated_files = generate_java_code(
             crate::test::TEST_PACKAGE,
@@ -897,6 +920,7 @@ mod tests {
             single_exported_file: false,
             finalized_flags: FinalizedFlagMap::new(),
             support_uau_annotation: false,
+            optimize_read_only_getter: false,
         };
         let generated_files = generate_java_code(
             crate::test::TEST_PACKAGE,
@@ -1113,6 +1137,7 @@ mod tests {
             single_exported_file: false,
             finalized_flags,
             support_uau_annotation: false,
+            optimize_read_only_getter: false,
         };
         let generated_files = generate_java_code(
             crate::test::TEST_PACKAGE,
@@ -1334,6 +1359,7 @@ mod tests {
             single_exported_file: false,
             finalized_flags,
             support_uau_annotation: false,
+            optimize_read_only_getter: false,
         };
         let generated_files = generate_java_code(
             crate::test::TEST_PACKAGE,
@@ -1373,6 +1399,7 @@ mod tests {
             single_exported_file: false,
             finalized_flags: FinalizedFlagMap::new(),
             support_uau_annotation: false,
+            optimize_read_only_getter: false,
         };
         let generated_files = generate_java_code(
             crate::test::TEST_PACKAGE,
@@ -1496,6 +1523,7 @@ mod tests {
             single_exported_file: false,
             finalized_flags: FinalizedFlagMap::new(),
             support_uau_annotation: false,
+            optimize_read_only_getter: false,
         };
         let generated_files = generate_java_code(
             crate::test::TEST_PACKAGE,
@@ -1754,6 +1782,7 @@ mod tests {
             single_exported_file: true,
             finalized_flags,
             support_uau_annotation: false,
+            optimize_read_only_getter: false,
         };
         let generated_files = generate_java_code(
             crate::test::TEST_PACKAGE,
@@ -1854,6 +1883,7 @@ mod tests {
             single_exported_file: false,
             finalized_flags: FinalizedFlagMap::new(),
             support_uau_annotation: false,
+            optimize_read_only_getter: false,
         };
         let error = generate_java_code(
             crate::test::TEST_PACKAGE,

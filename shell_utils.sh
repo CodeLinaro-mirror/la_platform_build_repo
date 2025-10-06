@@ -147,6 +147,14 @@ function setup_cog_symlink() {
     local cog_workspace_name="$(basename "$(dirname "${top}")")"
     link_destination="${cartfs_mount_point}/${cog_workspace_name}/out"
     setup_cartfs_incremental_build "${link_destination}" "${cartfs_mount_point}"
+  else
+    # If CartFS is not mounted, check to see if it is installed (no mount but
+    # being installed implies it was disabled). If it is installed, then don't
+    # display any messages to the user. If it isn't installed, then message the
+    # user to install it, but don't stop the script.
+    if ! command -v cartfs &> /dev/null; then
+      echo "Install CartFS for more reliable builds. See go/cartfs-with-cog for installation instructions."
+    fi
   fi
 
   # remove existing out/ dir if it exists
