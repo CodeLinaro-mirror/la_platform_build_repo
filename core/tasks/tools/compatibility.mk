@@ -165,6 +165,19 @@ $(call declare-0p-target,$(test_suite_notice_txt))
 $(call declare-1p-copy-files,$(test_suite_dynamic_config),)
 $(call declare-1p-copy-files,$(test_suite_prebuilt_tools),)
 
+compatibility_files_metadata := $(HOST_OUT)/$(test_suite_name)/$(test_suite_name)_files_metadata.textproto
+file_metadata_generation_tool := $(HOST_OUT_EXECUTABLES)/file_metadata_generation$(HOST_EXECUTABLE_SUFFIX)
+aapt2_tool := $(HOST_OUT_EXECUTABLES)/aapt2$(HOST_EXECUTABLE_SUFFIX)
+$(compatibility_files_metadata): PRIVATE_TESTCASES_DIR := $(out_dir)/testcases
+$(compatibility_files_metadata): PRIVATE_AAPT2_TOOL := $(aapt2_tool)
+$(compatibility_files_metadata): PRIVATE_METADATA_TOOL := $(file_metadata_generation_tool)
+$(compatibility_files_metadata): PRIVATE_SDK_VERSION := $(PLATFORM_SDK_VERSION)
+$(compatibility_files_metadata): $(file_metadata_generation_tool) $(aapt2_tool) $(compatibility_zip)
+	$(PRIVATE_METADATA_TOOL) --testcases_dir $(PRIVATE_TESTCASES_DIR)\
+	--aapt2 $(PRIVATE_AAPT2_TOOL) --sdk_version $(PRIVATE_SDK_VERSION) --output $@
+
+$(call declare-0p-target,$(compatibility_files_metadata),)
+
 # Reset all input variables
 test_suite_name :=
 test_suite_tradefed :=

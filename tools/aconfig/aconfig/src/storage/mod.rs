@@ -179,11 +179,11 @@ mod tests {
                     pkg,
                     "system",
                     vec![Input {
-                        source: format!("tests/{}", aconfig_file).to_string(),
+                        source: format!("tests/{aconfig_file}").to_string(),
                         reader: Box::new(aconfig_content),
                     }],
                     vec![Input {
-                        source: format!("tests/{}", value_file).to_string(),
+                        source: format!("tests/{value_file}").to_string(),
                         reader: Box::new(value_content),
                     }],
                     None,

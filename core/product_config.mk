@@ -290,6 +290,8 @@ PRODUCT_PACKAGES_SHIPPING_API_LEVEL_33 := $(sort $(PRODUCT_PACKAGES_SHIPPING_API
 PRODUCT_PACKAGES_SHIPPING_API_LEVEL_34 := $(sort $(PRODUCT_PACKAGES_SHIPPING_API_LEVEL_34))
 
 ############################################################################
+PRODUCT_MAKEFILE_PATH := $(current_product_makefile)
+$(KATI_visibility_prefix PRODUCT_MAKEFILE_PATH,build/make/core/product_config.mk build/make/core/dumpvar.mk)
 
 current_product_makefile :=
 
@@ -300,7 +302,7 @@ current_product_makefile :=
 # TODO(b/308187268): Remove this denylist mechanism
 # Use PRODUCT_PACKAGES to determine if this is an aosp product. aosp products do not use google signed apexes.
 ignore_apex_contributions :=
-ifeq (,$(filter com.google.android.conscrypt com.google.android.go.conscrypt com.google.android.extservices com.google.android.go.extservices,$(PRODUCT_PACKAGES)))
+ifeq (,$(filter com.google.android.conscrypt% com.google.android.go.conscrypt% com.google.android.extservices% com.google.android.go.extservices%,$(PRODUCT_PACKAGES)))
   ignore_apex_contributions := true
 endif
 ifeq (true,$(PRODUCT_MODULE_BUILD_FROM_SOURCE))

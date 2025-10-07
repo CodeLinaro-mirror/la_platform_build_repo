@@ -122,7 +122,7 @@ impl Flag {
         match (&self.permission, self.staged_value) {
             (FlagPermission::ReadOnly, _) => "-".to_string(),
             (FlagPermission::ReadWrite, None) => "-".to_string(),
-            (FlagPermission::ReadWrite, Some(v)) => format!("(->{})", v),
+            (FlagPermission::ReadWrite, Some(v)) => format!("(->{v})"),
         }
     }
 }
@@ -304,7 +304,7 @@ fn invoke_updatable_aflags() {
 
     let output_str = String::from_utf8_lossy(&output.stdout).trim().to_string();
     if !output_str.is_empty() {
-        println!("{}", output_str);
+        println!("{output_str}");
     }
 }
 

@@ -60,9 +60,6 @@ ALL_SDK_FILES:=
 # Files for dalvik.  This is often build without building the rest of the OS.
 INTERNAL_DALVIK_MODULES:=
 
-# All findbugs xml files
-ALL_FINDBUGS_FILES:=
-
 # Packages with certificate violation
 CERTIFICATE_VIOLATION_MODULES :=
 
@@ -2997,38 +2994,6 @@ $(hide) \
   rm -f $@.uncompressed; \
   mv $@.compressed $@;
 endef
-
-ifeq ($(HOST_OS),linux)
-# Runs appcompat and store logs in $(PRODUCT_OUT)/appcompat
-define extract-package
-$(AAPT2) dump resources $@ | awk -F ' |=' '/^Package/{print $$3; exit}' >> $(PRODUCT_OUT)/appcompat/$(PRIVATE_MODULE).log &&
-endef
-define appcompat-header
-$(hide) \
-  mkdir -p $(PRODUCT_OUT)/appcompat && \
-  rm -f $(PRODUCT_OUT)/appcompat/$(PRIVATE_MODULE).log && \
-  echo -n "Package name: " >> $(PRODUCT_OUT)/appcompat/$(PRIVATE_MODULE).log && \
-  $(extract-package) \
-  echo "Module name in Android tree: $(PRIVATE_MODULE)" >> $(PRODUCT_OUT)/appcompat/$(PRIVATE_MODULE).log && \
-  echo "Local path in Android tree: $(PRIVATE_PATH)" >> $(PRODUCT_OUT)/appcompat/$(PRIVATE_MODULE).log && \
-  echo "Install path: $(patsubst $(PRODUCT_OUT)/%,%,$(PRIVATE_INSTALLED_MODULE))" >> $(PRODUCT_OUT)/appcompat/$(PRIVATE_MODULE).log && \
-  echo >> $(PRODUCT_OUT)/appcompat/$(PRIVATE_MODULE).log
-endef
-ART_VERIDEX_APPCOMPAT:=$(HOST_OUT)/bin/appcompat
-define run-appcompat
-$(hide) \
-  echo "appcompat output:" >> $(PRODUCT_OUT)/appcompat/$(PRIVATE_MODULE).log && \
-  ANDROID_LOG_TAGS="*:e" $(ART_VERIDEX_APPCOMPAT) --dex-file=$@ 2>&1 >> $(PRODUCT_OUT)/appcompat/$(PRIVATE_MODULE).log
-endef
-appcompat-files = \
-  $(AAPT2) \
-  $(ART_VERIDEX_APPCOMPAT) \
-else
-appcompat-header =
-run-appcompat =
-appcompat-files =
-endif  # HOST_OS == linux
-.KATI_READONLY: appcompat-header run-appcompat appcompat-files
 
 # Remove dynamic timestamps from packages
 #

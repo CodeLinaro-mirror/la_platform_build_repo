@@ -28,6 +28,7 @@ PRODUCT_PACKAGES += \
     android.test.mock \
     android.test.runner \
     apexd \
+    apexd.mainline_patch_level_2 \
     appops \
     app_process \
     appwidget \
@@ -388,7 +389,11 @@ endif
 
 ifeq ($(RELEASE_TELEPHONY_MODULE),true)
     PRODUCT_PACKAGES += \
-       com.android.telephony2
+       com.android.telephonycore
+
+else
+    PRODUCT_PACKAGES += \
+        framework-platformtelephony
 endif
 
 ifneq (,$(RELEASE_RANGING_STACK))
@@ -515,6 +520,11 @@ PRODUCT_SYSTEM_PROPERTIES += debug.atrace.tags.enableflags=0
 PRODUCT_SYSTEM_PROPERTIES += persist.traced.enable=1
 PRODUCT_SYSTEM_PROPERTIES += ro.surface_flinger.game_default_frame_rate_override=60
 
+# When the flag RELEASE_ADBD_OPEN_VSOCK_PORT is enabled, open adbd on vsock port 8382 as default.
+ifneq ($(RELEASE_ADBD_OPEN_VSOCK_PORT),)
+PRODUCT_SYSTEM_PROPERTIES += service.adb.listen_addrs?=vsock:8382
+endif
+
 # Include kernel configs.
 PRODUCT_PACKAGES += \
     approved-ogki-builds.xml \
@@ -580,6 +590,11 @@ PRODUCT_PACKAGES += dirty-image-objects
 # Enable go/perfetto-persistent-tracing for eng builds
 ifneq (,$(filter eng, $(TARGET_BUILD_VARIANT)))
     PRODUCT_PRODUCT_PROPERTIES += persist.debug.perfetto.persistent_sysui_tracing_for_bugreport=1
+endif
+
+ifneq (,$(RELEASE_NATIVE_FRAMEWORK_PROTOTYPE))
+    PRODUCT_PACKAGES += \
+        zygote_next
 endif
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/runtime_libart.mk)

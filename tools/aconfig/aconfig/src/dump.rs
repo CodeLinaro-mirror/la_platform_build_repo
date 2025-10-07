@@ -130,12 +130,12 @@ fn create_filter_predicate_single(filter: &str) -> Result<Box<DumpPredicate>> {
         T: std::fmt::Debug + Copy,
     {
         for candidate in expected.iter() {
-            if s == format!("{:?}", candidate) {
+            if s == format!("{candidate:?}") {
                 return Ok(*candidate);
             }
         }
         let expected =
-            expected.iter().map(|state| format!("{:?}", state)).collect::<Vec<_>>().join(", ");
+            expected.iter().map(|state| format!("{state:?}")).collect::<Vec<_>>().join(", ");
         bail!("\"{s}\": not a valid flag state, expected one of {expected}");
     }
 

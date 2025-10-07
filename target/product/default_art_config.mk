@@ -133,7 +133,11 @@ endif
 # Check if build supports Profiling module.
 ifeq ($(RELEASE_PACKAGE_PROFILING_MODULE),true)
     PRODUCT_APEX_BOOT_JARS += \
-        com.android.profiling:framework-profiling \
+        com.android.profiling:framework-profiling
+    ifeq ($(RELEASE_ANOMALY_DETECTOR),true)
+        PRODUCT_APEX_BOOT_JARS += \
+            com.android.profiling:framework-anomaly-detector
+    endif
 
 endif
 
@@ -156,7 +160,11 @@ endif
 
 ifeq ($(RELEASE_TELEPHONY_MODULE),true)
     PRODUCT_APEX_BOOT_JARS += \
-        com.android.telephony2:framework-telephony \
+        com.android.telephonycore:framework-telephony \
+
+else
+    PRODUCT_BOOT_JARS += \
+        framework-platformtelephony \
 
 endif
 
@@ -219,8 +227,11 @@ PRODUCT_APEX_STANDALONE_SYSTEM_SERVER_JARS := \
 # Check if build supports Profiling module.
 ifeq ($(RELEASE_PACKAGE_PROFILING_MODULE),true)
     PRODUCT_APEX_STANDALONE_SYSTEM_SERVER_JARS += \
-        com.android.profiling:service-profiling \
-
+        com.android.profiling:service-profiling
+    ifeq ($(RELEASE_ANOMALY_DETECTOR),true)
+        PRODUCT_APEX_SYSTEM_SERVER_JARS += \
+            com.android.profiling:service-anomaly-detector
+    endif
 endif
 
 ifneq (,$(RELEASE_RANGING_STACK))

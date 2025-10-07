@@ -143,7 +143,7 @@ class Benchmark:
       return ""
 
 
-    def soong_command(self, root):
+    def soong_command(self, root, soong_extra_flags):
       "Command line args to soong_ui for this benchmark."
       if self.dumpvars:
           return [
@@ -154,12 +154,16 @@ class Benchmark:
               "--abs-var-prefix=abs_var_cache_",
           ]
       elif self.modules:
-          return [
+          command = [
               "--build-mode",
               "--all-modules",
               f"--dir={root}",
               "--skip-metrics-upload",
-          ] + self.modules
+          ]
+          if soong_extra_flags:
+              command.append(f"{soong_extra_flags}")
+          command += self.modules
+          return command
       else:
           raise Exception("Benchmark must specify dumpvars or modules")
 
@@ -205,7 +209,7 @@ def Clean():
 def CleanNinja():
     """Remove the out directory, and then run lunch to initialize soong"""
     def clean_ninja():
-        returncode = subprocess.call("rm out/*.ninja out/soong/*.ninja", shell=True)
+        returncode = subprocess.call("rm -rf out/*.ninja out/soong/*.ninja out/soong/*.db out/soong/*.gob", shell=True)
         if returncode != 0:
             report_error(f"Build failed: {' '.join(cmd)}")
             raise FatalError()
@@ -371,11 +375,13 @@ class Runner():
         """Run a single benchmark."""
         benchmark_log_subdir = self._benchmark_log_dir(lunch, benchmark, iteration)
         benchmark_log_dir = self._options.LogDir().joinpath(benchmark_log_subdir)
+        soong_extra_flags = self._options.SoongExtraFlags()
 
         sys.stderr.write(f"STARTING BENCHMARK: {benchmark.id}\n")
         sys.stderr.write(f"             lunch: {lunch.Combine()}\n")
         sys.stderr.write(f"         iteration: {iteration}\n")
         sys.stderr.write(f" benchmark_log_dir: {benchmark_log_dir}\n")
+        sys.stderr.write(f" extra_soong_flags:  {soong_extra_flags}\n")
 
         report = BenchmarkReport(lunch, benchmark, iteration, benchmark_log_subdir)
         self._reports.append(report)
@@ -439,7 +445,8 @@ class Runner():
         if not self._options.DryRun():
             cmd = [
                 "build/soong/soong_ui.bash",
-            ] + benchmark.soong_command(self._options.root)
+            ] + benchmark.soong_command(self._options.root, self._options.SoongExtraFlags())
+            sys.stderr.write(f"STARTING SOONG BUILD {cmd}\n")
             env = dict(os.environ)
             env["TARGET_PRODUCT"] = lunch.target_product
             env["TARGET_RELEASE"] = lunch.target_release
@@ -578,6 +585,8 @@ benchmarks:
         parser.add_argument("--dist-one", action="store_true",
                             help="Copy logs and metrics to the given dist dir. Requires that only"
                                 + " one benchmark be supplied. Postroll steps will be skipped.")
+        parser.add_argument("--soong-extra-flags", type=str, default="",
+                            help="Extra flags passed to soong command.")
 
         self._args = parser.parse_args()
 
@@ -655,6 +664,9 @@ benchmarks:
 
     def List(self):
         return self._args.list
+
+    def SoongExtraFlags(self):
+        return self._args.soong_extra_flags
 
     def BenchmarkIds(self) :
         return [benchmark.id for benchmark in self._benchmarks]
@@ -854,12 +866,39 @@ benchmarks:
                       preroll=1,
                       postroll=2,
                       ),
+            Benchmark(id="systemui_application_add_log_call",
+                      title="SystemUI-application: Add a Log call StatusBarInitializer",
+                      change=Modify("frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/core/StatusBarInitializer.kt",
+                                    lambda: f'android.util.Log.v("StatusBarInitializer", "BENCHMARK = {random.randint(0, 1000000)}")\n',
+                                    before="initialized ="),
+                      modules=["SystemUI-application"],
+                      preroll=1,
+                      postroll=2,
+                    ),
             Benchmark(id="systemui_core_add_log_call",
-                      title="Add a Log call SystemUIApplication",
-                      change=Modify("frameworks/base/packages/SystemUI/src/com/android/systemui/SystemUIApplication.java",
-                                    lambda: f'Log.v(TAG, "BENCHMARK = {random.randint(0, 1000000)}");\n',
-                                    before="Log.wtf(TAG,"),
+                      title="SystemUI-core: Add a Log call StatusBarInitializer",
+                      change=Modify("frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/core/StatusBarInitializer.kt",
+                                    lambda: f'android.util.Log.v("StatusBarInitializer", "BENCHMARK = {random.randint(0, 1000000)}")\n',
+                                    before="initialized ="),
                       modules=["SystemUI-core"],
+                      preroll=1,
+                      postroll=2,
+                      ),
+            Benchmark(id="systemui_pod_api",
+                      title="Add an API to a SystemUI pod",
+                      change=Modify("frameworks/base/packages/SystemUI/pods/src/com/android/systemui/util/time/SystemClock.java",
+                                    lambda: f'default long benchmarkMillis() {{ return 0; }}\n',
+                                    before="long uptimeMillis();"),
+                      modules=["SystemUI-application"],
+                      preroll=1,
+                      postroll=2,
+                      ),
+            Benchmark(id="systemui_pod_impl",
+                      title="Modify an internal implementation of a SystemUI pod",
+                      change=Modify("frameworks/base/packages/SystemUI/pods/src/com/android/systemui/util/time/impl/SystemClockImpl.java",
+                                    lambda: f'android.util.Log.v("SystemClockImpl", "BENCHMARK = {random.randint(0, 1000000)}");\n',
+                                    before="return android.os.SystemClock.uptimeMillis();"),
+                      modules=["SystemUI-application"],
                       preroll=1,
                       postroll=2,
                       ),
