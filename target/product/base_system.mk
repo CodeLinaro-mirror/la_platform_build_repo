@@ -79,7 +79,6 @@ PRODUCT_PACKAGES += \
     com.android.permission \
     com.android.resolv \
     com.android.rkpd \
-    com.android.neuralnetworks \
     com.android.scheduling \
     com.android.sdkext \
     com.android.tethering \
@@ -90,8 +89,6 @@ PRODUCT_PACKAGES += \
     com.android.wifi \
     ContactsProvider \
     content \
-    CtsShimPrebuilt \
-    CtsShimPrivPrebuilt \
     debuggerd\
     device_config \
     dmctl \
@@ -421,6 +418,13 @@ ifeq ($(RELEASE_PROCESS_MEMORY_GUARDIAN_DAEMON),true)
   PRODUCT_PACKAGES += \
         pmg_daemon
 endif
+
+ifneq ($(TARGET_IS_QLMD), true)
+PRODUCT_PACKAGES += \
+    com.android.neuralnetworks \
+    CtsShimPrebuilt \
+    CtsShimPrivPrebuilt
+endif #TARGET_IS_QLMD
 
 # VINTF data for system image
 PRODUCT_PACKAGES += \

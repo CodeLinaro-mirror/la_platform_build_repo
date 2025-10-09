@@ -30,14 +30,14 @@ PRODUCT_PACKAGES += \
 
 # Applications
 PRODUCT_PACKAGES += \
-    LiveWallpapersPicker \
     PartnerBookmarksProvider \
-    Tag \
 
 ifneq ($(TARGET_NO_TELEPHONY), true)
+ifneq ($(TARGET_IS_QLMD), true)
 PRODUCT_PACKAGES += \
     preinstalled-packages-platform-generic-system.xml \
     Stk
+endif #TARGET_IS_QLMD
 endif #TARGET_NO_TELEPHONY
 
 # OTA support
@@ -56,6 +56,13 @@ PRODUCT_PACKAGES += charger_res_images
 PRODUCT_PACKAGES += \
     cppreopts.sh \
     otapreopt_script \
+
+ifneq ($(TARGET_IS_QLMD), true)
+PRODUCT_PACKAGES += \
+    LiveWallpapersPicker \
+    Tag \
+    android.hardware.biometrics.fingerprint@2.1
+endif #TARGET_IS_QLMD
 
 # For ringtones that rely on forward lock encryption
 PRODUCT_PACKAGES += libfwdlockengine

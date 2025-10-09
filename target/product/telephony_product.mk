@@ -19,7 +19,10 @@
 
 # /product packages
 ifneq ($(TARGET_NO_TELEPHONY), true)
+ifneq ($(TARGET_IS_QLMD), true)
 PRODUCT_PACKAGES += \
-    ImsServiceEntitlement \
+    ImsServiceEntitlement
+endif #TARGET_IS_QLMD
+PRODUCT_PACKAGES += \
     preinstalled-packages-platform-telephony-product.xml
 endif #TARGET_NO_TELEPHONY

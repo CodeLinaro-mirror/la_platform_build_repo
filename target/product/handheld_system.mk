@@ -40,8 +40,6 @@ PRODUCT_PACKAGES += \
     Bluetooth \
     BluetoothMidiService \
     BookmarkProvider \
-    BuiltInPrintService \
-    CalendarProvider \
     cameraserver \
     CameraExtensionsProxy \
     CaptivePortalLogin \
@@ -49,9 +47,7 @@ PRODUCT_PACKAGES += \
     CredentialManager \
     DeviceAsWebcam \
     DeviceDiagnostics \
-    DocumentsUI \
     DownloadProviderUi \
-    EasterEgg \
     ExternalStorageProvider \
     FusedLocation \
     InputDevices \
@@ -59,16 +55,11 @@ PRODUCT_PACKAGES += \
     librs_jni \
     ManagedProvisioning \
     MtpService \
-    MusicFX \
     PacProcessor \
     preinstalled-packages-platform-handheld-system.xml \
-    PrintRecommendationService \
-    PrintSpooler \
     PrivateSpace \
-    ProxyHandler \
     screenrecord \
     SharedStorageBackup \
-    SimAppDialog \
     Traceur \
     UserDictionaryProvider \
     VpnDialogs \
@@ -96,8 +87,11 @@ PRODUCT_PACKAGES += $(RELEASE_PACKAGE_VIRTUAL_CAMERA)
 $(call soong_config_set,vdm,virtual_camera_service_enabled,$(if $(RELEASE_PACKAGE_VIRTUAL_CAMERA),true,false))
 
 ifneq ($(TARGET_NO_TELEPHONY), true)
+ifneq ($(TARGET_IS_QLMD), true)
 PRODUCT_PACKAGES += \
-  MmsService \
+  MmsService
+endif #TARGET_IS_QLMD
+PRODUCT_PACKAGES += \
   TeleService
 endif #TARGET_NO_TELEPHONY
 
@@ -110,6 +104,20 @@ ifneq ($(TARGET_HAS_LOW_RAM), true)
 PRODUCT_PACKAGES += \
     SecureElement
 endif
+
+ifneq ($(TARGET_IS_QLMD), true)
+PRODUCT_PACKAGES += \
+    BuiltInPrintService \
+    CalendarProvider \
+    DocumentsUI \
+    EasterEgg \
+    MusicFX \
+    PrintRecommendationService \
+    PrintSpooler \
+    ProxyHandler \
+    SimAppDialog \
+    vr
+endif #TARGET_IS_QLMD
 
 PRODUCT_SYSTEM_SERVER_APPS += \
     FusedLocation \
