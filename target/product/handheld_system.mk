@@ -37,16 +37,12 @@ PRODUCT_PACKAGES += \
     Bluetooth \
     BluetoothMidiService \
     BookmarkProvider \
-    BuiltInPrintService \
-    CalendarProvider \
     cameraserver \
     CameraExtensionsProxy \
     CaptivePortalLogin \
     CertInstaller \
     CredentialManager \
-    DocumentsUI \
     DownloadProviderUi \
-    EasterEgg \
     ExternalStorageProvider \
     FusedLocation \
     InputDevices \
@@ -54,27 +50,39 @@ PRODUCT_PACKAGES += \
     librs_jni \
     ManagedProvisioning \
     MtpService \
-    MusicFX \
     PacProcessor \
     preinstalled-packages-platform-handheld-system.xml \
-    PrintRecommendationService \
     PrintSpooler \
-    ProxyHandler \
     screenrecord \
     SharedStorageBackup \
-    SimAppDialog \
     Telecom \
     TelephonyProvider \
     Traceur \
     UserDictionaryProvider \
     VpnDialogs \
-    vr \
 
 ifneq ($(TARGET_NO_TELEPHONY), true)
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
 PRODUCT_PACKAGES += \
-  MmsService \
+  MmsService
+endif
+PRODUCT_PACKAGES += \
   TeleService
 endif #TARGET_NO_TELEPHONY
+
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
+PRODUCT_PACKAGES += \
+    BuiltInPrintService \
+    CalendarProvider \
+    DocumentsUI \
+    EasterEgg \
+    MusicFX \
+    PrintRecommendationService \
+    ProxyHandler \
+    SimAppDialog \
+    vr \
+
+endif
 
 ifneq ($(TARGET_HAS_LOW_RAM), true)
 PRODUCT_PACKAGES += \
