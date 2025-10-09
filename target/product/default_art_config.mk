@@ -228,6 +228,13 @@ PRODUCT_SYSTEM_PROPERTIES += \
     dalvik.vm.image-dex2oat-Xms=64m \
     dalvik.vm.image-dex2oat-Xmx=64m \
     dalvik.vm.dex2oat-Xms=64m \
-    dalvik.vm.dex2oat-Xmx=512m \
+
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
+PRODUCT_SYSTEM_PROPERTIES += \
+    dalvik.vm.dex2oat-Xmx=512m
+else
+PRODUCT_SYSTEM_PROPERTIES += \
+    dalvik.vm.dex2oat-Xmx=256m
+endif #TARGET_QCOM_IOT_LOW_RAM
 
 PRODUCT_ENABLE_UFFD_GC := default
