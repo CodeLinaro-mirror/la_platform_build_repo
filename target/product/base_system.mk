@@ -69,7 +69,6 @@ PRODUCT_PACKAGES += \
     com.android.permission \
     com.android.resolv \
     com.android.rkpd \
-    com.android.neuralnetworks \
     com.android.scheduling \
     com.android.sdkext \
     com.android.tethering \
@@ -79,8 +78,6 @@ PRODUCT_PACKAGES += \
     com.android.wifi \
     ContactsProvider \
     content \
-    CtsShimPrebuilt \
-    CtsShimPrivPrebuilt \
     debuggerd\
     device_config \
     dmctl \
@@ -388,6 +385,13 @@ else
   PRODUCT_PACKAGES += \
         init-mmd-prop.rc
 endif
+
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
+PRODUCT_PACKAGES += \
+    com.android.neuralnetworks \
+    CtsShimPrebuilt \
+    CtsShimPrivPrebuilt
+endif #TARGET_QCOM_IOT_LOW_RAM
 
 # VINTF data for system image
 PRODUCT_PACKAGES += \
