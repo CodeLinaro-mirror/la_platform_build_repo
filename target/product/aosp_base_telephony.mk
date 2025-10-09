@@ -15,5 +15,7 @@
 #
 $(call inherit-product, $(SRC_TARGET_DIR)/product/full_base_telephony.mk)
 
+ifneq ($(TARGET_TELEPHONY_DATA_ONLY), true)
 PRODUCT_PACKAGES += \
     messaging
+endif #TARGET_TELEPHONY_DATA_ONLY
