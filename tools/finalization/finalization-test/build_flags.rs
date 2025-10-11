@@ -74,6 +74,13 @@ fn parse_release_config(
     build_flag_map: &mut BuildFlagMap,
     aliases: &mut AliasMap,
 ) {
+    if release_config.disallow_lunch_use() {
+        // Ignore the release configs that you can't lunch. These are the 'userdebug', 'eng', etc
+        // release configs that run perpendicular to the usual product release configs, and the
+        // build flag rules we want to test do not apply.
+        return;
+    }
+
     let flags: HashMap<String, String> = release_config
         .flags
         .iter()

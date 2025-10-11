@@ -354,6 +354,8 @@ pub fn create_java_lib(
     let mut flag_names = extract_flag_names(parsed_flags)?;
     let package_fingerprint = compute_flags_fingerprint(&mut flag_names);
     let flag_ids = assign_flag_ids(&package, modified_parsed_flags.iter())?;
+    let optimize_read_only_getter =
+        cfg!(optimize_read_only_java) && codegen_mode != CodegenMode::Test;
     let config = JavaCodegenConfig {
         codegen_mode,
         flag_ids,
@@ -361,7 +363,7 @@ pub fn create_java_lib(
         single_exported_file,
         finalized_flags,
         support_uau_annotation: !cfg!(enable_jarjar_flags_in_framwork),
-        optimize_read_only_getter: cfg!(optimize_read_only_java),
+        optimize_read_only_getter,
     };
     generate_java_code(&package, modified_parsed_flags.into_iter(), config)
 }

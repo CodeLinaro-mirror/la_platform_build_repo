@@ -785,6 +785,7 @@ mod tests {
         )
         .unwrap();
         let mut expect_flags_content = EXPECTED_FLAG_COMMON_CONTENT.to_string();
+        let mut expect_customfeatureflags_content = EXPECTED_CUSTOMFEATUREFLAGS_CONTENT.to_string();
         if optimize_read_only_getter {
             expect_flags_content = expect_flags_content
                 .replace("FEATURE_FLAGS.disabledRo()", "false")
@@ -792,6 +793,14 @@ mod tests {
                 .replace("FEATURE_FLAGS.enabledRoExported()", "true")
                 .replace("FEATURE_FLAGS.enabledFixedRo()", "true")
                 .replace("FEATURE_FLAGS.enabledFixedRoExported()", "true");
+            expect_customfeatureflags_content = expect_customfeatureflags_content.replace(
+                r#"
+        private boolean isOptimizationEnabled() {
+            return false;"#,
+                r#"
+        private boolean isOptimizationEnabled() {
+            return true;"#,
+            );
         }
         expect_flags_content += r#"
             private static FeatureFlags FEATURE_FLAGS = new FeatureFlagsImpl();
@@ -807,7 +816,7 @@ mod tests {
             ("com/android/aconfig/test/FeatureFlags.java", EXPECTED_FEATUREFLAGS_COMMON_CONTENT),
             (
                 "com/android/aconfig/test/CustomFeatureFlags.java",
-                EXPECTED_CUSTOMFEATUREFLAGS_CONTENT,
+                expect_customfeatureflags_content.as_str(),
             ),
             ("com/android/aconfig/test/FakeFeatureFlagsImpl.java", &expect_fake_feature_impl),
         ]);

@@ -153,7 +153,9 @@ function setup_cog_symlink() {
     # display any messages to the user. If it isn't installed, then message the
     # user to install it, but don't stop the script.
     if ! command -v cartfs &> /dev/null; then
-      echo "Install CartFS for more reliable builds. See go/cartfs-with-cog for installation instructions."
+      echo "***"
+      echo "🚨 Install CartFS for more reliable builds. See go/cartfs-with-cog for installation instructions! 🚨"
+      echo "***"
     fi
   fi
 
@@ -241,6 +243,10 @@ function _wrap_build()
     elif [[ $SOONG_USE_PARTIAL_COMPILE == false ]]; then
       echo "${color_warning}Partial compilation was disabled due to SOONG_USE_PARTIAL_COMPILE=false"
       echo "See http://go/soong-partial-compile"
+    fi
+    if [[ ${SOONG_INCREMENTAL_ANALYSIS#true} = ${SOONG_INCREMENTAL_ANALYSIS} ]]; then
+      echo "${color_warning}Try enabling incremental analysis for faster builds after changing Android.bp files."
+      echo "See http://go/soong-incremental-analysis"
     fi
     echo -n "${color_reset}"
 

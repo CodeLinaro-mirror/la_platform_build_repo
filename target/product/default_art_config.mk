@@ -243,9 +243,9 @@ ifneq (,$(RELEASE_RANGING_STACK))
         com.android.uwb:service-ranging
 endif
 
-ifeq ($(RELEASE_UPROBESTATS_SERVICE),true)
+ifeq ($(RELEASE_UPROBESTATS_BRIDGE_SERVICE),true)
     PRODUCT_APEX_STANDALONE_SYSTEM_SERVER_JARS += \
-        com.android.uprobestats:service-uprobestats
+        com.android.uprobestats:service-uprobestats-bridge
 endif
 
 # Overrides the (apex, jar) pairs above when determining the on-device location. The format is:

@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# These tools are intended for interactive environments and were not designed
+# to work when checking unbound variables is disallowed.
+set +u
+
 # gettop is duplicated here and in shell_utils.mk, because it's difficult
 # to find shell_utils.make without it for all the novel ways this file can be
 # sourced.  Other common functions should only be in one place or the other.
