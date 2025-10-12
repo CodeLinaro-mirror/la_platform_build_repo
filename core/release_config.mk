@@ -16,10 +16,11 @@
 # -----------------------------------------------------------------
 # Determine which pass this is.
 # -----------------------------------------------------------------
-# On the first pass, we are asked for only PRODUCT_RELEASE_CONFIG_MAPS,
-# on the second pass, we are asked for whatever else is wanted.
+# Before PRODUCT_RELEASE_CONFIG_MAPS has been set to its final value,
+# we are called with CALLED_PRE_PRODUCT_CONFIG=true.
+# The final pass will have it unset/empty.
 _final_product_config_pass:=
-ifneq (PRODUCT_RELEASE_CONFIG_MAPS,$(DUMP_MANY_VARS))
+ifeq (,$(CALLED_PRE_PRODUCT_CONFIG))
     _final_product_config_pass:=true
 endif
 

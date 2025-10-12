@@ -723,6 +723,11 @@ system_image_defaults {
         default: [
             "init-mmd-prop.rc", // base_system
         ],
+    }) + select(release_flag("RELEASE_PROCESS_MEMORY_GUARDIAN_DAEMON"), {
+        true: [
+            "pmg_daemon", // base_system (RELEASE_PROCESS_MEMORY_GUARDIAN_DAEMON)
+        ],
+        default: [],
     }) + select(product_variable("debuggable"), {
         true: [
             "alloctop",

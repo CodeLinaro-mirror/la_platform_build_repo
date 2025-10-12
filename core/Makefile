@@ -7140,7 +7140,7 @@ $(NDK_SYSROOT_TARGET): $(SOONG_OUT_DIR)/ndk.timestamp
 	$(hide) tar cjf $@ -C $(SOONG_OUT_DIR) ndk
 
 ifeq ($(HOST_OS),linux)
-$(call dist-for-goals,sdk ndk_sysroot,$(NDK_SYSROOT_TARGET))
+$(call dist-for-goals,ndk_sysroot,$(NDK_SYSROOT_TARGET))
 endif
 
 ifeq ($(build_ota_package),true)
@@ -7770,6 +7770,128 @@ $(INTERNAL_EMULATOR_PACKAGE_TARGET): $(INTERNAL_EMULATOR_PACKAGE_FILES)
 endif
 
 
+# -----------------------------------------------------------------
+# The SDK
+
+ifneq ($(filter sdk,$(MAKECMDGOALS)),)
+
+# The SDK includes host-specific components, so it belongs under HOST_OUT.
+sdk_dir := $(HOST_OUT)/sdk/$(TARGET_PRODUCT)
+
+# Build a name that looks like:
+#
+#     linux-x86   --> android-sdk_12345_linux-x86
+#     darwin-x86  --> android-sdk_12345_mac-x86
+#     windows-x86 --> android-sdk_12345_windows
+#
+ifneq ($(HOST_OS),linux)
+  $(error Building the monolithic SDK is only supported on Linux)
+endif
+sdk_name := android-sdk
+INTERNAL_SDK_HOST_OS_NAME := linux-$(SDK_HOST_ARCH)
+sdk_name := $(sdk_name)_$(INTERNAL_SDK_HOST_OS_NAME)
+
+sdk_dep_file := $(sdk_dir)/sdk_deps.mk
+
+ATREE_FILES :=
+-include $(sdk_dep_file)
+
+# if we don't have a real list, then use "everything"
+ifeq ($(strip $(ATREE_FILES)),)
+ATREE_FILES := \
+	$(ALL_DOCS) \
+	$(ALL_SDK_FILES)
+endif
+
+sdk_atree_files := development/build/sdk.exclude.atree
+
+ifneq ($(PRODUCT_SDK_ATREE_FILES),)
+sdk_atree_files += $(PRODUCT_SDK_ATREE_FILES)
+else
+sdk_atree_files += development/build/sdk.atree
+endif
+
+SDK_METADATA_DIR :=$= $(call intermediates-dir-for,PACKAGING,framework-doc-stubs-metadata,,COMMON)
+SDK_METADATA_FILES :=$= $(addprefix $(SDK_METADATA_DIR)/,\
+    activity_actions.txt \
+    broadcast_actions.txt \
+    categories.txt \
+    features.txt \
+    service_actions.txt \
+    widgets.txt)
+SDK_METADATA :=$= $(firstword $(SDK_METADATA_FILES))
+$(SDK_METADATA): .KATI_IMPLICIT_OUTPUTS := $(filter-out $(SDK_METADATA),$(SDK_METADATA_FILES))
+$(SDK_METADATA): $(TARGET_OUT_COMMON_INTERMEDIATES)/PACKAGING/framework-doc-stubs-metadata.zip
+	rm -rf $(SDK_METADATA_DIR)
+	mkdir -p $(SDK_METADATA_DIR)
+	unzip -DDqo $< -d $(SDK_METADATA_DIR)
+
+.PHONY: framework-doc-stubs
+framework-doc-stubs: $(SDK_METADATA)
+
+deps := \
+	$(OUT_DOCS)/offline-sdk-timestamp \
+	$(SDK_METADATA_FILES) \
+  $(INSTALLED_SDK_BUILD_PROP_TARGET) \
+	$(ATREE_FILES) \
+	$(sdk_atree_files) \
+	$(HOST_OUT_EXECUTABLES)/atree
+
+# The name of the subdir within the platforms dir of the sdk. One of:
+# - android-<SDK_INT> (stable base dessert SDKs)
+# - android-<CODENAME> (stable extension SDKs)
+# - android-<SDK_INT>-ext<EXT_INT> (codename SDKs)
+sdk_platform_dir_name := $(strip \
+  $(if $(filter REL,$(PLATFORM_VERSION_CODENAME)), \
+    $(if $(filter $(PLATFORM_SDK_EXTENSION_VERSION),$(PLATFORM_BASE_SDK_EXTENSION_VERSION)), \
+      android-$(PLATFORM_SDK_VERSION_FULL), \
+      android-$(PLATFORM_SDK_VERSION_FULL)-ext$(PLATFORM_SDK_EXTENSION_VERSION) \
+    ), \
+    android-$(PLATFORM_VERSION_CODENAME) \
+  ) \
+)
+
+INTERNAL_SDK_TARGET := $(sdk_dir)/$(sdk_name).zip
+$(INTERNAL_SDK_TARGET): PRIVATE_NAME := $(sdk_name)
+$(INTERNAL_SDK_TARGET): PRIVATE_DIR := $(sdk_dir)/$(sdk_name)
+$(INTERNAL_SDK_TARGET): PRIVATE_DEP_FILE := $(sdk_dep_file)
+$(INTERNAL_SDK_TARGET): PRIVATE_INPUT_FILES := $(sdk_atree_files)
+$(INTERNAL_SDK_TARGET): PRIVATE_PLATFORM_NAME := $(sdk_platform_dir_name)
+
+$(INTERNAL_SDK_TARGET): $(deps) | $(BUILD_NUMBER_FILE)
+	@echo "Package SDK: $@"
+	$(hide) rm -rf $(PRIVATE_DIR) $@
+	$(hide) ( \
+	    ATREE_STRIP="$(HOST_STRIP) -x" \
+	    $(HOST_OUT_EXECUTABLES)/atree \
+	    $(addprefix -f ,$(PRIVATE_INPUT_FILES)) \
+	        -m $(PRIVATE_DEP_FILE) \
+	        -I . \
+	        -I $(PRODUCT_OUT) \
+	        -I $(HOST_OUT) \
+	        -I $(TARGET_COMMON_OUT_ROOT) \
+	        -v "PLATFORM_NAME=$(PRIVATE_PLATFORM_NAME)" \
+	        -v "PLATFORM_SDK_API_VERSION=$(PLATFORM_SDK_VERSION_FULL)" \
+	        -v "OUT_DIR=$(OUT_DIR)" \
+	        -v "HOST_OUT=$(HOST_OUT)" \
+	        -v "TARGET_ARCH=$(TARGET_ARCH)" \
+	        -v "TARGET_CPU_ABI=$(TARGET_CPU_ABI)" \
+	        -v "DLL_EXTENSION=$(HOST_SHLIB_SUFFIX)" \
+	        -o $(PRIVATE_DIR) && \
+	    HOST_OUT_EXECUTABLES=$(HOST_OUT_EXECUTABLES) HOST_OS=$(HOST_OS) \
+	        development/build/tools/sdk_clean.sh $(PRIVATE_DIR) && \
+	    if [ "$(TARGET_BUILD_VARIANT)" != "user" ] && \
+	       { [ "$(PRODUCT_NAME)" = "sdk" ] || [ "$(PRODUCT_NAME)" = "sdk_with_runtime_apis" ]; }; then \
+	        sed -e "s/{BUILD_NUMBER}/`cat $(BUILD_NUMBER_FILE)`/" -e "s/{PRODUCT_EXPORT_RUNTIME_APIS}/$(PRODUCT_EXPORT_RUNTIME_APIS)/" build/make/core/build_properties_template.xml > $(PRIVATE_DIR)/build_properties.xml; \
+	    fi && \
+	    chmod -R ug+rwX $(PRIVATE_DIR) && \
+	    cd $(dir $@) && zip -rqX $(notdir $@) $(PRIVATE_NAME) \
+	) || ( rm -rf $(PRIVATE_DIR) $@ && exit 44 )
+
+MAIN_SDK_DIR  := $(sdk_dir)
+MAIN_SDK_ZIP  := $(INTERNAL_SDK_TARGET)
+
+endif # sdk in MAKECMDGOALS
 
 # -----------------------------------------------------------------
 # These are some additional build tasks that need to be run.
@@ -7794,6 +7916,13 @@ endif
 $(info [$(include_makefiles_total)/$(include_makefiles_total)] finishing Make packaging rules)
 
 include $(BUILD_SYSTEM)/product-graph.mk
+
+# -----------------------------------------------------------------
+# Create SDK repository packages. Must be done after tasks/* since
+# we need the addon rules defined.
+ifneq ($(sdk_repo_goal),)
+include $(TOPDIR)development/build/tools/sdk_repo.mk
+endif
 
 # -----------------------------------------------------------------
 # Extract additional data files used in Layoutlib
