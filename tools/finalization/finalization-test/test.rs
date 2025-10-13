@@ -161,4 +161,21 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn test_preview_sdk_int() {
+        // invariants: if codename is REL, RELEASE_PLATFORM_PREVIEW_SDK_INT must be 0, else it
+        // should be non-zero (but old release configs from before we resurrected PREVIEW_SDK_INT,
+        // may still set it to 0)
+        for release_config in RELEASE_CONFIGS.flags.keys() {
+            let codename =
+                &RELEASE_CONFIGS.flags[release_config]["RELEASE_PLATFORM_VERSION_CODENAME"];
+            if codename == "REL" {
+                let preview_sdk_int =
+                    &RELEASE_CONFIGS.flags[release_config]["RELEASE_PLATFORM_PREVIEW_SDK_INT"];
+                let preview_sdk_int = preview_sdk_int.parse::<u32>().unwrap();
+                assert_eq!(preview_sdk_int, 0, "in release config {release_config}, expected RELEASE_PLATFORM_PREVIEW_SDK_INT to be 0 but was {preview_sdk_int}");
+            }
+        }
+    }
 }
