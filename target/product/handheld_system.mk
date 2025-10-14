@@ -39,8 +39,6 @@ PRODUCT_PACKAGES += \
     Bluetooth \
     BluetoothMidiService \
     BookmarkProvider \
-    BuiltInPrintService \
-    CalendarProvider \
     cameraserver \
     CameraExtensionsProxy \
     CaptivePortalLogin \
@@ -48,9 +46,7 @@ PRODUCT_PACKAGES += \
     CredentialManager \
     DeviceAsWebcam \
     DeviceDiagnostics \
-    DocumentsUI \
     DownloadProviderUi \
-    EasterEgg \
     ExternalStorageProvider \
     FusedLocation \
     InputDevices \
@@ -58,19 +54,13 @@ PRODUCT_PACKAGES += \
     librs_jni \
     ManagedProvisioning \
     MtpService \
-    MusicFX \
     PacProcessor \
-    preinstalled-packages-platform-handheld-system.xml \
-    PrintRecommendationService \
-    ProxyHandler \
     screenrecord \
     SharedStorageBackup \
-    SimAppDialog \
     Telecom \
     Traceur \
     UserDictionaryProvider \
     VpnDialogs \
-    vr \
 
 # Choose the correct products based on HSUM status
 ifeq ($(PRODUCT_USE_HSUM),true)
@@ -86,8 +76,11 @@ PRODUCT_PACKAGES += $(RELEASE_PACKAGE_VIRTUAL_CAMERA)
 $(call soong_config_set,vdm,virtual_camera_service_enabled,$(if $(RELEASE_PACKAGE_VIRTUAL_CAMERA),true,false))
 
 ifneq ($(TARGET_NO_TELEPHONY), true)
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
 PRODUCT_PACKAGES += \
-  MmsService \
+  MmsService
+endif #TARGET_QCOM_IOT_LOW_RAM
+PRODUCT_PACKAGES += \
   TeleService
 endif #TARGET_NO_TELEPHONY
 
@@ -100,6 +93,20 @@ ifneq ($(TARGET_HAS_LOW_RAM), true)
 PRODUCT_PACKAGES += \
     SecureElement
 endif
+
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
+PRODUCT_PACKAGES += \
+    BuiltInPrintService \
+    CalendarProvider \
+    DocumentsUI \
+    EasterEgg \
+    MusicFX \
+    preinstalled-packages-platform-handheld-system.xml \
+    PrintRecommendationService \
+    ProxyHandler \
+    SimAppDialog \
+    vr
+endif #TARGET_QCOM_IOT_LOW_RAM
 
 PRODUCT_SYSTEM_SERVER_APPS += \
     FusedLocation \
