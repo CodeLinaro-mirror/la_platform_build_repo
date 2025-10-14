@@ -140,10 +140,13 @@ Non-A/B OTA specific options
 A/B OTA specific options
 
   --disable_fec_computation
-      Disable the on device FEC data computation for incremental updates. OTA will be larger but installation will be faster.
+      Disable the on device FEC data computation for incremental updates. OTA will be larger but installation will be faster. (default)
 
   --disable_verity_computation
       Disable the on device verity data computation for incremental updates. OTA will be larger but installation will be faster.
+  --enable_fec_computation
+      Enable the on device FEC data computation for incremental updates.
+      OTA will be smaller but installation will be slower.
 
   --include_secondary
       Additionally include the payload for secondary slot images (default:
@@ -319,7 +322,7 @@ OPTIONS.log_diff = None
 OPTIONS.extracted_input = None
 OPTIONS.skip_postinstall = False
 OPTIONS.skip_compatibility_check = False
-OPTIONS.disable_fec_computation = False
+OPTIONS.disable_fec_computation = True
 OPTIONS.disable_verity_computation = False
 OPTIONS.partial = None
 OPTIONS.custom_images = {}
@@ -1150,7 +1153,11 @@ def main(argv):
     elif o == "--output_metadata_path":
       OPTIONS.output_metadata_path = a
     elif o == "--disable_fec_computation":
+      # This is now the default behavior. This flag is kept for backward
+      # compatibility.
       OPTIONS.disable_fec_computation = True
+    elif o == "--enable_fec_computation":
+      OPTIONS.disable_fec_computation = False
     elif o == "--disable_verity_computation":
       OPTIONS.disable_verity_computation = True
     elif o == "--force_non_ab":
@@ -1257,6 +1264,7 @@ def main(argv):
                                  "skip_compatibility_check",
                                  "output_metadata_path=",
                                  "disable_fec_computation",
+                                 "enable_fec_computation",
                                  "disable_verity_computation",
                                  "force_non_ab",
                                  "boot_variable_file=",

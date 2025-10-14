@@ -211,13 +211,16 @@ function _wrap_build()
     local secs=$(($tdiff % 60))
     local ncolors=$(tput colors 2>/dev/null)
     if [ -n "$ncolors" ] && [ $ncolors -ge 8 ]; then
-        color_failed=$'\E'"[0;31m"
-        color_success=$'\E'"[0;32m"
-        color_warning=$'\E'"[0;33m"
+        color_failed=$'\E'"[0;31m"  # red
+        color_success=$'\E'"[0;32m"  # green
+        color_warning=$'\E'"[0;33m"  # yellow
+        color_info=$'\E'"[0;36m"  # cyan
         color_reset=$'\E'"[00m"
     else
         color_failed=""
         color_success=""
+        color_warning=""
+        color_info=""
         color_reset=""
     fi
 
@@ -238,14 +241,14 @@ function _wrap_build()
     if [[ ${TARGET_BUILD_VARIANT} = eng ]] \
        && [[ ${SOONG_PARTIAL_COMPILE#true} = ${SOONG_PARTIAL_COMPILE} ]] \
        && [[ ${SOONG_PARTIAL_COMPILE#all} = ${SOONG_PARTIAL_COMPILE} ]]; then
-      echo "${color_warning}Try enabling partial compilation for significantly faster builds."
+      echo "${color_info}Try enabling partial compilation for significantly faster builds."
       echo "See http://go/soong-partial-compile"
     elif [[ $SOONG_USE_PARTIAL_COMPILE == false ]]; then
-      echo "${color_warning}Partial compilation was disabled due to SOONG_USE_PARTIAL_COMPILE=false"
+      echo "${color_info}Partial compilation was disabled due to SOONG_USE_PARTIAL_COMPILE=false"
       echo "See http://go/soong-partial-compile"
     fi
     if [[ ${SOONG_INCREMENTAL_ANALYSIS#true} = ${SOONG_INCREMENTAL_ANALYSIS} ]]; then
-      echo "${color_warning}Try enabling incremental analysis for faster builds after changing Android.bp files."
+      echo "${color_info}Try enabling incremental analysis for faster builds after changing Android.bp files."
       echo "See http://go/soong-incremental-analysis"
     fi
     echo -n "${color_reset}"
@@ -345,6 +348,11 @@ function setup_cartfs_incremental_build() {
     return
   fi
 
+  local link_destination=$1
+  if [[ -d "$link_destination" ]]; then
+    return
+  fi
+
   local cartfs_endpoint="127.0.0.1:65001"
   local cartfs_rpc_copy_directory="cartfs.Cartfs.CopyDirectory"
 
@@ -365,7 +373,6 @@ function setup_cartfs_incremental_build() {
 
   echo "Searching for recent build outputs in CartFS for incremental builds"
 
-  local link_destination=$1
   local cartfs_mount_point=$2
   local top=$(gettop)
   local repo="$(basename "${top}")"
