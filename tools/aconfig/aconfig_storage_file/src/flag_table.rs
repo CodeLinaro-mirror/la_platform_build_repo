@@ -171,7 +171,7 @@ impl fmt::Debug for FlagTable {
         writeln!(f, "{:?}", self.buckets)?;
         writeln!(f, "Nodes:")?;
         for node in self.nodes.iter() {
-            write!(f, "{:?}", node)?;
+            write!(f, "{node:?}")?;
         }
         Ok(())
     }

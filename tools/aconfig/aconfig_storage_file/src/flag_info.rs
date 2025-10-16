@@ -152,7 +152,7 @@ impl fmt::Debug for FlagInfoList {
         write!(f, "{:?}", self.header)?;
         writeln!(f, "Nodes:")?;
         for node in self.nodes.iter() {
-            write!(f, "{:?}", node)?;
+            write!(f, "{node:?}")?;
         }
         Ok(())
     }

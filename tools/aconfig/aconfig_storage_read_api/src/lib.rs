@@ -262,7 +262,7 @@ impl ffi::PackageReadContextQueryCXX {
             },
             Err(errmsg) => Self {
                 query_success: false,
-                error_message: format!("{:?}", errmsg),
+                error_message: format!("{errmsg:?}"),
                 package_exists: false,
                 package_id: 0,
                 boolean_start_index: 0,
@@ -294,7 +294,7 @@ impl ffi::FlagReadContextQueryCXX {
             },
             Err(errmsg) => Self {
                 query_success: false,
-                error_message: format!("{:?}", errmsg),
+                error_message: format!("{errmsg:?}"),
                 flag_exists: false,
                 flag_type: 0u16,
                 flag_index: 0u16,
@@ -312,7 +312,7 @@ impl ffi::BooleanFlagValueQueryCXX {
             }
             Err(errmsg) => Self {
                 query_success: false,
-                error_message: format!("{:?}", errmsg),
+                error_message: format!("{errmsg:?}"),
                 flag_value: false,
             },
         }
@@ -328,7 +328,7 @@ impl ffi::FlagAttributeQueryCXX {
             }
             Err(errmsg) => Self {
                 query_success: false,
-                error_message: format!("{:?}", errmsg),
+                error_message: format!("{errmsg:?}"),
                 flag_attribute: 0u8,
             },
         }
@@ -347,7 +347,7 @@ impl ffi::VersionNumberQueryCXX {
             },
             Err(errmsg) => Self {
                 query_success: false,
-                error_message: format!("{:?}", errmsg),
+                error_message: format!("{errmsg:?}"),
                 version_number: 0,
             },
         }

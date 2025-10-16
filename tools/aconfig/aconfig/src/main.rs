@@ -121,12 +121,16 @@ fn main() -> Result<()> {
                 allow_read_write,
                 force_read_only,
             };
+            let config_input = mainline_beta_namespace_config
+                .as_ref()
+                .map(|path| open_single_file(path))
+                .transpose()?;
             let output = commands::parse_flags(
                 &package,
                 &container,
                 open_zero_or_more_files(&declarations)?, // declarations
                 open_zero_or_more_files(&values)?,       // values
-                mainline_beta_namespace_config,
+                config_input,
                 extended_permissions_options,
             )
             .context("failed to create cache")?;
