@@ -3503,7 +3503,7 @@ synx-driver
 qti_battery_charger
 leds-qti-flash
 mem_buf_dev
-llcc_qcom
+llcc-qcom
 mdt_loader
 qcom_rpmh
 camera
@@ -3520,8 +3520,8 @@ endef
 
 # MM RVC modules
 define ES_MOD_ORDER_RV
-dcvs_fp scc-sm8150
-qcom-dcvs gpucc-sm8150
+dcvs_fp
+qcom-dcvs
 nvmem_qfprom
 
 endef
