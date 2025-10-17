@@ -22,7 +22,6 @@ use aconfig_storage_file::{
 };
 use clap::{builder::ArgAction, Arg, Command};
 use serde::Serialize;
-use serde_json;
 use std::fmt;
 use std::fs;
 use std::fs::File;
@@ -144,7 +143,7 @@ where
     if as_json {
         serde_json::to_string(&file_contents).unwrap()
     } else {
-        format!("{:?}", file_contents)
+        format!("{file_contents:?}")
     }
 }
 
@@ -192,25 +191,24 @@ fn main() -> Result<(), AconfigStorageError> {
             let input_json = fs::read_to_string(input_file_path).unwrap();
 
             let file_type = sub_matches.get_one::<StorageFileType>("type").unwrap();
-            let output_bytes: Vec<u8>;
-            match file_type {
+            let output_bytes: Vec<u8> = match file_type {
                 StorageFileType::FlagVal => {
                     let list: FlagValueList = serde_json::from_str(&input_json).unwrap();
-                    output_bytes = list.into_bytes();
+                    list.into_bytes()
                 }
                 StorageFileType::FlagInfo => {
                     let list: FlagInfoList = serde_json::from_str(&input_json).unwrap();
-                    output_bytes = list.into_bytes();
+                    list.into_bytes()
                 }
                 StorageFileType::FlagMap => {
                     let table: FlagTable = serde_json::from_str(&input_json).unwrap();
-                    output_bytes = table.into_bytes();
+                    table.into_bytes()
                 }
                 StorageFileType::PackageMap => {
                     let table: PackageTable = serde_json::from_str(&input_json).unwrap();
-                    output_bytes = table.into_bytes();
+                    table.into_bytes()
                 }
-            }
+            };
 
             let output_file_path = sub_matches.get_one::<String>("output-file").unwrap();
             let file = File::create(output_file_path);
@@ -228,7 +226,7 @@ fn main() -> Result<(), AconfigStorageError> {
         Some(("update-version", sub_matches)) => {
             let version = sub_matches.get_one::<u32>("version").unwrap();
             if *version > MAX_SUPPORTED_FILE_VERSION {
-                panic!("version {} is not supported", version);
+                panic!("version {version} is not supported");
             }
             let file_path = sub_matches.get_one::<String>("file").unwrap();
             let bytes = read_file_to_bytes(file_path)?;

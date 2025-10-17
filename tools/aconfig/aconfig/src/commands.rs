@@ -186,18 +186,24 @@ pub fn parse_flags(
     container: &str,
     declarations: Vec<Input>,
     values: Vec<Input>,
-    mainline_beta_namespace_config: Option<PathBuf>,
+    mainline_beta_namespace_config: Option<Input>,
     extended_permissions_options: ExtendedPermissionsOptions,
 ) -> Result<Vec<u8>> {
     let mut parsed_flags = ProtoParsedFlags::new();
 
-    let beta_namespaces: Option<MainlineBetaNamespaces> = match mainline_beta_namespace_config {
-        Some(file) => {
-            let contents = std::fs::read_to_string(file)?;
-            Some(serde_json::from_str(&contents)?)
-        }
-        None => None,
-    };
+    let beta_namespaces: Option<MainlineBetaNamespaces> = mainline_beta_namespace_config
+        .map(|mut input| {
+            let mut contents = String::new();
+            input
+                .reader
+                .read_to_string(&mut contents)
+                .with_context(|| format!("failed to read {}", input.source))?;
+
+            serde_json::from_str(&contents).with_context(|| {
+                format!("failed to parse mainline beta namespace config from {}", input.source)
+            })
+        })
+        .transpose()?;
 
     for mut input in declarations {
         let mut contents = String::new();
@@ -1117,7 +1123,7 @@ mod tests {
         package: &'static str,
         decl: &'static str,
         val: Option<&'static str>,
-        config: Option<PathBuf>,
+        config: Option<&'static str>,
     ) -> Result<ProtoParsedFlag> {
         let declaration =
             vec![Input { source: "memory".to_string(), reader: Box::new(decl.as_bytes()) }];
@@ -1130,6 +1136,10 @@ mod tests {
                 vec![]
             }
         };
+        let beta_config: Option<Input> = config.map(|json_str| Input {
+            source: "memory".to_string(),
+            reader: Box::new(json_str.as_bytes()),
+        });
         let extended_permissions_options = ExtendedPermissionsOptions {
             default_permission: ProtoFlagPermission::READ_WRITE,
             allow_read_write: true,
@@ -1141,7 +1151,7 @@ mod tests {
             container,
             declaration,
             value,
-            config,
+            beta_config,
             extended_permissions_options,
         )?;
 
@@ -1164,12 +1174,36 @@ mod tests {
         }
         "#;
 
-        let config = Some(PathBuf::from("tests/mainline_beta_namespaces.json"));
+        let config = r#"
+        {
+            "namespaces": {
+                "com_android_tethering": {
+                    "container": "com.android.tethering",
+                    "allow_exported": true
+                },
+                "com_android_networkstack": {
+                    "container": "com.android.networkstack",
+                    "allow_exported": false
+                },
+                "com_android_captiveportallogin": {
+                    "container": "com.android.captiveportallogin",
+                    "allow_exported": false
+                },
+                "com_android_healthfitness": {
+                    "container": "com.android.healthfitness",
+                    "allow_exported": true
+                },
+                "com_android_mediaprovider": {
+                    "container": "com.android.mediaprovider",
+                    "allow_exported": true
+                }
+            }
+        }
+        "#;
 
         // Case 1, regular RW flag without value file override
         let parsed_flag =
-            get_parsed_flag_proto("test", "com.first", metadata_flag, None, config.clone())
-                .unwrap();
+            get_parsed_flag_proto("test", "com.first", metadata_flag, None, Some(config)).unwrap();
         assert_eq!(ProtoFlagStorageBackend::ACONFIGD, parsed_flag.metadata.storage());
 
         // Case 2, regular RW flag with value file override to RO
@@ -1186,7 +1220,7 @@ mod tests {
             "com.first",
             metadata_flag,
             Some(first_flag_value),
-            config.clone(),
+            Some(config),
         )
         .unwrap();
         assert_eq!(ProtoFlagStorageBackend::NONE, parsed_flag.metadata.storage());
@@ -1205,8 +1239,7 @@ mod tests {
         "#;
 
         let parsed_flag =
-            get_parsed_flag_proto("test", "com.first", metadata_flag, None, config.clone())
-                .unwrap();
+            get_parsed_flag_proto("test", "com.first", metadata_flag, None, Some(config)).unwrap();
         assert_eq!(ProtoFlagStorageBackend::NONE, parsed_flag.metadata.storage());
 
         // Case 4, mainline beta namespace fixed read only flag
@@ -1226,7 +1259,7 @@ mod tests {
             "com.first",
             metadata_flag,
             None,
-            config.clone(),
+            Some(config),
         )
         .unwrap();
         assert_eq!(ProtoFlagStorageBackend::NONE, parsed_flag.metadata.storage());
@@ -1243,7 +1276,7 @@ mod tests {
         }
         "#;
         let parsed_flag =
-            get_parsed_flag_proto("system", "com.first", metadata_flag, None, config.clone())
+            get_parsed_flag_proto("system", "com.first", metadata_flag, None, Some(config))
                 .unwrap();
         assert_eq!(ProtoFlagStorageBackend::ACONFIGD, parsed_flag.metadata.storage());
 
@@ -1263,7 +1296,7 @@ mod tests {
             "com.first",
             metadata_flag,
             None,
-            config.clone(),
+            Some(config),
         )
         .unwrap();
         assert_eq!(ProtoFlagStorageBackend::DEVICE_CONFIG, parsed_flag.metadata.storage());
@@ -1300,7 +1333,7 @@ mod tests {
             "com.first",
             metadata_flag,
             None,
-            config.clone(),
+            Some(config),
         )
         .unwrap_err();
         assert_eq!(
@@ -1325,7 +1358,7 @@ mod tests {
             "com.first",
             metadata_flag,
             None,
-            config.clone(),
+            Some(config),
         )
         .unwrap_err();
         assert_eq!(

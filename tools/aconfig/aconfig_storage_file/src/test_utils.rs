@@ -27,7 +27,7 @@ use tempfile::NamedTempFile;
 
 pub fn create_test_package_table(version: u32) -> PackageTable {
     let header = PackageTableHeader {
-        version: version,
+        version,
         container: String::from("mockup"),
         file_type: StorageFileType::PackageMap as u8,
         file_size: match version {
@@ -124,7 +124,7 @@ impl FlagTableNode {
 
 pub fn create_test_flag_table(version: u32) -> FlagTable {
     let header = FlagTableHeader {
-        version: version,
+        version,
         container: String::from("mockup"),
         file_type: StorageFileType::FlagMap as u8,
         file_size: 321,
@@ -166,7 +166,7 @@ pub fn create_test_flag_table(version: u32) -> FlagTable {
 
 pub fn create_test_flag_value_list(version: u32) -> FlagValueList {
     let header = FlagValueHeader {
-        version: version,
+        version,
         container: String::from("mockup"),
         file_type: StorageFileType::FlagVal as u8,
         file_size: 35,
@@ -179,7 +179,7 @@ pub fn create_test_flag_value_list(version: u32) -> FlagValueList {
 
 pub fn create_test_flag_info_list(version: u32) -> FlagInfoList {
     let header = FlagInfoHeader {
-        version: version,
+        version,
         container: String::from("mockup"),
         file_type: StorageFileType::FlagInfo as u8,
         file_size: 35,
@@ -195,7 +195,8 @@ pub fn write_bytes_to_temp_file(bytes: &[u8]) -> Result<NamedTempFile, AconfigSt
     let mut file = NamedTempFile::new().map_err(|_| {
         AconfigStorageError::FileCreationFail(anyhow!("Failed to create temp file"))
     })?;
-    let _ = file.write_all(&bytes);
+    file.write_all(bytes)
+        .map_err(|_| AconfigStorageError::FileWriteFail(anyhow!("Failed to write to temp file")))?;
     Ok(file)
 }
 
@@ -217,10 +218,10 @@ pub fn get_test_data_path(file_type: StorageFileType, version: u32) -> PathBuf {
 }
 
 fn get_source_file_name(file_type: StorageFileType, version: u32) -> String {
-    return match file_type {
+    match file_type {
         StorageFileType::PackageMap => format!("data/v{version}/package_v{version}.map"),
         StorageFileType::FlagMap => format!("data/v{version}/flag_v{version}.map"),
         StorageFileType::FlagVal => format!("data/v{version}/flag_v{version}.val"),
         StorageFileType::FlagInfo => format!("data/v{version}/flag_v{version}.info"),
-    };
+    }
 }

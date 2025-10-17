@@ -129,7 +129,7 @@ pub enum ParsedCommand {
         default_permission: aconfig_protos::ProtoFlagPermission,
         allow_read_write: bool,
         cache_out_path: String,
-        mainline_beta_namespace_config: Option<PathBuf>,
+        mainline_beta_namespace_config: Option<String>,
         force_read_only: bool,
     },
     CreateJavaLib {
@@ -369,16 +369,7 @@ pub fn parse_args(
             let declarations = get_zero_or_more_string_paths_from_arg(sub_matches, "declarations");
             let values = get_zero_or_more_string_paths_from_arg(sub_matches, "values");
             let mainline_beta_namespace_config =
-                match sub_matches.get_one::<String>("mainline-beta-namespace-config") {
-                    Some(config) => {
-                        if config.is_empty() {
-                            None
-                        } else {
-                            Some(PathBuf::from(config))
-                        }
-                    }
-                    None => None,
-                };
+                sub_matches.get_one::<String>("mainline-beta-namespace-config").cloned();
             Ok(ParsedCommand::CreateCache {
                 package: get_required_arg::<String>(sub_matches, "package")?.clone(),
                 container: get_required_arg::<String>(sub_matches, "container")?.clone(),
@@ -515,18 +506,31 @@ mod tests {
         {
             assert_eq!(package, "com.test.cache");
             assert_eq!(container, "vendor".to_string());
-            assert_eq!(declarations.len(), 1);
-            assert_eq!(values.len(), 1);
-            assert_eq!(declarations[0], "test.aconfig");
-            assert_eq!(values[0], "flag.val");
+            assert_eq!(declarations, vec!["test.aconfig"]);
+            assert_eq!(values, vec!["flag.val"]);
             assert_eq!(default_permission, aconfig_protos::ProtoFlagPermission::READ_WRITE);
             assert!(allow_read_write);
             assert_eq!(cache_out_path, "/output/cache.pb");
-            assert_eq!(
-                mainline_beta_namespace_config,
-                Some(PathBuf::from("/path/to/some/file.json"))
-            );
+            assert_eq!(mainline_beta_namespace_config, Some("/path/to/some/file.json".to_string()));
             assert!(!force_read_only);
+        }
+        let command_string = "aconfig create-cache \
+            --package com.test.cache \
+            --container vendor \
+            --declarations decl1.aconfig \
+            --declarations decl2.aconfig \
+            --values val1.txt \
+            --values val2.txt \
+            --cache /output/cache.pb";
+        let input_args = create_os_command(command_string);
+        let parsed = parse_args(input_args)?;
+
+        assert!(matches!(parsed, ParsedCommand::CreateCache { .. }));
+        if let ParsedCommand::CreateCache { declarations, values, .. } = parsed {
+            assert_eq!(declarations, vec!["decl1.aconfig", "decl2.aconfig"]);
+            assert_eq!(values, vec!["val1.txt", "val2.txt"]);
+        } else {
+            panic!("Expected ParsedCommand::CreateCache");
         }
         Ok(())
     }
