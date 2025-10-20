@@ -89,10 +89,10 @@ PRODUCT_PACKAGES += \
     PrintSpooler
 endif
 
-ifneq ($(TARGET_HAS_LOW_RAM), true)
-PRODUCT_PACKAGES += \
-    SecureElement
-endif
+# ifneq ($(TARGET_HAS_LOW_RAM), true)
+# PRODUCT_PACKAGES += \
+#    SecureElement
+# endif
 
 PRODUCT_SYSTEM_SERVER_APPS += \
     FusedLocation \
