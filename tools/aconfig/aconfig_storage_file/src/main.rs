@@ -220,9 +220,7 @@ fn main() -> Result<(), AconfigStorageError> {
         // Reads in bytes, updates the version code, and writes out the bytes.
         // Use the json if there are any changes to the file for this version.
         // Intended to update the version code of files not affected by the
-        // version change.
-        // In other words, this is meant for host-side use to set up files for
-        // testing only.
+        // version change for testing.
         Some(("update-version", sub_matches)) => {
             let version = sub_matches.get_one::<u32>("version").unwrap();
             if *version > MAX_SUPPORTED_FILE_VERSION {

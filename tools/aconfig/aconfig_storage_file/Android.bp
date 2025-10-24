@@ -15,6 +15,10 @@ rust_defaults {
         "libaconfig_storage_protos",
         "libserde",
     ],
+    cfgs: select(release_flag("RELEASE_ACONFIG_PARSE_V4"), {
+        true: ["enable_parse_v4"],
+        default: [],
+    }),
 }
 
 rust_library {

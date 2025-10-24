@@ -719,6 +719,7 @@ system_image_defaults {
     }) + select(release_flag("RELEASE_MEMORY_MANAGEMENT_DAEMON"), {
         true: [
             "mm_daemon", // base_system (RELEASE_MEMORY_MANAGEMENT_DAEMON)
+            "mm_daemon_setup", // base_system (RELEASE_MEMORY_MANAGEMENT_DAEMON)
         ],
         default: [
             "init-mmd-prop.rc", // base_system
@@ -1108,6 +1109,9 @@ system_image_defaults {
             ],
         },
     },
+    // Do not use a fixed timestamp.
+    // This prevents a full push on the first adb sync.
+    no_use_fixed_timestamp: true,
 }
 
 android_system_image {

@@ -18,12 +18,35 @@
 
 use crate::AconfigStorageError;
 use aconfig_storage_file::{
-    flag_value::FlagValueHeader, read_u8_from_bytes, MAX_SUPPORTED_FILE_VERSION,
+    flag_value::FlagValueHeader, read_i64_from_bytes, read_u8_from_bytes,
+    MAX_SUPPORTED_FILE_VERSION,
 };
 use anyhow::anyhow;
 
 /// Query flag value
 pub fn find_boolean_flag_value(buf: &[u8], flag_index: u32) -> Result<bool, AconfigStorageError> {
+    let interpreted_header = read_header_and_check_version(buf)?;
+    let mut head = interpreted_header.get_offset_for_boolean_flag(flag_index)?;
+
+    let val = read_u8_from_bytes(buf, &mut head)?;
+    Ok(val == 1)
+}
+
+pub fn find_int64_flag_value(buf: &[u8], flag_index: u32) -> Result<i64, AconfigStorageError> {
+    if !cfg!(enable_parse_v4) {
+        return Err(AconfigStorageError::HigherStorageFileVersion(anyhow!(
+            "Int64 not supported for flag value files."
+        )));
+    }
+
+    let interpreted_header = read_header_and_check_version(buf)?;
+    let mut head = interpreted_header.get_offset_for_int_flag(flag_index)?;
+
+    let val = read_i64_from_bytes(buf, &mut head)?;
+    Ok(val)
+}
+
+fn read_header_and_check_version(buf: &[u8]) -> Result<FlagValueHeader, AconfigStorageError> {
     let interpreted_header = FlagValueHeader::from_bytes(buf)?;
     if interpreted_header.version > MAX_SUPPORTED_FILE_VERSION {
         return Err(AconfigStorageError::HigherStorageFileVersion(anyhow!(
@@ -32,17 +55,7 @@ pub fn find_boolean_flag_value(buf: &[u8], flag_index: u32) -> Result<bool, Acon
             MAX_SUPPORTED_FILE_VERSION
         )));
     }
-
-    // Find byte offset to the flag value, each boolean flag cost one byte to store
-    let mut head = (interpreted_header.boolean_value_offset + flag_index) as usize;
-    if head >= interpreted_header.file_size as usize {
-        return Err(AconfigStorageError::InvalidStorageFileOffset(anyhow!(
-            "Flag value offset goes beyond the end of the file."
-        )));
-    }
-
-    let val = read_u8_from_bytes(buf, &mut head)?;
-    Ok(val == 1)
+    Ok(interpreted_header)
 }
 
 #[cfg(test)]
@@ -62,6 +75,17 @@ mod tests {
     }
 
     #[test]
+    #[cfg(enable_parse_v4)]
+    fn test_int32_flag_value_query() {
+        let flag_value_list = create_test_flag_value_list(4).into_bytes();
+        let baseline: Vec<i32> = vec![0, 1, 2, 3, 4, 5, 6, 7];
+        for (offset, expected_value) in baseline.into_iter().enumerate() {
+            let flag_value = find_int64_flag_value(&flag_value_list[..], offset as u32).unwrap();
+            assert_eq!(flag_value, expected_value);
+        }
+    }
+
+    #[test]
     // this test point locks down query beyond the end of boolean section
     fn test_boolean_out_of_range() {
         let flag_value_list = create_test_flag_value_list(DEFAULT_FILE_VERSION).into_bytes();
@@ -69,6 +93,29 @@ mod tests {
         assert_eq!(
             format!("{:?}", error),
             "InvalidStorageFileOffset(Flag value offset goes beyond the end of the file.)"
+        );
+    }
+
+    #[test]
+    #[cfg(enable_parse_v4)]
+    // this test point locks down query beyond the end of int64 section
+    fn test_int64_out_of_range() {
+        let flag_value_list = create_test_flag_value_list(4).into_bytes();
+        let error = find_int32_flag_value(&flag_value_list[..], 8).unwrap_err();
+        assert_eq!(
+            format!("{:?}", error),
+            "InvalidStorageFileOffset(Flag value offset goes beyond the end of the file.)"
+        );
+    }
+
+    #[test]
+    #[cfg(not(enable_parse_v4))]
+    fn test_int64_disabled() {
+        let flag_value_list = create_test_flag_value_list(4).into_bytes();
+        let error = find_int64_flag_value(&flag_value_list[..], 3).unwrap_err();
+        assert_eq!(
+            format!("{:?}", error),
+            "HigherStorageFileVersion(Int64 not supported for flag value files.)"
         );
     }
 
@@ -82,7 +129,7 @@ mod tests {
         assert_eq!(
             format!("{:?}", error),
             format!(
-                "HigherStorageFileVersion(Cannot read storage file with a higher version of {} with lib version {})",
+                "HigherStorageFileVersion(Cannot read storage file with a higher version of {} with lib max version {})",
                 MAX_SUPPORTED_FILE_VERSION + 1,
                 MAX_SUPPORTED_FILE_VERSION
             )
