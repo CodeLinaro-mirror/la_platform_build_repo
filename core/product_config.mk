@@ -569,6 +569,9 @@ ifeq (,$(filter true false,$(PRODUCT_COMPRESSED_APEX)))
   $(error PRODUCT_COMPRESSED_APEX should be either true or false)
 endif
 PRODUCT_SYSTEM_PROPERTIES += apexd.config.compressed_apex=$(PRODUCT_COMPRESSED_APEX)
+# This is a system property but cannot be defined in the system makefile because
+# the PRODUCT_COMPRESSED_APEX is not available. Add it to the allowed list.
+PRODUCT_ARTIFACT_PATH_REQUIREMENT_SYSPROP_ALLOWED_LIST += apexd.config.compressed_apex
 
 ###########################################
 # Set the default payload type for APEXes

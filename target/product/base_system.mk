@@ -43,7 +43,6 @@ PRODUCT_PACKAGES += \
     bootstat \
     boringssl_self_test \
     bpfloader \
-    bpftool \
     bu \
     bugreport \
     bugreportz \
@@ -102,6 +101,7 @@ PRODUCT_PACKAGES += \
     framework-location \
     framework-minus-apex \
     framework-minus-apex-install-dependencies \
+    framework-network-security-config \
     framework-sysconfig.xml \
     fsck.erofs \
     fsck_msdos \
@@ -302,6 +302,11 @@ PRODUCT_PACKAGES += \
     wificond \
     wifi.rc \
     wm \
+
+ifeq ($(RELEASE_CROSS_DEVICE_SYNC),true)
+  PRODUCT_PACKAGES += \
+        CrossDeviceSync
+endif
 
 # Once Telecom is APEX, we will consolidate all deps
 ifeq ($(RELEASE_TELECOM_MAINLINE_MODULE),true)
@@ -514,7 +519,6 @@ PRODUCT_PACKAGES += init.usb.rc init.usb.configfs.rc
 PRODUCT_PACKAGES += etc_hosts
 
 PRODUCT_PACKAGES += init.zygote32.rc
-PRODUCT_VENDOR_PROPERTIES += ro.zygote?=zygote32
 
 PRODUCT_SYSTEM_PROPERTIES += debug.atrace.tags.enableflags=0
 PRODUCT_SYSTEM_PROPERTIES += persist.traced.enable=1
@@ -595,6 +599,15 @@ endif
 ifneq (,$(RELEASE_NATIVE_FRAMEWORK_PROTOTYPE))
     PRODUCT_PACKAGES += \
         zygote_next
+endif
+
+# Whether to use Java or new native (Rust) OMAPI implementation
+ifeq ($(RELEASE_NATIVE_OMAPI),true)
+    PRODUCT_PACKAGES += \
+        omapi
+else
+    PRODUCT_PACKAGES += \
+        SecureElement
 endif
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/runtime_libart.mk)

@@ -63,6 +63,33 @@ function require_lunch
 }
 fi
 
+function set_network_file_system_type_env_var() {
+  local top=$(gettop)
+  local out_dir=$(getoutdir)
+  local cartfs_mount_point=$(cartfs_mount_point)
+
+  local nfs_type=local
+
+  # The options are:
+  # - cog-cartfs-symlink: out is a symlink to a CartFS path in a Cog workspace.
+  # - local-cartfs-symlink: out is a symlink to a CartFS path in a local workspace.
+  # - cog-symlink: $top starts with /google/cog.
+  # - abfs: .abfs.sock exists in the workspace.
+  if [[ -n "$cartfs_mount_point" && -L "$out_dir" && "$(readlink "$out_dir")" =~ ^/google/cartfs/mount ]]; then
+    if [[ "$top" =~ ^/google/cog ]]; then
+      nfs_type=cog-cartfs-symlink
+    else
+      nfs_type=local-cartfs-symlink
+    fi
+  elif [[ "$top" =~ ^/google/cog ]]; then
+    nfs_type=cog-symlink
+  elif [[ -f "$top/.abfs.sock" ]]; then
+    nfs_type=abfs
+  fi
+
+  export NETWORK_FILE_SYSTEM_TYPE=$nfs_type
+}
+
 # This function sets up the build environment to be appropriate for Cog.
 function setup_cog_env_if_needed() {
   local top=$(gettop)
@@ -244,6 +271,11 @@ function import_build_vars()
 }
 
 function cartfs_mount_point() {
+  # Make sure findmnt is installed.
+  if ! command -v findmnt &> /dev/null; then
+    return
+  fi
+
   local cartfs_user_id="$(id -u cartfs 2>/dev/null)"
   local cartfs_mount_point="$(findmnt -t fuse -O "user_id=${cartfs_user_id}" | tail -n +2 | awk '{print $1}')"
   # Making sure $cartfs_user_id is not empty since findmnt will return mounts

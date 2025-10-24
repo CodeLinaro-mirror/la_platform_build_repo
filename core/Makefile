@@ -1123,18 +1123,6 @@ SYSTEM_DLKM_MODULE_PATTERNS := $(foreach path,$(BOARD_SYSTEM_KERNEL_MODULES),%/$
 
 endif
 
-# BOARD_KERNEL_MODULES_16K might contain duplicate modules under different path.
-# for example, foo/bar/wifi.ko and foo/wifi.ko . To avoid build issues, de-dup
-# module list on basename first.
-BOARD_KERNEL_MODULES_16K := $(foreach \
-  pattern,\
-  $(sort $(foreach \
-    path,\
-    $(BOARD_KERNEL_MODULES_16K),\
-    %/$(notdir $(path)))\
-  ),\
-  $(firstword $(filter $(pattern),$(BOARD_KERNEL_MODULES_16K))) \
-)
 # For non-GKI modules, strip them before install. As debug symbols take up
 # significant space.
 $(foreach \
@@ -1878,34 +1866,7 @@ endif # BUILDING_VENDOR_KERNEL_BOOT_IMAGE
 
 # -----------------------------------------------------------------
 # NOTICE files
-#
-# We are required to publish the licenses for all code under BSD, GPL and
-# Apache licenses (and possibly other more exotic ones as well). We err on the
-# side of caution, so the licenses for other third-party code are included here
-# too.
-#
-# This needs to be before the systemimage rules, because it adds to
-# ALL_DEFAULT_INSTALLED_MODULES, which those use to pick which files
-# go into the systemimage.
-
 .PHONY: notice_files
-
-# Convert license metadata into xml notice file.
-# $(1) - Output target notice filename
-# $(2) - Product name
-# $(3) - File title
-# $(4) - License metadata file roots
-# $(5) - Prefixes to strip
-#
-define xml-notice-rule
-$(1): PRIVATE_PRODUCT := $(2)
-$(1): PRIVATE_MESSAGE := $(3)
-$(1): PRIVATE_DEPS := $(call corresponding-license-metadata,$(4))
-$(1): $(call corresponding-license-metadata,$(4)) $(XMLNOTICE) $(BUILD_SYSTEM)/Makefile
-	OUT_DIR=$(OUT_DIR) $(XMLNOTICE) -o $$@ -product=$$(PRIVATE_PRODUCT) -title=$$(PRIVATE_MESSAGE) $(foreach prefix, $(5), -strip_prefix=$(prefix)) $$(PRIVATE_DEPS)
-
-notice_files: $(1)
-endef
 
 # Convert license metadata into text notice file.
 # $(1) - Output target notice filename
@@ -1939,7 +1900,7 @@ $(1): $(call corresponding-license-metadata,$(4)) $(HTMLNOTICE) $(BUILD_SYSTEM)/
 notice_files: $(1)
 endef
 
-$(KATI_obsolete_var combine-notice-files, To create notice files use xml-notice-rule, html-notice-rule, or text-notice-rule.)
+$(KATI_obsolete_var combine-notice-files, To create notice files use html-notice-rule, or text-notice-rule.)
 
 # Notice file logic isn't relevant for TARGET_BUILD_APPS
 ifndef TARGET_BUILD_APPS
@@ -4827,10 +4788,10 @@ BOARD_AVB_INIT_BOOT_ADD_HASH_FOOTER_ARGS += \
     --prop com.android.build.init_boot.fingerprint:$(BUILD_FINGERPRINT_FROM_FILE)
 
 BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS += \
-    --prop com.android.build.vendor_boot.fingerprint:$(BUILD_FINGERPRINT_FROM_FILE) \
+    --prop com.android.build.vendor_boot.fingerprint:$(BUILD_FINGERPRINT_FROM_FILE)
 
 BOARD_AVB_VENDOR_KERNEL_BOOT_ADD_HASH_FOOTER_ARGS += \
-    --prop com.android.build.vendor_kernel_boot.fingerprint:$(BUILD_FINGERPRINT_FROM_FILE) \
+    --prop com.android.build.vendor_kernel_boot.fingerprint:$(BUILD_FINGERPRINT_FROM_FILE)
 
 BOARD_AVB_RECOVERY_ADD_HASH_FOOTER_ARGS += \
     --prop com.android.build.recovery.fingerprint:$(BUILD_FINGERPRINT_FROM_FILE)
@@ -6447,6 +6408,13 @@ define copy-image-and-generate-map
   )
 endef
 
+HAS_ANY_EROFS_PARTITION :=
+$(foreach image_type,INIT_BOOT BOOT VENDOR_BOOT VENDOR_KERNEL_BOOT SYSTEM VENDOR CACHE USERDATA PRODUCT SYSTEM_EXT OEM ODM VENDOR_DLKM ODM_DLKM SYSTEM_DLKM VBMETA VBMETA_SYSTEM VBMETA_VENDOR VBMETA_SYSTEM_DLKM VBMETA_VENDOR_DLKM, \
+  $(if $(BUILDING_$(image_type)_IMAGE), \
+    $(if $(filter erofs,$(BOARD_$(image_type)IMAGE_FILE_SYSTEM_TYPE)), \
+      $(eval HAS_ANY_EROFS_PARTITION := true))))
+.KATI_READONLY := HAS_ANY_EROFS_PARTITION
+
 # By conditionally including the dependency of the target files package on the
 # full system image deps, we speed up builds that do not build the system
 # image.
@@ -6584,6 +6552,14 @@ endif
 ifdef BOARD_PREBUILT_BOOTLOADER
 $(BUILT_TARGET_FILES_DIR): $(INSTALLED_BOOTLOADER_MODULE)
 droidcore-unbundled: $(INSTALLED_BOOTLOADER_MODULE)
+endif
+
+# Add a dependency for the signed desktop firmware. We need it included in the
+# target_files.zip so that the unsigned firmware can be swapped with the signed
+# firmware when the target files are signed.
+DESKTOP_SIGNED_FW_ZIP := $(call module-built-files,desktop-firmware-zip-signed)
+ifneq ($(DESKTOP_SIGNED_FW_ZIP),)
+  $(BUILT_TARGET_FILES_DIR): $(DESKTOP_SIGNED_FW_ZIP)
 endif
 
 # Depending on the various images guarantees that the underlying
@@ -6980,6 +6956,10 @@ ifeq ($(BOARD_USES_PVMFWIMAGE),true)
 	$(hide) mkdir -p $(zip_root)/PVMFW
 	$(hide) cp $(INSTALLED_PVMFW_BINARY_TARGET) $(zip_root)/PVMFW/
 endif
+ifneq ($(DESKTOP_SIGNED_FW_ZIP),)
+	$(hide) mkdir -p $(zip_root)/SIGNED_PREBUILTS
+	$(hide) cp $(DESKTOP_SIGNED_FW_ZIP) $(zip_root)/SIGNED_PREBUILTS/ap-ec-fw-signed.zip
+endif
 ifdef BOARD_PREBUILT_BOOTLOADER
 	$(hide) mkdir -p $(zip_root)/IMAGES
 	$(hide) cp $(INSTALLED_BOOTLOADER_MODULE) $(zip_root)/IMAGES/
@@ -7040,8 +7020,10 @@ ifdef BOARD_KERNEL_PAGESIZE
 	$(hide) echo "$(BOARD_KERNEL_PAGESIZE)" > $(zip_root)/INIT_BOOT/pagesize
 endif # BOARD_KERNEL_PAGESIZE
 endif # BUILDING_INIT_BOOT_IMAGE
+ifdef HAS_ANY_EROFS_PARTITION
 ifdef BOARD_EROFS_COMPRESS_HINTS
 	$(hide) cp $(BOARD_EROFS_COMPRESS_HINTS) $(zip_root)/META/erofs_default_compress_hints.txt
+endif
 endif
 ifdef BOARD_SYSTEMIMAGE_EROFS_COMPRESS_HINTS
 	$(hide) cp $(BOARD_SYSTEMIMAGE_EROFS_COMPRESS_HINTS) $(zip_root)/META/system_erofs_compress_hints.txt
@@ -7254,12 +7236,6 @@ dexpreopt_config_zip: $(DEXPREOPT_CONFIG_ZIP)
 $(call declare-1p-target,$(DEXPREOPT_CONFIG_ZIP),)
 
 # -----------------------------------------------------------------
-# Zips of the symbols directory per test suites
-#
-
-$(foreach suite,$(ALL_COMPATIBILITY_SUITES),$(eval $(call create-suite-symbols-map,$(suite))))
-
-# -----------------------------------------------------------------
 # A zip of the symbols directory.  Keep the full paths to make it
 # more obvious where these files came from.
 # Also produces a textproto containing mappings from elf IDs to symbols
@@ -7283,8 +7259,15 @@ SYMBOLS_MAPPING := $(PRODUCT_OUT)/$(name)-symbols-mapping.textproto
 
 _symbols_zip_modules := $(call product-installed-modules,$(INTERNAL_PRODUCT))
 
+ifeq ($(BOARD_USES_PVMFWIMAGE),true)
+_symbols_zip_modules += pvmfw_bin
+endif # BOARD_USES_PVMFWIMAGE
+
 _symbols_zip_modules_symbols_files := $(foreach m,$(_symbols_zip_modules),$(ALL_MODULES.$(m).SYMBOLIC_OUTPUT_PATH))
 _symbols_zip_modules_mapping_files := $(foreach m,$(_symbols_zip_modules),$(ALL_MODULES.$(m).ELF_SYMBOL_MAPPING_PATH))
+
+.PHONY: symbols-zip
+symbols-zip: $(SYMBOLS_ZIP) $(SYMBOLS_MAPPING)
 
 .PHONY: symbols-files
 symbols-files: $(_symbols_zip_modules_symbols_files)
@@ -7858,7 +7841,7 @@ $(SDK_METADATA): $(TARGET_OUT_COMMON_INTERMEDIATES)/PACKAGING/framework-doc-stub
 framework-doc-stubs: $(SDK_METADATA)
 
 deps := \
-	$(OUT_DOCS)/offline-sdk-timestamp \
+	$(OUT_DOCS)/offline-sdk-docs-docs.zip \
 	$(SDK_METADATA_FILES) \
   $(INSTALLED_SDK_BUILD_PROP_TARGET) \
 	$(ATREE_FILES) \
@@ -7889,7 +7872,7 @@ $(INTERNAL_SDK_TARGET): PRIVATE_PLATFORM_NAME := $(sdk_platform_dir_name)
 #
 #SDK_GNU_ERROR := true
 
-$(INTERNAL_SDK_TARGET): $(deps)
+$(INTERNAL_SDK_TARGET): $(deps) | $(BUILD_NUMBER_FILE)
 	@echo "Package SDK: $@"
 	$(hide) rm -rf $(PRIVATE_DIR) $@
 	$(hide) for f in $(strip $(target_gnu_MODULES)); do \
@@ -7919,6 +7902,10 @@ $(INTERNAL_SDK_TARGET): $(deps)
 	        -o $(PRIVATE_DIR) && \
 	    HOST_OUT_EXECUTABLES=$(HOST_OUT_EXECUTABLES) HOST_OS=$(HOST_OS) \
 	        development/build/tools/sdk_clean.sh $(PRIVATE_DIR) && \
+	    if [ "$(TARGET_BUILD_VARIANT)" != "user" ] && \
+	       { [ "$(PRODUCT_NAME)" = "sdk" ] || [ "$(PRODUCT_NAME)" = "sdk_with_runtime_apis" ]; }; then \
+	        sed -e "s/{BUILD_NUMBER}/`cat $(BUILD_NUMBER_FILE)`/" -e "s/{PRODUCT_EXPORT_RUNTIME_APIS}/$(PRODUCT_EXPORT_RUNTIME_APIS)/" build/make/core/build_properties_template.xml > $(PRIVATE_DIR)/build_properties.xml; \
+	    fi && \
 	    chmod -R ug+rwX $(PRIVATE_DIR) && \
 	    cd $(dir $@) && zip -rqX $(notdir $@) $(PRIVATE_NAME) \
 	) || ( rm -rf $(PRIVATE_DIR) $@ && exit 44 )
@@ -8019,6 +8006,12 @@ endif # PACK_DESKTOP_FILESYSTEM_IMAGES
 # -----------------------------------------------------------------
 # Desktop pack recovery image hook.
 ifeq ($(BOARD_USES_DESKTOP_RECOVERY_IMAGE),true)
+ifeq ($(GENERATED_FW_IMAGE),)
+$(error The desktop recovery image requires AP and EC firmware. \
+	Please ensure RELEASE_FIRMWARE_$(call to-upper,$(TARGET_PRODUCT))_VERSION is set, \
+	or disable the recovery image by specifying \
+	PRODUCT_BUILD_DESKTOP_RECOVERY_IMAGE := false)
+endif # ($(GENERATED_FW_IMAGE),)
 PACK_RECOVERY_IMAGE_TARGET := $(PRODUCT_OUT)/android-desktop_recovery_image.bin
 PACK_RECOVERY_IMAGE_ARGS := --noarchive --recovery --firmware $(GENERATED_FW_IMAGE) --partition-image $(GENERATED_PARTITION_IMAGE)
 

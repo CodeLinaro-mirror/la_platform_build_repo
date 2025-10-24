@@ -51,6 +51,7 @@ PRODUCT_BOOT_JARS += \
     framework-minus-apex \
     framework-graphics \
     framework-location \
+    framework-network-security-config \
     ext \
     telephony-common \
     voip-common \
@@ -237,6 +238,11 @@ endif
 ifneq (,$(RELEASE_RANGING_STACK))
     PRODUCT_APEX_STANDALONE_SYSTEM_SERVER_JARS += \
         com.android.uwb:service-ranging
+endif
+
+ifeq ($(RELEASE_UPROBESTATS_SERVICE),true)
+    PRODUCT_APEX_STANDALONE_SYSTEM_SERVER_JARS += \
+        com.android.uprobestats:service-uprobestats
 endif
 
 # Overrides the (apex, jar) pairs above when determining the on-device location. The format is:
