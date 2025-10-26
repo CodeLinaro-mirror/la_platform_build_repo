@@ -132,8 +132,10 @@ impl PackageTableNode {
             1 => Self::as_bytes_v1(self),
             2 => Self::as_bytes_v2(self),
             3 => Self::as_bytes_v3(self),
-            // TODO(b/316357686): into_bytes should return a Result.
-            _ => Self::as_bytes_v2(self),
+            4 if cfg!(enable_parse_v4) => Self::as_bytes_v3(self),
+            // TODO(b/444251791): into_bytes should return a Result and panic
+            // if version is not supported.
+            _ => Self::as_bytes_v2(&self),
         }
     }
 
@@ -179,6 +181,7 @@ impl PackageTableNode {
             1 => Self::from_bytes_v1(bytes),
             2 => Self::from_bytes_v2(bytes),
             3 => Self::from_bytes_v3(bytes),
+            4 if cfg!(enable_parse_v4) => Self::from_bytes_v3(bytes),
             _ => Err(AconfigStorageError::BytesParseFail(anyhow!(
                 "Binary file is an unsupported version: {}",
                 version

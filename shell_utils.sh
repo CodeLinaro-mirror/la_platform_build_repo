@@ -238,12 +238,9 @@ function _wrap_build()
         printf "(%d seconds)" $secs
     fi
     echo " ####"
-    if [[ ${TARGET_BUILD_VARIANT} = eng ]] \
-       && [[ ${SOONG_PARTIAL_COMPILE#true} = ${SOONG_PARTIAL_COMPILE} ]] \
-       && [[ ${SOONG_PARTIAL_COMPILE#all} = ${SOONG_PARTIAL_COMPILE} ]]; then
-      echo "${color_info}Try enabling partial compilation for significantly faster builds."
-      echo "See http://go/soong-partial-compile"
-    elif [[ $SOONG_USE_PARTIAL_COMPILE == false ]]; then
+    # Because SOONG_PARTIAL_COMPILE and SOONG_USE_PARTIAL_COMPILE are set via
+    # ANDROID_BUILD_ENVIRONMENT, we only have access to values explicitly set by the user.
+    if [[ ${TARGET_BUILD_VARIANT} = eng ]] && [[ $SOONG_USE_PARTIAL_COMPILE == false ]]; then
       echo "${color_info}Partial compilation was disabled due to SOONG_USE_PARTIAL_COMPILE=false"
       echo "See http://go/soong-partial-compile"
     fi

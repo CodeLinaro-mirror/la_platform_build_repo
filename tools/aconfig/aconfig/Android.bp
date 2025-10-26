@@ -24,6 +24,7 @@ rust_defaults {
         "libserde_json",
         "libtinytemplate",
         "libconvert_finalized_flags",
+        "libwalkdir",
     ],
     cfgs: select(release_flag("RELEASE_ACONFIG_FINGERPRINT_RUST"), {
         true: ["enable_fingerprint_rust"],
@@ -67,6 +68,9 @@ rust_test_host {
         "tests/*.values",
     ],
     test_suites: ["general-tests"],
+    data: [
+        "tests/golden/java/**/*.java.golden",
+    ],
 }
 
 // integration tests: general

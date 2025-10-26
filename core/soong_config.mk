@@ -706,6 +706,10 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_list, VendorExceptionPaths, $(VENDOR_EXCEPTION_PATHS))
   $(call add_json_list, VendorExceptionModules, $(VENDOR_EXCEPTION_MODULES))
 
+  # Used to create dist rules defined in product config.
+  $(call add_json_list, AllDistGoalOutputPairs, $(_all_dist_goal_output_pairs))
+  $(call add_json_list, AllDistSrcDstPairs, $(_all_dist_src_dst_pairs))
+
 $(call end_json_map)
 
 # For converting vintf_data

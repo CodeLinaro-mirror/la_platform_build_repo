@@ -13,6 +13,10 @@ rust_defaults {
         "libcxx",
         "libthiserror",
     ],
+    cfgs: select(release_flag("RELEASE_ACONFIG_PARSE_V4"), {
+        true: ["enable_parse_v4"],
+        default: [],
+    }),
 }
 
 rust_library {

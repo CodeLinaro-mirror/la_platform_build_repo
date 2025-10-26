@@ -65,7 +65,7 @@ impl fmt::Debug for Input {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct OutputFile {
     pub path: PathBuf, // relative to some root directory only main knows about
     pub contents: Vec<u8>,

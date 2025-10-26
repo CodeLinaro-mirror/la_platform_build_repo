@@ -404,7 +404,8 @@ endif
 
 ifeq ($(RELEASE_MEMORY_MANAGEMENT_DAEMON),true)
   PRODUCT_PACKAGES += \
-        mm_daemon
+        mm_daemon \
+        mm_daemon_setup
 else
   PRODUCT_PACKAGES += \
         init-mmd-prop.rc

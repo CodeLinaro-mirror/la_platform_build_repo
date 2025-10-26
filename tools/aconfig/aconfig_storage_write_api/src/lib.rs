@@ -61,6 +61,24 @@ pub fn set_boolean_flag_value(
     })
 }
 
+/// Set int flag value thru mapped file and flush the change to file
+///
+/// \input mapped_file: the mapped flag value file
+/// \input index: flag index
+/// \input value: updated flag value
+/// \return a result of ()
+///
+pub fn set_int64_flag_value(
+    file: &mut MmapMut,
+    index: u32,
+    value: i64,
+) -> Result<(), AconfigStorageError> {
+    crate::flag_value_update::update_int64_flag_value(file, index, value)?;
+    file.flush().map_err(|errmsg| {
+        AconfigStorageError::MapFlushFail(anyhow!("fail to flush storage file: {}", errmsg))
+    })
+}
+
 /// Set if flag is has server override thru mapped file and flush the change to file
 ///
 /// \input mapped_file: the mapped flag info file

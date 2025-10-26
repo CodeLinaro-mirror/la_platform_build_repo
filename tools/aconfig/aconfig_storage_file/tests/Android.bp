@@ -55,6 +55,10 @@ filegroup {
         "data/v3/flag_v3.map",
         "data/v3/flag_v3.val",
         "data/v3/flag_v3.info",
+        "data/v4/package_v4.map",
+        "data/v4/flag_v4.map",
+        "data/v4/flag_v4.val",
+        "data/v4/flag_v4.info",
     ],
     visibility: [
         "//build/make/tools/aconfig:__subpackages__",
