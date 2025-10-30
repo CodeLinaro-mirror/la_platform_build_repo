@@ -721,7 +721,7 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(
-            format!("{error:?}"),
+            error.to_string(),
             "Package com.android.aconfig.test cannot contain both device_config and new storage stored flags",
         );
     }

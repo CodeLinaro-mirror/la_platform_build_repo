@@ -759,7 +759,7 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(
-            format!("{error:?}"),
+            error.to_string(),
             "failed to parse memory: expected package com.argument.package, got com.declaration.package"
         );
     }
@@ -796,7 +796,7 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(
-            format!("{error:?}"),
+            error.to_string(),
             "failed to parse memory: expected container argument.container, got declaration.container"
         );
     }
@@ -830,7 +830,7 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(
-            format!("{error:?}"),
+            error.to_string(),
             "flag first has permission READ_WRITE, but allow_read_write is false"
         );
     }
@@ -877,7 +877,7 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(
-            format!("{error:?}"),
+            error.to_string(),
             "flag first has permission READ_WRITE, but allow_read_write is false"
         );
     }
@@ -1072,7 +1072,7 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(
-            format!("{error:?}"),
+            error.to_string(),
             "failed to set permission of flag first, since this flag is fixed read only flag"
         );
     }
@@ -1337,7 +1337,7 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(
-            format!("{error:?}"),
+            error.to_string(),
             "Creating com.android.tethering container flag in namespace com_android_networkstack is not allowed"
         );
 
@@ -1362,7 +1362,7 @@ mod tests {
         )
         .unwrap_err();
         assert_eq!(
-            format!("{error:?}"),
+            error.to_string(),
             "Creating exported flag com.first.first in namespace com_android_networkstack is not allowed"
         );
     }
@@ -1467,7 +1467,7 @@ mod tests {
         parsed_flags.parsed_flag.retain(|pf| !pf.is_exported());
         let error =
             modify_parsed_flags_based_on_mode(parsed_flags, CodegenMode::Exported).unwrap_err();
-        assert_eq!("exported library contains no exported flags", format!("{error:?}"));
+        assert_eq!(error.to_string(), "exported library contains no exported flags");
     }
 
     #[test]
@@ -1531,9 +1531,6 @@ mod tests {
         parsed_flags.parsed_flag.retain_mut(|pf| pf.is_exported());
         let error = modify_parsed_flags_based_on_mode(parsed_flags, CodegenMode::ForceReadOnly)
             .unwrap_err();
-        assert_eq!(
-            "force-read-only library contains no force-read-only flags",
-            format!("{error:?}")
-        );
+        assert_eq!(error.to_string(), "force-read-only library contains no force-read-only flags",);
     }
 }

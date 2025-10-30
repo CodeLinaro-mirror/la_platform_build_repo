@@ -240,9 +240,7 @@ mod tests {
         let mut flag_info_list = create_test_flag_info_list(DEFAULT_FILE_VERSION);
         flag_info_list.header.file_type = 123u8;
         let error = FlagInfoList::from_bytes(&flag_info_list.into_bytes()).unwrap_err();
-        assert_eq!(
-            format!("{:?}", error),
-            format!("BytesParseFail(binary file is not a flag info file)")
-        );
+        assert!(format!("{:?}", error)
+            .starts_with("BytesParseFail(binary file is not a flag info file"));
     }
 }

@@ -596,7 +596,7 @@ mod tests {
         let err = read_files_to_map_using_path(vec![file_path.to_string_lossy().to_string()])
             .unwrap_err();
         assert_eq!(
-            format!("{err:?}"),
+            err.to_string(),
             "Provided incorrect file, must be finalized-flags.txt or extended_flags_list.txt"
         );
     }

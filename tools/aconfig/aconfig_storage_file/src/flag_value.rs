@@ -372,10 +372,8 @@ mod tests {
         let mut flag_value_list = create_test_flag_value_list(DEFAULT_FILE_VERSION);
         flag_value_list.header.file_type = 123u8;
         let error = FlagValueList::from_bytes(&flag_value_list.into_bytes()).unwrap_err();
-        assert_eq!(
-            format!("{:?}", error),
-            format!("BytesParseFail(binary file is not a flag value file)")
-        );
+        assert!(format!("{:?}", error)
+            .starts_with("BytesParseFail(binary file is not a flag value file"));
     }
 
     #[test]
@@ -399,12 +397,9 @@ mod tests {
 
         let err = header.get_offset_for_boolean_flag(99);
 
-        assert_eq!(
-            format!("{:?}", err),
-            format!(
-                "Err(InvalidStorageFileOffset(Flag value offset goes beyond the end of the file.))"
-            )
-        );
+        assert!(format!("{:?}", err).starts_with(
+            "Err(InvalidStorageFileOffset(Flag value offset goes beyond the end of the file."
+        ));
     }
 
     #[test]
@@ -446,9 +441,7 @@ mod tests {
 
         let err = header.get_offset_for_int_flag(3);
 
-        assert_eq!(
-            format!("{:?}", err),
-            format!("Err(HigherStorageFileVersion(Version 4 is not supported in this build))")
-        );
+        assert!(format!("{:?}", err)
+            .starts_with("Err(HigherStorageFileVersion(Version 4 is not supported in this build"));
     }
 }

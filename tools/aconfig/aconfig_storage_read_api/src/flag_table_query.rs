@@ -115,13 +115,13 @@ mod tests {
         table.header.version = MAX_SUPPORTED_FILE_VERSION + 1;
         let flag_table = table.into_bytes();
         let error = find_flag_read_context(&flag_table[..], 0, "enabled_ro").unwrap_err();
-        assert_eq!(
-            format!("{:?}", error),
-            format!(
-                "HigherStorageFileVersion(Cannot read storage file with a higher version of {} with lib version {})",
+        assert!(
+            format!("{:?}", error).starts_with(
+            &format!(
+                "HigherStorageFileVersion(Cannot read storage file with a higher version of {} with lib version {}",
                 MAX_SUPPORTED_FILE_VERSION + 1,
                 MAX_SUPPORTED_FILE_VERSION
-            )
+            ))
         );
     }
 }

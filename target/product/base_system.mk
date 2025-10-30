@@ -397,6 +397,11 @@ else
         framework-platformtelephony
 endif
 
+ifeq ($(RELEASE_NPUMANAGER_MODULE),true)
+    PRODUCT_PACKAGES += \
+       com.android.npumanager
+endif
+
 ifneq (,$(RELEASE_RANGING_STACK))
     PRODUCT_PACKAGES += \
         com.android.ranging
