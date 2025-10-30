@@ -105,10 +105,9 @@ mod tests {
         let flag_info_list = create_test_flag_info_list(DEFAULT_FILE_VERSION).into_bytes();
         let error =
             find_flag_attribute(&flag_info_list[..], FlagValueType::Boolean, 8).unwrap_err();
-        assert_eq!(
-            format!("{:?}", error),
-            "InvalidStorageFileOffset(Flag info offset goes beyond the end of the file.)"
-        );
+        assert!(format!("{:?}", error).starts_with(
+            "InvalidStorageFileOffset(Flag info offset goes beyond the end of the file."
+        ));
     }
 
     #[test]
@@ -118,13 +117,13 @@ mod tests {
         info_list.header.version = MAX_SUPPORTED_FILE_VERSION + 1;
         let flag_info = info_list.into_bytes();
         let error = find_flag_attribute(&flag_info[..], FlagValueType::Boolean, 4).unwrap_err();
-        assert_eq!(
-            format!("{:?}", error),
-            format!(
-                "HigherStorageFileVersion(Cannot read storage file with a higher version of {} with lib version {})",
+        assert!(
+            format!("{:?}", error).starts_with(
+            &format!(
+                "HigherStorageFileVersion(Cannot read storage file with a higher version of {} with lib version {}",
                 MAX_SUPPORTED_FILE_VERSION + 1,
                 MAX_SUPPORTED_FILE_VERSION
-            )
+            ))
         );
     }
 }

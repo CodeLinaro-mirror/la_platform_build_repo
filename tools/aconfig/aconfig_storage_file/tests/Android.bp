@@ -1,6 +1,9 @@
+package {
+    default_team: "trendy_team_android_core_experiments",
+}
+
 cc_test {
     name: "aconfig_storage_file.test.cpp",
-    team: "trendy_team_android_core_experiments",
     srcs: [
         "storage_file_test.cpp",
     ],
@@ -20,7 +23,6 @@ cc_test {
 
 android_test {
     name: "aconfig_storage_file.test.java",
-    team: "trendy_team_android_core_experiments",
     srcs: [
         "srcs/**/*.java",
     ],

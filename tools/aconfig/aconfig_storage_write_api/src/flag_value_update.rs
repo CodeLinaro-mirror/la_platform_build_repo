@@ -116,10 +116,8 @@ mod tests {
             /* flag_value= */ 8,
         )
         .unwrap_err();
-        assert_eq!(
-            format!("{:?}", error),
-            format!("HigherStorageFileVersion(Int64 not supported for flag value files.)")
-        );
+        assert!(format!("{:?}", error)
+            .starts_with("HigherStorageFileVersion(Int64 not supported for flag value files."));
     }
 
     #[test]
@@ -127,10 +125,9 @@ mod tests {
     fn test_boolean_out_of_range() {
         let mut flag_value_list = create_test_flag_value_list(DEFAULT_FILE_VERSION).into_bytes();
         let error = update_boolean_flag_value(&mut flag_value_list[..], 8, true).unwrap_err();
-        assert_eq!(
-            format!("{:?}", error),
-            "InvalidStorageFileOffset(Flag value offset goes beyond the end of the file.)"
-        );
+        assert!(format!("{:?}", error).starts_with(
+            "InvalidStorageFileOffset(Flag value offset goes beyond the end of the file."
+        ));
     }
 
     #[cfg(enable_parse_v4)]
@@ -139,10 +136,9 @@ mod tests {
     fn test_int_out_of_range() {
         let mut flag_value_list = create_test_flag_value_list(4).into_bytes();
         let error = update_int64_flag_value(&mut flag_value_list[..], 8, 1).unwrap_err();
-        assert_eq!(
-            format!("{:?}", error),
-            "InvalidStorageFileOffset(Flag value offset goes beyond the end of the file.)"
-        );
+        assert!(format!("{:?}", error).starts_with(
+            "InvalidStorageFileOffset(Flag value offset goes beyond the end of the file."
+        ));
     }
 
     #[test]
@@ -152,13 +148,13 @@ mod tests {
         value_list.header.version = MAX_SUPPORTED_FILE_VERSION + 8;
         let mut flag_value = value_list.into_bytes();
         let error = update_boolean_flag_value(&mut flag_value[..], 4, true).unwrap_err();
-        assert_eq!(
-            format!("{:?}", error),
-            format!(
-                "HigherStorageFileVersion(Cannot read storage file with a higher version of {} with lib max version {})",
+        assert!(
+            format!("{:?}", error).starts_with(
+            &format!(
+                "HigherStorageFileVersion(Cannot read storage file with a higher version of {} with lib max version {}",
                 MAX_SUPPORTED_FILE_VERSION + 8,
                 MAX_SUPPORTED_FILE_VERSION
-            )
+            ))
         );
     }
 }

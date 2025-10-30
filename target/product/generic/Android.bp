@@ -962,6 +962,11 @@ system_image_defaults {
                 default: [
                     "framework-telecom", // base_system
                 ],
+            }) + select(release_flag("RELEASE_NPUMANAGER_MODULE"), {
+                true: [
+                    "com.android.npumanager", // base_system (RELEASE_NPUMANAGER_MODULE)
+                ],
+                default: [],
             }),
         },
         prefer32: {

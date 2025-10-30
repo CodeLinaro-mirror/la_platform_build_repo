@@ -1,5 +1,6 @@
 package {
     default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_core_experiments",
 }
 
 rust_defaults {
@@ -71,6 +72,12 @@ rust_test_host {
     data: [
         "tests/golden/java/**/*.java.golden",
     ],
+}
+
+filegroup {
+    name: "mainline_beta_namespace_config.json",
+    // TODO: Read release_flag instead.
+    srcs: ["config/mainline_beta_namespaces_apr_25.json"],
 }
 
 // integration tests: general

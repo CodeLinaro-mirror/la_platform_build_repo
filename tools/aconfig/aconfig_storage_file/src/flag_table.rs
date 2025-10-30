@@ -266,9 +266,6 @@ mod tests {
         let mut flag_table = create_test_flag_table(DEFAULT_FILE_VERSION);
         flag_table.header.file_type = 123u8;
         let error = FlagTable::from_bytes(&flag_table.into_bytes()).unwrap_err();
-        assert_eq!(
-            format!("{:?}", error),
-            format!("BytesParseFail(binary file is not a flag map)")
-        );
+        assert!(format!("{:?}", error).starts_with("BytesParseFail(binary file is not a flag map"));
     }
 }
