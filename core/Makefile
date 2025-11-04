@@ -1197,7 +1197,11 @@ $(eval $(call write-partition-file-list,$(ramdisk_intermediates)/file_list.txt,$
 
 # We just build this directly to the install location.
 INSTALLED_RAMDISK_TARGET := $(BUILT_RAMDISK_TARGET)
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+$(INSTALLED_RAMDISK_TARGET): PRIVATE_DIRS := debug_ramdisk dev metadata mnt proc second_stage_resources sys vendor_early_services
+else
 $(INSTALLED_RAMDISK_TARGET): PRIVATE_DIRS := debug_ramdisk dev metadata mnt proc second_stage_resources sys
+endif
 $(INSTALLED_RAMDISK_TARGET): $(MKBOOTFS) $(RAMDISK_NODE_LIST) $(INTERNAL_RAMDISK_FILES) $(INSTALLED_FILES_FILE_RAMDISK) | $(COMPRESSION_COMMAND_DEPS)
 	$(call pretty,"Target ramdisk: $@")
 	$(hide) mkdir -p $(addprefix $(TARGET_RAMDISK_OUT)/,$(PRIVATE_DIRS))
@@ -1607,6 +1611,12 @@ endif # BUILDING_INIT_BOOT_IMAGE is not true
 # vendor boot image
 INSTALLED_FILES_OUTSIDE_IMAGES := $(filter-out $(TARGET_VENDOR_RAMDISK_OUT)/%, $(INSTALLED_FILES_OUTSIDE_IMAGES))
 ifeq ($(BUILDING_VENDOR_BOOT_IMAGE),true)
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+BOARD_COPY_VENDOR_BOOT_IMAGE_TO_TARGET_FILES := true
+ifeq ($(BOARD_AVB_ENABLE),true)
+INTERNAL_VENDOR_RAMDISK_UPDATE := $(PRODUCT_OUT)/vendor_ramdisk_update.txt
+endif
+endif
 
 INTERNAL_VENDOR_RAMDISK_FILES := $(filter $(TARGET_VENDOR_RAMDISK_OUT)/%, \
     $(ALL_DEFAULT_INSTALLED_MODULES))
@@ -1717,55 +1727,6 @@ $(foreach vendor_ramdisk_fragment,$(INTERNAL_VENDOR_RAMDISK_FRAGMENTS), \
   $(eval INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS += $(vendor_ramdisk_fragment_target)) \
   $(eval INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS += $(BOARD_VENDOR_RAMDISK_FRAGMENT.$(vendor_ramdisk_fragment).MKBOOTIMG_ARGS) --vendor_ramdisk_fragment $(vendor_ramdisk_fragment_target)) \
 )
-
-INSTALLED_VENDOR_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot.img
-$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
-$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_BOOTCONFIG_TARGET)
-ifeq ($(BOARD_AVB_ENABLE),true)
-$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH)
-	$(call pretty,"Target vendor_boot image: $@")
-	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
-	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
-	$(AVBTOOL) add_hash_footer \
-           --image $@ \
-	   $(call get-partition-size-argument,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)) \
-	   --salt $$(sha256sum $(BUILD_NUMBER_FILE) $(BUILD_DATETIME_FILE) | cut -d " " -f 1 | tr -d '\n') \
-	   --partition_name vendor_boot $(INTERNAL_AVB_VENDOR_BOOT_SIGNING_ARGS) \
-	   $(BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS)
-else
-$(INSTALLED_VENDOR_BOOTIMAGE_TARGET):
-	$(call pretty,"Target vendor_boot image: $@")
-	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
-	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
-endif
-
-$(call declare-1p-container,$(INSTALLED_VENDOR_BOOTIMAGE_TARGET),)
-$(call declare-container-license-deps,$(INSTALLED_VENDOR_BOOTIMAGE_TARGET),$(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTB_IMAGE_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_BOOTCONDIG_TARGET),$(PRODUCT_OUT)/:/)
-VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_BOOTIMAGE_TARGET)
-
-else # BUILDING_VENDOR_BOOT_IMAGE not defined, use prebuilt image
-
-ifdef BOARD_PREBUILT_VENDOR_BOOTIMAGE
-INTERNAL_PREBUILT_VENDOR_BOOTIMAGE := $(BOARD_PREBUILT_VENDOR_BOOTIMAGE)
-INSTALLED_VENDOR_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot.img
-
-ifeq ($(BOARD_AVB_ENABLE),true)
-$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(INTERNAL_PREBUILT_VENDOR_BOOTIMAGE) $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOT_KEY_PATH)
-	cp $(INTERNAL_PREBUILT_VENDOR_BOOTIMAGE) $@
-	chmod +w $@
-	$(AVBTOOL) add_hash_footer \
-	    --image $@ \
-	    $(call get-partition-size-argument,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)) \
-	    --partition_name vendor_boot $(INTERNAL_AVB_VENDOR_BOOT_SIGNING_ARGS) \
-	    $(BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS)
-else
-$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(INTERNAL_PREBUILT_VENDOR_BOOTIMAGE)
-	cp $(INTERNAL_PREBUILT_VENDOR_BOOTIMAGE) $@
-
-endif # BOARD_AVB_ENABLE
-$(call declare-1p-container,$(INSTALLED_VENDOR_BOOTIMAGE_TARGET),)
-$(call declare-container-license-deps,$(INSTALLED_VENDOR_BOOTIMAGE_TARGET),$(INTERNAL_PREBUILT_VENDOR_BOOTIMAGE),$(PRODUCT_OUT)/:/)
-endif # BOARD_PREBUILT_VENDOR_BOOTIMAGE
 endif # BUILDING_VENDOR_BOOT_IMAGE
 
 # -----------------------------------------------------------------
@@ -3066,6 +3027,12 @@ $(call declare-0p-target,$(INSTALLED_FILES_JSON_VENDOR_DEBUG_RAMDISK))
 
 INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET := $(call intermediates-dir-for,PACKAGING,vendor_boot-debug)/vendor_ramdisk-debug.cpio$(RAMDISK_EXT)
 
+# The vendor debug ramdisk combines vendor ramdisk and debug ramdisk.
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+ifeq ($(BOARD_AVB_ENABLE),true)
+$(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET): $(INTERNAL_VENDOR_RAMDISK_UPDATE)
+endif
+endif
 $(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET): $(INSTALLED_FILES_FILE_VENDOR_DEBUG_RAMDISK)
 $(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET): $(MKBOOTFS) | $(COMPRESSION_COMMAND_DEPS)
 	$(hide) rm -f $@
@@ -3081,41 +3048,6 @@ $(call declare-1p-container,$(INSTALLED_VENDOR_DEBUG_RAMDISK_TARGET),)
 $(call declare-container-license-deps,$(INSTALLED_VENDOR_DEBUG_RAMDISK_TARGET),$(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET),$(PRODUCT_OUT)/:/)
 
 VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_DEBUG_RAMDISK_TARGET)
-
-# -----------------------------------------------------------------
-# vendor_boot-debug.img.
-INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot-debug.img
-
-# The util to sign vendor_boot-debug.img with a test key.
-BOARD_AVB_VENDOR_BOOT_TEST_KEY_PATH := external/avb/test/data/testkey_rsa2048.pem
-INTERNAL_AVB_VENDOR_BOOT_TEST_SIGNING_ARGS := --algorithm SHA256_RSA2048 --key $(BOARD_AVB_VENDOR_BOOT_TEST_KEY_PATH)
-# $(1): the vendor bootimage to sign
-define test-key-sign-vendor-bootimage
-$(call assert-max-image-size,$(1),$(call get-hash-image-max-size,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)))
-$(AVBTOOL) add_hash_footer \
-  --image $(1) \
-  $(call get-partition-size-argument,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)) \
-  --partition_name vendor_boot $(INTERNAL_AVB_VENDOR_BOOT_TEST_SIGNING_ARGS) \
-  $(BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS)
-$(call assert-max-image-size,$(1),$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
-endef
-
-ifneq ($(BOARD_AVB_VENDOR_BOOT_KEY_PATH),)
-$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOT_TEST_KEY_PATH)
-endif
-
-# Depends on vendor_boot.img and vendor-ramdisk-debug.cpio.gz to build the new vendor_boot-debug.img
-$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INSTALLED_VENDOR_BOOTIMAGE_TARGET) $(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET)
-$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS)
-	$(call pretty,"Target vendor_boot debug image: $@")
-	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
-	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
-	$(if $(BOARD_AVB_VENDOR_BOOT_KEY_PATH),$(call test-key-sign-vendor-bootimage,$@))
-
-$(call declare-1p-container,$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET),)
-$(call declare-container-license-deps,$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET),$(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET),$(PRODUCT_OUT)/:/)
-
-VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET)
 
 endif # BUILDING_DEBUG_VENDOR_BOOT_IMAGE
 
@@ -3150,134 +3082,6 @@ INTERNAL_TEST_HARNESS_RAMDISK_FILES := $(filter $(TARGET_TEST_HARNESS_RAMDISK_OU
 # staging directory.
 INTERNAL_TEST_HARNESS_RAMDISK_SRC_DIRS := $(INTERNAL_DEBUG_RAMDISK_SRC_DIRS) $(TARGET_TEST_HARNESS_RAMDISK_OUT)
 INTERNAL_TEST_HARNESS_RAMDISK_SRC_DEPS := $(INSTALLED_FILES_FILE_DEBUG_RAMDISK) $(INTERNAL_TEST_HARNESS_RAMDISK_FILES)
-
-ifdef BUILDING_DEBUG_BOOT_IMAGE
-
-# -----------------------------------------------------------------
-# The test harness ramdisk, which is based off debug_ramdisk, plus a
-# few additional test-harness-specific properties in adb_debug.prop.
-INSTALLED_TEST_HARNESS_RAMDISK_TARGET := $(PRODUCT_OUT)/ramdisk-test-harness.img
-
-$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET): $(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DEPS)
-$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET): $(MKBOOTFS) | $(COMPRESSION_COMMAND_DEPS)
-	@echo "Target test harness ramdisk: $@"
-	$(hide) rm -f $@
-	$(hide) mkdir -p $(dir $@)
-	$(MKBOOTFS) -d $(TARGET_OUT) $(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DIRS) | $(COMPRESSION_COMMAND) > $@
-
-$(call declare-1p-container,$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET),)
-$(call declare-container-license-deps,$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET),$(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DEPS),$(PRODUCT_OUT)/:/)
-
-UNMOUNTED_NOTICE_VENDOR_DEPS+= $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)
-
-.PHONY: ramdisk_test_harness-nodeps
-ramdisk_test_harness-nodeps: $(MKBOOTFS) | $(COMPRESSION_COMMAND_DEPS)
-	@echo "make $@: ignoring dependencies"
-	$(hide) rm -f $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)
-	$(hide) mkdir -p $(dir $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)) $(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DIRS)
-	$(MKBOOTFS) -d $(TARGET_OUT) $(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DIRS) | $(COMPRESSION_COMMAND) > $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)
-
-# -----------------------------------------------------------------
-# the boot-test-harness.img, which is the kernel plus ramdisk-test-harness.img
-#
-# Note: it's intentional to skip signing for boot-test-harness.img, because it
-# can only be used if the device is unlocked with verification error.
-ifneq ($(strip $(BOARD_KERNEL_BINARIES)),)
-  INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET := $(foreach k,$(subst kernel,boot-test-harness,$(BOARD_KERNEL_BINARIES)), \
-    $(PRODUCT_OUT)/$(k).img)
-else
-  INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/boot-test-harness.img
-endif
-
-# Replace ramdisk-debug.img in $(MKBOOTIMG) ARGS with ramdisk-test-harness.img to build boot-test-harness.img
-$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET): $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)
-INTERNAL_TEST_HARNESS_BOOTIMAGE_ARGS := $(subst $(INSTALLED_DEBUG_RAMDISK_TARGET),$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET),$(INTERNAL_DEBUG_BOOTIMAGE_ARGS))
-
-# If boot.img is chained but boot-test-harness.img is not signed, libavb in bootloader
-# will fail to find valid AVB metadata from the end of /boot, thus stop booting.
-# Using a test key to sign boot-test-harness.img to continue booting with the mismatched
-# public key, if the device is unlocked.
-ifneq ($(BOARD_AVB_BOOT_KEY_PATH),)
-$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_BOOT_TEST_KEY_PATH)
-endif
-
-# $(1): output file
-define build-boot-test-harness-target
-  $(MKBOOTIMG) --kernel $(PRODUCT_OUT)/$(subst .img,,$(subst boot-test-harness,kernel,$(notdir $(1)))) \
-    $(INTERNAL_TEST_HARNESS_BOOTIMAGE_ARGS) $(INTERNAL_MKBOOTIMG_VERSION_ARGS) \
-    $(BOARD_MKBOOTIMG_ARGS) --output $@
-  $(if $(BOARD_AVB_BOOT_KEY_PATH),$(call test-key-sign-bootimage,$@,boot-test-harness))
-endef
-
-# Build the new boot-test-harness.img, based on boot-debug.img and ramdisk-test-harness.img.
-$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INSTALLED_DEBUG_BOOTIMAGE_TARGET) $(AVBTOOL)
-	$(call pretty,"Target boot test harness image: $@")
-	$(call build-boot-test-harness-target,$@)
-
-$(call declare-1p-container,$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET),)
-$(call declare-container-license-deps,$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET),$(INSTALLED_DEBUG_BOOTIMAGE_TARGET),$(PRODUCT_OUT)/:/)
-
-UNMOUNTED_NOTICE_VENDOR_DEPS+= $(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET)
-
-.PHONY: bootimage_test_harness-nodeps
-bootimage_test_harness-nodeps: $(MKBOOTIMG) $(AVBTOOL)
-	echo "make $@: ignoring dependencies"
-	$(foreach b,$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET),$(call build-boot-test-harness-target,$b))
-
-endif # BUILDING_DEBUG_BOOT_IMAGE
-
-# -----------------------------------------------------------------
-# vendor test harness ramdisk, which is a vendor ramdisk combined with
-# a test harness ramdisk.
-ifdef BUILDING_DEBUG_VENDOR_BOOT_IMAGE
-
-INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET := $(call intermediates-dir-for,PACKAGING,vendor_boot-test-harness)/vendor_ramdisk-test-harness.cpio$(RAMDISK_EXT)
-
-# The order is important here. The test harness ramdisk staging directory has to
-# come last so that it can override the adb_debug.prop in the debug ramdisk
-# staging directory.
-INTERNAL_TEST_HARNESS_VENDOR_RAMDISK_SRC_DIRS := $(INTERNAL_DEBUG_VENDOR_RAMDISK_SRC_DIRS) $(TARGET_TEST_HARNESS_RAMDISK_OUT)
-INTERNAL_TEST_HARNESS_VENDOR_RAMDISK_SRC_DEPS := $(INSTALLED_FILES_FILE_VENDOR_DEBUG_RAMDISK) $(INTERNAL_TEST_HARNESS_RAMDISK_FILES)
-
-$(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET): $(INTERNAL_TEST_HARNESS_VENDOR_RAMDISK_SRC_DEPS)
-$(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET): $(MKBOOTFS) | $(COMPRESSION_COMMAND_DEPS)
-	$(hide) rm -f $@
-	$(hide) mkdir -p $(dir $@)
-	$(MKBOOTFS) -d $(TARGET_OUT) $(INTERNAL_TEST_HARNESS_VENDOR_RAMDISK_SRC_DIRS) | $(COMPRESSION_COMMAND) > $@
-
-INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET := $(PRODUCT_OUT)/vendor_ramdisk-test-harness.img
-$(INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET): $(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET)
-	@echo "Target test harness vendor ramdisk: $@"
-	$(copy-file-to-target)
-
-$(call declare-1p-container,$(INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET),)
-$(call declare-container-license-deps,$(INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET),$(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET),$(PRODUCT_OUT)/:/)
-
-VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET)
-
-# -----------------------------------------------------------------
-# vendor_boot-test-harness.img.
-INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot-test-harness.img
-
-ifneq ($(BOARD_AVB_VENDOR_BOOT_KEY_PATH),)
-$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOT_TEST_KEY_PATH)
-endif
-
-# Depends on vendor_boot.img and vendor_ramdisk-test-harness.cpio$(RAMDISK_EXT) to build the new vendor_boot-test-harness.img
-$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INSTALLED_VENDOR_BOOTIMAGE_TARGET)
-$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET)
-$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS)
-	$(call pretty,"Target vendor_boot test harness image: $@")
-	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
-	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
-	$(if $(BOARD_AVB_VENDOR_BOOT_KEY_PATH),$(call test-key-sign-vendor-bootimage,$@))
-
-$(call declare-1p-container,$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET),)
-$(call declare-container-license-deps,$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET),$(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET),$(PRODUCT_OUT)/:/)
-
-VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET)
-
-endif # BUILDING_DEBUG_VENDOR_BOOT_IMAGE
 
 endif # BUILDING_DEBUG_BOOT_IMAGE || BUILDING_DEBUG_VENDOR_BOOT_IMAGE
 
@@ -3960,6 +3764,680 @@ $(if $(strip $(ALL_TARGETS.$(INSTALLED_VENDORIMAGE_TARGET).META_LIC)),,\
         $(call declare-copy-target-license-metadata,$(INSTALLED_VENDORIMAGE_TARGET),$(BOARD_PREBUILT_VENDORIMAGE)),\
         $(call declare-license-metadata,$(INSTALLED_VENDORIMAGE_TARGET),legacy_proprietary,proprietary,,"Vendor Image",vendor)))
 endif
+
+#-----------------------------------------------------------------
+# vendor ramdisk update
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+ifeq ($(BOARD_AVB_ENABLE),true)
+ifdef BUILDING_VENDOR_BOOT_IMAGE
+
+ES_VNDR_MOD_PATH := "/vendor_early_services/vendor/lib/modules"
+ES_MOD_PATH := "/vendor_early_services/lib/modules"
+
+# strip debug info and copied to ES mods
+ES_DEFAULT_LKMS := \
+   ais \
+   msm_kgsl \
+   snd_event_dlkm \
+   q6_pdr_dlkm \
+   stub_dlkm \
+   q6_notifier_dlkm \
+   gpr_dlkm \
+   spf_core_dlkm \
+   audpkt_ion_dlkm \
+   audio_pkt_dlkm \
+   adsp_loader_dlkm \
+   q6_dlkm \
+   audio_prm_dlkm \
+   machine_dlkm \
+   coupled_ssr_dlkm \
+   camera \
+
+# Default modules - first set; Last set auto-generated modules_end.order
+define ES_MOD_ORDER
+gcc-kalama qnoc-kalama dispcc-kalama pinctrl-kalama clk-dummy pinctrl-spmi-gpio
+tcsrcc-kalama camcc-kalama dispcc-crow videocc-kalama
+spmi-pmic-arb qcom_hwspinlock qcom-cpufreq-hw rtc-pm8xxx mem_buf regmap-spmi qnoc-qos qcom_ipc_logging qcom-scm proxy-consumer nvmem_qcom-spmi-sdam msm_dma_iommu_mapping iommu-logger icc-debug gh_msgq debug-regulator stub-regulator cmd-db
+pinctrl-msm smem gh_rm_drv secure_buffer qcom_rpmh qcom_aoss qti-fixed-regulator gdsc-regulator qcom-pdc proxy-consumer qcom_iommu_util soc_sleep_stats socinfo icc-bcm-voter minidump crypto-qti-common rpmh-regulator clk-qcom clk-rpmh qcom-spmi-pmic
+arm_smmu boot_stats icc-rpmh crypto-qti-tz crypto-qti-common phy-qcom-ufs phy-qcom-ufs-qmp-v4 phy-qcom-ufs-qmp-v4-kalama ufshcd-crypto-qti ufs_qcom
+coresight qcom_va_minidump plh_vendor plh_scmi msm_performance nvmem_qfprom gpucc-kalama qcom-pmu-lib qcom_rimps dcvs_fp qcom_llcc_pmu mdt_loader qcom-dcvs qcom_ipcc tmecom-intf
+
+endef
+
+# Default modules - second set
+define ES_MOD_ORDER_2
+reboot-mode qcom_cpu_vendor_hooks llcc-qcom mem_buf_dev mem-hooks qcom_logbuf_vh  mdt_loader qcom_va_minidump qcom_wdt_core qcom_llcc_pmu
+qcom-pon qcom_dma_heaps qcom-pdc msm_gpi mem_buf_msgq qrtr msm_qmp sched-walt qcom-pmu-lib
+clk-dummy qcom-dload-mode  mem_buf  msm_performance
+
+endef
+
+# Default modules - first set; Last set auto-generated modules_end.order
+define ES_MOD_ORDER_GEN4
+icc-debug qnoc-qos nvmem_qcom-spmi-sdam qcom_hwspinlock qcom-scm qcom-cpufreq-hw reboot-mode rtc-pm8xxx spmi-pmic-arb msm_dma_iommu_mapping debug-regulator proxy-consumer qcom_cpu_vendor_hooks smem cmd-db qcom_ipc_logging qti-regmap-debugfs regmap-spmi qcom-reboot-reason pcs_xpcs
+qcom_rpmh qrtr minidump llcc-qcom socinfo secure_buffer qcom_aoss qcom-pon qcom-spmi-pmic gdsc-regulator pinctrl-msm qcom-pdc crypto-qti-tz soc_sleep_stats
+icc-bcm-voter msm_qmp clk-rpmh clk-qcom   mem_buf pinctrl-lemans qcom_iommu_util mem_buf_dev qcom_wdt_core qcom-dload-mode crypto-qti-common phy-qcom-ufs boot_stats
+ufshcd-crypto-qti rpmh-regulator icc-rpmh qcom_dma_heaps phy-qcom-ufs dispcc1-lemans dispcc0-lemans camcc-lemans gcc-lemans    qcom_soc_wdt arm_smmu clk-dummy phy-qcom-ufs-qmp-v4-waipio
+ufs_qcom qnoc-lemans
+
+endef
+
+# MM Display modules
+define ES_MOD_ORDER_DI
+msm_geni_serial 
+llcc-qcom
+spi-msm-geni i2c-msm-geni
+msm_ext_display
+qcom_glink
+qcom_glink_smem
+qcom_smd
+rproc_qcom_common
+qseecom_proxy
+qmi_helpers
+pdr_interface
+pmic_glink
+ucsi_glink
+wcd_usbss_i2c
+fsa4480-i2c
+redriver
+dwc3-msm
+qcom_va_minidump
+msm-mmrm
+panel_event_notifier
+altmode-glink
+hdcp_qseecom_dlkm
+sync_fence
+msm_hw_fence
+mem_buf_dev
+qcom_iommu_util
+qcom_rpmh
+pinctrl-msm
+msm_dma_iommu_mapping
+qcom-scm
+qcom_ipc_logging
+spmi-pmic-arb
+msm_drm
+
+endef
+
+# MM Display modules
+define ES_MOD_ORDER_DI_GEN4
+msm_geni_serial i2c-mux qseecom_dlkm refgen gpio-pca953x i2c-msm-geni spi-msm-geni qcom_ipcc anx7625
+qcom_va_minidump i2c-mux-pca954x smcinvoke_dlkm hdcp_qseecom_dlkm
+msm_drm
+
+endef
+
+# MM AIS modules
+define ES_MOD_ORDER_AIS
+camcc-kalama
+qcom_ipc_lite
+synx-driver
+qti_battery_charger
+leds-qti-flash
+mem_buf_dev
+llcc_qcom
+mdt_loader
+qcom_rpmh
+camera
+
+endef
+
+# MM RVC modules
+define ES_MOD_ORDER_RV_GEN4
+gpucc-lemans dcvs_fp qcom_llcc_pmu mdt_loader nvmem_qfprom qcom_ipcc
+qcom-dcvs qcom-pmu-lib
+msm_performance
+
+endef
+
+# MM RVC modules
+define ES_MOD_ORDER_RV
+dcvs_fp scc-sm8150
+qcom-dcvs gpucc-sm8150
+nvmem_qfprom
+
+endef
+
+# MM QCXServer modules
+define ES_MOD_ORDER_QCX
+pinctrl-spmi-gpio
+gpio-pca953x
+camera
+
+endef
+
+# MM Video modules
+define ES_MOD_ORDER_VI
+videocc-kalama
+llcc-qcom qcom-scm mdt_loader msm-mmrm  mem_buf_dev
+msm_video
+
+endef
+
+# MM Audio reach modules
+define ES_MOD_ORDER_R_AU
+smp2p_sleepstate
+qcom_pil_info
+qcom_ramdump
+smp2p
+qcom_glink_spss
+qcom_sysmon frpc-adsprpc
+qcom_q6v5
+qrtr-smd qcom_q6v5_pas qcom_spss
+snd_event_dlkm q6_pdr_dlkm stub_dlkm
+q6_notifier_dlkm
+gpr_dlkm
+spf_core_dlkm
+audpkt_ion_dlkm
+audio_pkt_dlkm
+adsp_loader_dlkm
+q6_dlkm audio_prm_dlkm
+pinctrl_lpi_dlkm
+swr_dlkm
+swr_ctrl_dlkm
+wcd_core_dlkm
+mbhc_dlkm
+wcd9xxx_dlkm
+wcd937x_dlkm
+wcd937x_slave_dlkm
+wcd938x_dlkm
+wcd938x_slave_dlkm
+wcd939x_dlkm
+wcd939x_slave_dlkm
+wsa883x_dlkm
+wsa884x_dlkm
+swr_dmic_dlkm
+lpass_cdc_dlkm
+lpass_cdc_wsa2_macro_dlkm
+lpass_cdc_wsa_macro_dlkm
+lpass_cdc_va_macro_dlkm
+lpass_cdc_tx_macro_dlkm
+lpass_cdc_rx_macro_dlkm
+sdpm_clk
+qcom-spmi-temp-alarm
+ddr_cdev
+memlat
+memlat_vendor
+memlat_scmi
+subsystem_sleep_stats
+sys_pm_vx
+spcom
+qti_battery_charger
+qcom-hv-haptics
+smcinvoke_dlkm
+pci-msm-drv
+mhi
+cnss_utils
+cnss_prealloc
+cnss_plat_ipc_qmi_svc
+wlan_firmware_service
+qcom_esoc
+mhi_cntrl_qcom
+cnss2
+bam_dma
+slimbus
+slim-qcom-ngd-ctrl
+btpower
+bt_fm_slim
+sps_drv
+qce50_dlkm
+qcedev-mod_dlkm
+snd-soc-hdmi-codec
+heap_mem_ext_v01
+msm_memshare
+qrtr-mhi
+qrtr-gunyah
+snd-usb-audio-qmi
+hdmi_dlkm
+machine_dlkm
+endef
+
+# MM Audio modules (Elite)
+define ES_MOD_ORDER_AU
+qmi_helpers smp2p_sleepstate qcom_pil_info qcom_glink qcom_smd msm_gpi qcom_ramdump
+smp2p pdr_interface qcom_glink_smem qcom_glink_spss qrtr-smd snd_event_dlkm_legacy
+rproc_qcom_common stub_dlkm_legacy
+qcom_sysmon frpc-adsprpc q6_notifier_dlkm_legacy
+qcom_q6v5 apr_dlkm
+qcom_q6v5_pas adsp_loader_dlkm_legacy q6_dlkm_legacy
+platform_dlkm
+native_dlkm machine_dlkm_legacy
+
+endef
+
+ES_SYSTEM_DEPS := \
+ $(PRODUCT_OUT)/system/etc/selinux/plat_file_contexts \
+ $(PRODUCT_OUT)/system/lib64/libbase.so \
+ $(PRODUCT_OUT)/system/lib64/libbinder.so \
+ $(PRODUCT_OUT)/system/lib64/libhidlbase.so \
+ $(PRODUCT_OUT)/system/lib64/libhidltransport.so \
+ $(PRODUCT_OUT)/system/lib64/libhwbinder.so \
+ $(PRODUCT_OUT)/system/lib64/liblzma.so \
+ $(PRODUCT_OUT)/system/lib64/libtinyalsa.so \
+ $(PRODUCT_OUT)/system/lib64/libutilscallstack.so \
+ $(PRODUCT_OUT)/system/lib64/libc++.so \
+ $(PRODUCT_OUT)/system/lib64/libcrypto.so \
+ $(PRODUCT_OUT)/system/lib64/libcutils.so \
+ $(PRODUCT_OUT)/system/lib64/libutils.so \
+ $(PRODUCT_OUT)/system/lib64/liblog.so \
+ $(PRODUCT_OUT)/system/lib64/libpackagelistparser.so \
+ $(PRODUCT_OUT)/system/lib64/libselinux.so \
+ $(PRODUCT_OUT)/system/lib64/libprocessgroup.so \
+ $(PRODUCT_OUT)/system/lib64/libz.so \
+ $(PRODUCT_OUT)/system/lib64/libvndksupport.so \
+ $(PRODUCT_OUT)/system/lib64/libexpat.so \
+ $(PRODUCT_OUT)/system/bin/tinymix \
+ $(PRODUCT_OUT)/system/lib64/libui.so \
+ $(PRODUCT_OUT)/system/lib64/libgraphicsenv.so \
+ $(PRODUCT_OUT)/system/lib64/libnativewindow.so \
+ $(PRODUCT_OUT)/system/lib64/libnativebridge_lazy.so \
+ $(PRODUCT_OUT)/system/lib64/libnativeloader_lazy.so \
+ $(PRODUCT_OUT)/system/lib64/libSurfaceFlingerProp.so \
+ $(PRODUCT_OUT)/system/lib64/libgralloctypes.so \
+ $(PRODUCT_OUT)/system/lib64/libbinder_ndk.so \
+ $(PRODUCT_OUT)/system/lib64/libandroid_runtime_lazy.so \
+ $(PRODUCT_OUT)/system/lib64/libsync.so \
+ $(PRODUCT_OUT)/system/lib64/libion.so \
+ $(PRODUCT_OUT)/system/lib64/libcgrouprc.so \
+ $(PRODUCT_OUT)/system/lib64/libnetd_client.so \
+ $(PRODUCT_OUT)/system/lib64/libdmabufheap.so \
+ $(PRODUCT_OUT)/system/lib64/libxml2.so \
+ $(PRODUCT_OUT)/system/lib64/libcamera_metadata.so \
+ $(PRODUCT_OUT)/system/lib64/libhardware.so \
+ $(PRODUCT_OUT)/system/lib64/libunwindstack.so \
+
+# list of mods to search via sed
+es_get_mods = $(subst $(space),,$(foreach mod,$(1),$(if $(filter NEWLINE, $(mod)),,$(mod)\|)))
+es_mod_list=/\($(call es_get_mods,$(subst ${newline}, NEWLINE ,$(1)))dummy\).ko/d
+
+# Add newline chars
+es_update_nl = $(subst $(newline),\n,$(1))
+
+# if module file doesn't exist, error is logged and not added to *.order files
+$(INTERNAL_VENDOR_RAMDISK_UPDATE): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
+$(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INSTALLED_SYSTEMIMAGE_TARGET) $(INSTALLED_VENDORIMAGE_TARGET)
+$(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_BOOTCONFIG_TARGET)
+$(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH) $(ES_SYSTEM_DEPS)
+	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/ ;\
+	        $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/msm_kgsl.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/msm_kgsl.ko;\
+        $(foreach fn, $(ES_MOD_ORDER_R_AU), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
+		$(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/camera.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/camera.ko;\
+        $(foreach fn, $(ES_MOD_ORDER_AIS), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
+	echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ;\
+  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
+  echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ;\
+  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_2}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
+  echo boot_stats >> "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" ;\
+  sed -e '$(call es_mod_list,${ES_MOD_ORDER}${ES_MOD_ORDER_2})' "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" | sed 's/.ko//' | tr '\n' ' ' > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end.order" ;\
+  echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ;\
+  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_DI}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
+  sed -e '$(call es_mod_list,${ES_MOD_ORDER_GEN4})' "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" | sed 's/.ko//' > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end_gen4.order" ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_VI})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_vi.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_AIS})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_ais.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_RV})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_rv.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_RV_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_rv_gen4.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_au.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_R_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_r_au.order ;\
+  mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH); \
+  $(foreach fn, $(ES_MOD_ORDER_R_AU), cp $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH);)\
+  $(foreach fn, $(ES_MOD_ORDER_AIS), cp $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH);)\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_QCX})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_qcx.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_DI_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di_gen4.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_gen4.order ;\
+  cp -r $(TARGET_RAMDISK_OUT)/vendor_early_services/bin/early_services_init $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
+  cp -r $(TARGET_RAMDISK_OUT)/vendor_early_services/bin/init_early_test $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
+  mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/firmware_mnt; \
+  mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/egl; \
+  cp -r $(PRODUCT_OUT)/vendor_dlkm/lib/modules/pinctrl-spmi-gpio.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/ ;\
+  cp -r $(PRODUCT_OUT)/vendor_dlkm/lib/modules/msm_video.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/ ;\
+  cp -r $(PRODUCT_OUT)/vendor_dlkm/lib/modules/boot_stats.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/ ;\
+  cp -r $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
+  cp -rf $(PRODUCT_OUT)/obj/ETC/precompiled_sepolicy_intermediates/precompiled_sepolicy  $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/vendor_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
+  cp -rf $(PRODUCT_OUT)/system/etc/selinux/plat_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libbase.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libbinder.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libhidlbase.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libhidltransport.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libhwbinder.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/liblzma.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libtinyalsa.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libutilscallstack.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libc++.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libcrypto.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libcutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/liblog.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libpackagelistparser.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libselinux.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libprocessgroup.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libz.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libvndksupport.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/bin/bootstrap $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libui.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libgraphicsenv.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libnativewindow.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libnativebridge_lazy.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libnativeloader_lazy.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libSurfaceFlingerProp.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libgralloctypes.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libbinder_ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libandroid_runtime_lazy.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libsync.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libion.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libcgrouprc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libnetd_client.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libgsl.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libdmabufheap.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libadreno_utils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libEGL_adreno.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/egl/libEGL_adreno.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/egl ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libGLESv2_adreno.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/egl/libGLESv2_adreno.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/egl ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libllvm-glnext.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libandroidicu.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libicuuc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/apex/com.android.i18n/lib64/libicui18n.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libjson.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_cci.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_common_so.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_csi.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqmi_encdec.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libdrm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libxml2.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -ar $(PRODUCT_OUT)/vendor/firmware $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/pd-mapper $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxhwnodecontext.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxifestriping.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamximageformatutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxsettingsmanager.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxstatscore.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxswispiqmodule.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcamxtintlessalgo.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libcamera_metadata.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libbitmlenginev2.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcom.qti.chinodeutils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libchilog.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/hw/camera.qcom.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/hw/com.qti.chi.override.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libadsprpc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libcdsprpc.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.dsp@1.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libqdMetaData.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libhardware.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libgralloc* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.display.allocator* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.display.mapper* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libprotobuf-cpp-full-3.9.1.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libdisplayconfig.qti.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libvmmem.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.display.config@2.0.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/early_audio $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/system/bin/tinymix $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libsndcardparser.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libagm.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libar-gsl.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/liblx-osal.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libats.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libaudio_log_utils.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libar-acdb.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/liblx-ar_util.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libar-gpr.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libdiag.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libpdmapper.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libpdnotifier.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libais*.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libmmosal_vendor.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libC2D2.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libadreno_app_profiles.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libc2d30_bltlib.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libCB.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libgpudataproducer.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libkcl_crow.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libkcl.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libkernelmanager.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libllvm-qcom.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libllvm-qgl.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/ais_server $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/qcarcam_edrm_rvc $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libexpat.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/acdbdata/kalama_cdp/; \
+  cp -rf $(PRODUCT_OUT)/vendor/etc/acdbdata/kalama_cdp/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/acdbdata/kalama_cdp/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/etc/card-defs.xml $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/ ;\
+  mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/media/audio/early_audio/; \
+  cp -rf $(TOPDIR)vendor/qcom/opensource/agm/service/audio/tone.wav $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/media/audio/early_audio/ ;\
+	$(MKBOOTFS) -d $(TARGET_OUT) $(TARGET_VENDOR_RAMDISK_OUT) $(PRIVATE_ADDITIONAL_DIR) | $(COMPRESSION_COMMAND) > $(INTERNAL_VENDOR_RAMDISK_TARGET)
+	$(hide) touch $@
+endif
+endif
+endif
+
+# -----------------------------------------------------------------
+# vendor_boot.img.
+ifdef BUILDING_VENDOR_BOOT_IMAGE
+INSTALLED_VENDOR_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot.img
+$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
+$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(INSTALLED_SYSTEMIMAGE_TARGET) $(INSTALLED_VENDORIMAGE_TARGET)
+$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_BOOTCONFIG_TARGET)
+ifeq ($(BOARD_AVB_ENABLE),true)
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH) $(INTERNAL_VENDOR_RAMDISK_UPDATE)
+	$(call pretty,"Target vendor_boot image: $@")
+else
+$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH)
+	$(call pretty,"Target vendor_boot image: $@")
+endif
+	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
+	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
+	$(call pretty,"Target vendor_boot image: $@")
+	$(AVBTOOL) add_hash_footer \
+           --image $@ \
+	   $(call get-partition-size-argument,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)) \
+	   --salt $$(sha256sum $(BUILD_NUMBER_FILE) $(BUILD_DATETIME_FILE) | cut -d " " -f 1 | tr -d '\n') \
+	   --partition_name vendor_boot $(INTERNAL_AVB_VENDOR_BOOT_SIGNING_ARGS) \
+	   $(BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS)
+else
+$(INSTALLED_VENDOR_BOOTIMAGE_TARGET):
+	$(call pretty,"Target vendor_boot image: $@")
+	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
+	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
+endif
+
+$(call declare-1p-container,$(INSTALLED_VENDOR_BOOTIMAGE_TARGET),)
+$(call declare-container-license-deps,$(INSTALLED_VENDOR_BOOTIMAGE_TARGET),$(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTB_IMAGE_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_BOOTCONDIG_TARGET),$(PRODUCT_OUT)/:/)
+VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_BOOTIMAGE_TARGET)
+else # BUILDING_VENDOR_BOOT_IMAGE not defined, use prebuilt image
+
+ifdef BOARD_PREBUILT_VENDOR_BOOTIMAGE
+INTERNAL_PREBUILT_VENDOR_BOOTIMAGE := $(BOARD_PREBUILT_VENDOR_BOOTIMAGE)
+INSTALLED_VENDOR_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot.img
+
+ifeq ($(BOARD_AVB_ENABLE),true)
+$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(INTERNAL_PREBUILT_VENDOR_BOOTIMAGE) $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOT_KEY_PATH)
+	cp $(INTERNAL_PREBUILT_VENDOR_BOOTIMAGE) $@
+	chmod +w $@
+	$(AVBTOOL) add_hash_footer \
+	    --image $@ \
+	    $(call get-partition-size-argument,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)) \
+	    --partition_name vendor_boot $(INTERNAL_AVB_VENDOR_BOOT_SIGNING_ARGS) \
+	    $(BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS)
+else
+$(INSTALLED_VENDOR_BOOTIMAGE_TARGET): $(INTERNAL_PREBUILT_VENDOR_BOOTIMAGE)
+	cp $(INTERNAL_PREBUILT_VENDOR_BOOTIMAGE) $@
+
+endif # BOARD_AVB_ENABLE
+$(call declare-1p-container,$(INSTALLED_VENDOR_BOOTIMAGE_TARGET),)
+$(call declare-container-license-deps,$(INSTALLED_VENDOR_BOOTIMAGE_TARGET),$(INTERNAL_PREBUILT_VENDOR_BOOTIMAGE),$(PRODUCT_OUT)/:/)
+endif # BOARD_PREBUILT_VENDOR_BOOTIMAGE
+endif # BUILDING_VENDOR_BOOT_IMAGE
+
+
+# -----------------------------------------------------------------
+# vendor_boot-debug.img.
+ifdef BUILDING_DEBUG_VENDOR_BOOT_IMAGE
+INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot-debug.img
+
+# The util to sign vendor_boot-debug.img with a test key.
+BOARD_AVB_VENDOR_BOOT_TEST_KEY_PATH := external/avb/test/data/testkey_rsa2048.pem
+INTERNAL_AVB_VENDOR_BOOT_TEST_SIGNING_ARGS := --algorithm SHA256_RSA2048 --key $(BOARD_AVB_VENDOR_BOOT_TEST_KEY_PATH)
+# $(1): the vendor bootimage to sign
+define test-key-sign-vendor-bootimage
+$(call assert-max-image-size,$(1),$(call get-hash-image-max-size,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)))
+$(AVBTOOL) add_hash_footer \
+  --image $(1) \
+  $(call get-partition-size-argument,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)) \
+  --partition_name vendor_boot $(INTERNAL_AVB_VENDOR_BOOT_TEST_SIGNING_ARGS) \
+  $(BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS)
+$(call assert-max-image-size,$(1),$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
+endef
+
+ifneq ($(BOARD_AVB_VENDOR_BOOT_KEY_PATH),)
+$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOT_TEST_KEY_PATH)
+endif
+
+# Depends on vendor_boot.img and vendor-ramdisk-debug.cpio.gz to build the new vendor_boot-debug.img
+$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INSTALLED_VENDOR_BOOTIMAGE_TARGET) $(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET)
+$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS)
+	$(call pretty,"Target vendor_boot debug image: $@")
+	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
+	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
+	$(if $(BOARD_AVB_VENDOR_BOOT_KEY_PATH),$(call test-key-sign-vendor-bootimage,$@))
+
+$(call declare-1p-container,$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET),)
+$(call declare-container-license-deps,$(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET),$(INTERNAL_VENDOR_DEBUG_RAMDISK_TARGET),$(PRODUCT_OUT)/:/)
+
+VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_DEBUG_BOOTIMAGE_TARGET)
+endif # BUILDING_DEBUG_VENDOR_BOOT_IMAGE
+
+ifdef BUILDING_DEBUG_BOOT_IMAGE
+
+# -----------------------------------------------------------------
+# The test harness ramdisk, which is based off debug_ramdisk, plus a
+# few additional test-harness-specific properties in adb_debug.prop.
+INSTALLED_TEST_HARNESS_RAMDISK_TARGET := $(PRODUCT_OUT)/ramdisk-test-harness.img
+
+$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET): $(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DEPS)
+$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET): $(MKBOOTFS) | $(COMPRESSION_COMMAND_DEPS)
+	@echo "Target test harness ramdisk: $@"
+	$(hide) rm -f $@
+	$(hide) mkdir -p $(dir $@)
+	$(MKBOOTFS) -d $(TARGET_OUT) $(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DIRS) | $(COMPRESSION_COMMAND) > $@
+
+$(call declare-1p-container,$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET),)
+$(call declare-container-license-deps,$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET),$(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DEPS),$(PRODUCT_OUT)/:/)
+
+UNMOUNTED_NOTICE_VENDOR_DEPS += $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)
+
+.PHONY: ramdisk_test_harness-nodeps
+ramdisk_test_harness-nodeps: $(MKBOOTFS) | $(COMPRESSION_COMMAND_DEPS)
+	@echo "make $@: ignoring dependencies"
+	$(hide) rm -f $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)
+	$(hide) mkdir -p $(dir $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)) $(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DIRS)
+	$(MKBOOTFS) -d $(TARGET_OUT) $(INTERNAL_TEST_HARNESS_RAMDISK_SRC_DIRS) | $(COMPRESSION_COMMAND) > $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)
+
+# -----------------------------------------------------------------
+# the boot-test-harness.img, which is the kernel plus ramdisk-test-harness.img
+#
+# Note: it's intentional to skip signing for boot-test-harness.img, because it
+# can only be used if the device is unlocked with verification error.
+ifneq ($(strip $(BOARD_KERNEL_BINARIES)),)
+  INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET := $(foreach k,$(subst kernel,boot-test-harness,$(BOARD_KERNEL_BINARIES)), \
+    $(PRODUCT_OUT)/$(k).img)
+else
+  INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/boot-test-harness.img
+endif
+
+# Replace ramdisk-debug.img in $(MKBOOTIMG) ARGS with ramdisk-test-harness.img to build boot-test-harness.img
+$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET): $(INSTALLED_TEST_HARNESS_RAMDISK_TARGET)
+INTERNAL_TEST_HARNESS_BOOTIMAGE_ARGS := $(subst $(INSTALLED_DEBUG_RAMDISK_TARGET),$(INSTALLED_TEST_HARNESS_RAMDISK_TARGET),$(INTERNAL_DEBUG_BOOTIMAGE_ARGS))
+
+# If boot.img is chained but boot-test-harness.img is not signed, libavb in bootloader
+# will fail to find valid AVB metadata from the end of /boot, thus stop booting.
+# Using a test key to sign boot-test-harness.img to continue booting with the mismatched
+# public key, if the device is unlocked.
+ifneq ($(BOARD_AVB_BOOT_KEY_PATH),)
+$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_BOOT_TEST_KEY_PATH)
+endif
+
+# $(1): output file
+define build-boot-test-harness-target
+  $(MKBOOTIMG) --kernel $(PRODUCT_OUT)/$(subst .img,,$(subst boot-test-harness,kernel,$(notdir $(1)))) \
+    $(INTERNAL_TEST_HARNESS_BOOTIMAGE_ARGS) $(INTERNAL_MKBOOTIMG_VERSION_ARGS) \
+    $(BOARD_MKBOOTIMG_ARGS) --output $@
+  $(if $(BOARD_AVB_BOOT_KEY_PATH),$(call test-key-sign-bootimage,$@,boot-test-harness))
+endef
+
+# Build the new boot-test-harness.img, based on boot-debug.img and ramdisk-test-harness.img.
+$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INSTALLED_DEBUG_BOOTIMAGE_TARGET) $(AVBTOOL)
+	$(call pretty,"Target boot test harness image: $@")
+	$(call build-boot-test-harness-target,$@)
+
+$(call declare-1p-container,$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET),)
+$(call declare-container-license-deps,$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET),$(INSTALLED_DEBUG_BOOTIMAGE_TARGET),$(PRODUCT_OUT)/:/)
+
+UNMOUNTED_NOTICE_VENDOR_DEPS += $(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET)
+
+.PHONY: bootimage_test_harness-nodeps
+bootimage_test_harness-nodeps: $(MKBOOTIMG) $(AVBTOOL)
+	echo "make $@: ignoring dependencies"
+	$(foreach b,$(INSTALLED_TEST_HARNESS_BOOTIMAGE_TARGET),$(call build-boot-test-harness-target,$b))
+
+endif # BUILDING_DEBUG_BOOT_IMAGE
+
+# -----------------------------------------------------------------
+# vendor test harness ramdisk, which is a vendor ramdisk combined with
+# a test harness ramdisk.
+ifdef BUILDING_DEBUG_VENDOR_BOOT_IMAGE
+
+INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET := $(call intermediates-dir-for,PACKAGING,vendor_boot-test-harness)/vendor_ramdisk-test-harness.cpio$(RAMDISK_EXT)
+
+# The order is important here. The test harness ramdisk staging directory has to
+# come last so that it can override the adb_debug.prop in the debug ramdisk
+# staging directory.
+INTERNAL_TEST_HARNESS_VENDOR_RAMDISK_SRC_DIRS := $(INTERNAL_DEBUG_VENDOR_RAMDISK_SRC_DIRS) $(TARGET_TEST_HARNESS_RAMDISK_OUT)
+INTERNAL_TEST_HARNESS_VENDOR_RAMDISK_SRC_DEPS := $(INSTALLED_FILES_FILE_VENDOR_DEBUG_RAMDISK) $(INTERNAL_TEST_HARNESS_RAMDISK_FILES)
+
+$(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET): $(INTERNAL_TEST_HARNESS_VENDOR_RAMDISK_SRC_DEPS)
+$(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET): $(MKBOOTFS) | $(COMPRESSION_COMMAND_DEPS)
+	$(hide) rm -f $@
+	$(hide) mkdir -p $(dir $@)
+	$(MKBOOTFS) -d $(TARGET_OUT) $(INTERNAL_TEST_HARNESS_VENDOR_RAMDISK_SRC_DIRS) | $(COMPRESSION_COMMAND) > $@
+
+INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET := $(PRODUCT_OUT)/vendor_ramdisk-test-harness.img
+$(INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET): $(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET)
+	@echo "Target test harness vendor ramdisk: $@"
+	$(copy-file-to-target)
+
+$(call declare-1p-container,$(INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET),)
+$(call declare-container-license-deps,$(INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET),$(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET),$(PRODUCT_OUT)/:/)
+
+VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_TEST_HARNESS_RAMDISK_TARGET)
+
+# -----------------------------------------------------------------
+# vendor_boot-test-harness.img.
+INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET := $(PRODUCT_OUT)/vendor_boot-test-harness.img
+
+ifneq ($(BOARD_AVB_VENDOR_BOOT_KEY_PATH),)
+$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOT_TEST_KEY_PATH)
+endif
+
+# Depends on vendor_boot.img and vendor_ramdisk-test-harness.cpio$(RAMDISK_EXT) to build the new vendor_boot-test-harness.img
+$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET): $(MKBOOTIMG) $(INSTALLED_VENDOR_BOOTIMAGE_TARGET)
+$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET)
+$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS)
+	$(call pretty,"Target vendor_boot test harness image: $@")
+	$(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_ARGS) --vendor_boot $@
+	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
+	$(if $(BOARD_AVB_VENDOR_BOOT_KEY_PATH),$(call test-key-sign-vendor-bootimage,$@))
+
+$(call declare-1p-container,$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET),)
+$(call declare-container-license-deps,$(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET),$(INTERNAL_VENDOR_TEST_HARNESS_RAMDISK_TARGET),$(PRODUCT_OUT)/:/)
+
+VENDOR_NOTICE_DEPS += $(INSTALLED_VENDOR_TEST_HARNESS_BOOTIMAGE_TARGET)
+
+endif # BUILDING_DEBUG_VENDOR_BOOT_IMAGE
 
 # -----------------------------------------------------------------
 # product partition image
@@ -6362,6 +6840,11 @@ ifdef BUILDING_VENDOR_BOOT_IMAGE
   ifeq (true,$(BOARD_MOVE_RECOVERY_RESOURCES_TO_VENDOR_BOOT))
     $(BUILT_TARGET_FILES_DIR): $(INTERNAL_RECOVERY_RAMDISK_FILES_TIMESTAMP)
   endif
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+ifneq (,$(filter true,$(BOARD_COPY_VENDOR_BOOT_IMAGE_TO_TARGET_FILES)))
+  $(BUILT_TARGET_FILES_DIR): $(INSTALLED_VENDOR_BOOTIMAGE_TARGET)
+endif
+endif
 endif
 
 ifdef BUILDING_VENDOR_KERNEL_BOOT_IMAGE
@@ -6804,6 +7287,16 @@ ifdef BOARD_PREBUILT_SYSTEM_EXTIMAGE
 	$(hide) mkdir -p $(zip_root)/IMAGES
 	$(hide) cp $(INSTALLED_SYSTEM_EXTIMAGE_TARGET) $(zip_root)/IMAGES/
 endif
+ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
+ifndef BOARD_PREBUILT_VENDORBOOTIMAGE
+ifneq (,$(filter true,$(BOARD_COPY_VENDOR_BOOT_IMAGE_TO_TARGET_FILES)))
+ifdef INSTALLED_VENDOR_BOOTIMAGE_TARGET
+	$(hide) mkdir -p $(zip_root)/IMAGES
+	$(hide) cp $(INSTALLED_VENDOR_BOOTIMAGE_TARGET) $(zip_root)/IMAGES/
+endif #INSTALLED_VENDOR_BOOTIMAGE_TARGET
+endif #BOARD_COPY_VENDOR_BOOT_IMAGE_TO_TARGET_FILES == true
+endif #BOARD_PREBUILT_VENDORBOOTIMAGE not defined
+endif #BOARD_SUPPORTS_RAMDISK_EARLY_INIT==true
 ifdef BOARD_PREBUILT_INIT_BOOT_IMAGE
 	$(hide) mkdir -p $(zip_root)/PREBUILT_IMAGES
 	$(hide) cp $(INSTALLED_INIT_BOOT_IMAGE_TARGET) $(zip_root)/PREBUILT_IMAGES/
