@@ -504,6 +504,8 @@ _product_single_value_vars += PRODUCT_ANDROIDMK_ALLOWLIST_FILE
 # Setting PRODUCT_SOONG_ONLY will cause the build to default to --soong-only mode, and the main
 # kati invocation will not be run.
 _product_single_value_vars += PRODUCT_SOONG_ONLY
+# Setting PRODUCT_SOONG_INCREMENTAL_ANALYSIS will enable incremental analysis by default
+_product_single_value_vars +=  PRODUCT_SOONG_INCREMENTAL_ANALYSIS
 
 # To provide a symlink target for $(TARGET_ROOT_OUT)/bugreports instead of using the default location defined in system/core/rootdir/create_root_structure.mk
 _product_single_value_vars += PRODUCT_BUGREPORTS_SYMLINK_TARGET
