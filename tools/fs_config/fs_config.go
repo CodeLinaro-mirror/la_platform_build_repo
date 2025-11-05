@@ -49,6 +49,7 @@ func (t *targetFSConfigGen) GenerateAndroidBuildActions(ctx android.ModuleContex
 		t.paths = android.Paths{path}
 
 		rule := android.NewRuleBuilder(pctx, ctx)
+		rule.SandboxDisabled()
 		rule.Command().Text("rm -rf").Output(path)
 		rule.Command().Text("touch").Output(path)
 		rule.Build("fs_config_empty", "create empty file")

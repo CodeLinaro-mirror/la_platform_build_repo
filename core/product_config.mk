@@ -747,4 +747,12 @@ ifdef PRODUCT_SOONG_ONLY
   endif
 endif
 
+ifdef PRODUCT_SOONG_INCREMENTAL_ANALYSIS
+  ifneq ($(PRODUCT_SOONG_INCREMENTAL_ANALYSIS),true)
+    ifneq ($(PRODUCT_SOONG_INCREMENTAL_ANALYSIS),false)
+      $(error PRODUCT_SOONG_INCREMENTAL_ANALYSIS can only be true, false or unset)
+    endif
+  endif
+endif
+
 $(call readonly-product-vars)
