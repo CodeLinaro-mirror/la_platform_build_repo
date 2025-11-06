@@ -331,7 +331,7 @@ function clean_deleted_workspaces_in_cartfs() {
           if [[ ! -d "${full_path}" ]]; then
             local log_timestamp=$(date +"%Y-%m-%d %H:%M:%S")
             echo "${log_timestamp}: The workspace ${workspace_name} does not exist, deleting ${folder} from cartfs" >> "${log_file}"
-            rm -Rf "${folder}"
+            rm -Rf "${folder}" &
           fi
         fi
       done <<< "$folders_list"

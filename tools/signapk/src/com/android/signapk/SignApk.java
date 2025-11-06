@@ -1063,6 +1063,7 @@ class SignApk {
                            "[-loadPrivateKeysFromKeyStore <keyStoreName>]" +
                            "[-keyStorePin <pin>]" +
                            "[--min-sdk-version <n>] " +
+                           "[--disable-v1] " +
                            "[--disable-v2] " +
                            "[--enable-v4] " +
                            "publickey.x509[.pem] privatekey.pk8 " +
@@ -1090,6 +1091,7 @@ class SignApk {
         int alignment = 4;
         boolean alignFileSize = false;
         Integer minSdkVersionOverride = null;
+        boolean signUsingApkSignatureSchemeV1 = true;
         boolean signUsingApkSignatureSchemeV2 = true;
         boolean signUsingApkSignatureSchemeV4 = false;
         SigningCertificateLineage certLineage = null;
@@ -1138,6 +1140,9 @@ class SignApk {
                     throw new IllegalArgumentException(
                             "--min-sdk-version must be a decimal number: " + minSdkVersionString);
                 }
+                ++argstart;
+            } else if ("--disable-v1".equals(args[argstart])) {
+                signUsingApkSignatureSchemeV1 = false;
                 ++argstart;
             } else if ("--disable-v2".equals(args[argstart])) {
                 signUsingApkSignatureSchemeV2 = false;
@@ -1256,7 +1261,7 @@ class SignApk {
 
                 DefaultApkSignerEngine.Builder builder = new DefaultApkSignerEngine.Builder(
                     createSignerConfigs(privateKey, publicKey), minSdkVersion)
-                    .setV1SigningEnabled(true)
+                    .setV1SigningEnabled(signUsingApkSignatureSchemeV1)
                     .setV2SigningEnabled(signUsingApkSignatureSchemeV2)
                     .setOtherSignersSignaturesPreserved(false)
                     .setCreatedBy("1.0 (Android SignApk)");

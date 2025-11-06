@@ -26,6 +26,7 @@ PRODUCT_PACKAGES += \
     product_manifest.xml \
     selinux_policy_product \
     product-build.prop \
+    com.android.hardware.biometrics.fingerprint.virtual \
 
 # Packages included only for eng or userdebug builds, previously debug tagged
 PRODUCT_PACKAGES_DEBUG += \

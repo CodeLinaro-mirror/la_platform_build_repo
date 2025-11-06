@@ -55,11 +55,12 @@ pub(crate) fn get_flag_offset_in_storage_file(
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, ValueEnum)]
 pub enum CodegenMode {
     Exported,
     ForceReadOnly,
     Production,
+    #[default]
     Test,
 }
 

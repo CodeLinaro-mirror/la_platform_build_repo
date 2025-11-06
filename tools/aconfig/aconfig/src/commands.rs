@@ -370,6 +370,7 @@ pub fn create_java_lib(
         finalized_flags,
         support_uau_annotation: !cfg!(enable_jarjar_flags_in_framwork),
         optimize_read_only_getter,
+        generate_checks_sdk_annotation: cfg!(feature = "generate_checks_sdk_annotation"),
     };
     generate_java_code(&package, modified_parsed_flags.into_iter(), config)
 }
