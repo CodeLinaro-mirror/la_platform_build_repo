@@ -25,7 +25,6 @@ PRODUCT_PACKAGES += \
     Browser2 \
     Calendar \
     Camera2 \
-    Contacts \
     DeskClock \
     Gallery2 \
     LatinIME \
@@ -34,6 +33,11 @@ PRODUCT_PACKAGES += \
     QuickSearchBox \
     SettingsIntelligence \
     frameworks-base-overlays
+
+ifneq ($(TARGET_NO_TELEPHONY), true)
+PRODUCT_PACKAGES += \
+  Contacts
+endif #TARGET_NO_TELEPHONY
 
 PRODUCT_PACKAGES_DEBUG += \
     frameworks-base-overlays-debug
