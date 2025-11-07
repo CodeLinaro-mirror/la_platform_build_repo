@@ -46,7 +46,11 @@ rust_defaults {
     features: select(release_flag("RELEASE_ACONFIG_DEFAULT_EXPORTED_READS_TO_DISABLED"), {
         true: ["default_exported_reads_to_disabled"],
         default: [],
-    }),
+    }) +
+        select(release_flag("RELEASE_ACONFIG_GENERATE_CHECKS_SDK_ANNOTATION"), {
+            true: ["generate_checks_sdk_annotation"],
+            default: [],
+        }),
 }
 
 rust_binary_host {

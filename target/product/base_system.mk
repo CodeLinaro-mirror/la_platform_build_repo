@@ -229,6 +229,8 @@ PRODUCT_PACKAGES += \
     mediaserverwrapper \
     mke2fs \
     mkfs.erofs \
+    mm_daemon \
+    mm_daemon_setup \
     monkey \
     misctrl \
     mtectrl \
@@ -402,24 +404,14 @@ ifeq ($(RELEASE_NPUMANAGER_MODULE),true)
        com.android.npumanager
 endif
 
+ifeq ($(RELEASE_WEBAPP_MODULE),true)
+    PRODUCT_PACKAGES += \
+       com.android.webapp
+endif
+
 ifneq (,$(RELEASE_RANGING_STACK))
     PRODUCT_PACKAGES += \
         com.android.ranging
-endif
-
-ifeq ($(RELEASE_MEMORY_MANAGEMENT_DAEMON),true)
-  PRODUCT_PACKAGES += \
-        mm_daemon \
-        mm_daemon_setup
-else
-  PRODUCT_PACKAGES += \
-        init-mmd-prop.rc
-endif
-
-
-ifeq ($(RELEASE_PROCESS_MEMORY_GUARDIAN_DAEMON),true)
-  PRODUCT_PACKAGES += \
-        pmg_daemon
 endif
 
 # VINTF data for system image

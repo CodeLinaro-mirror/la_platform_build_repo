@@ -436,6 +436,7 @@ android_filesystem_defaults {
         "product_manifest.xml",
         "selinux_policy_product",
         "product-build.prop",
+        "com.android.hardware.biometrics.fingerprint.virtual",
 
         // AUDIO
         "frameworks_sounds",
@@ -564,6 +565,7 @@ system_image_defaults {
         "cppreopts.sh", // generic_system
         "credstore",
         "debuggerd",
+        "default-permissions-virtualization.xml",
         "device_config",
         "dirty-image-objects",
         "dmctl",
@@ -634,6 +636,8 @@ system_image_defaults {
         "misctrl", // from base_system
         "mke2fs", // base_system
         "mkfs.erofs", // base_system
+        "mm_daemon", // base_system
+        "mm_daemon_setup", // base_system
         "monkey", // base_system
         "mtectrl", // base_system
         "ndc", // base_system
@@ -716,19 +720,6 @@ system_image_defaults {
         default: [
             "android.software.preview_sdk.prebuilt.xml", // media_system
         ],
-    }) + select(release_flag("RELEASE_MEMORY_MANAGEMENT_DAEMON"), {
-        true: [
-            "mm_daemon", // base_system (RELEASE_MEMORY_MANAGEMENT_DAEMON)
-            "mm_daemon_setup", // base_system (RELEASE_MEMORY_MANAGEMENT_DAEMON)
-        ],
-        default: [
-            "init-mmd-prop.rc", // base_system
-        ],
-    }) + select(release_flag("RELEASE_PROCESS_MEMORY_GUARDIAN_DAEMON"), {
-        true: [
-            "pmg_daemon", // base_system (RELEASE_PROCESS_MEMORY_GUARDIAN_DAEMON)
-        ],
-        default: [],
     }) + select(product_variable("debuggable"), {
         true: [
             "alloctop",
@@ -965,6 +956,11 @@ system_image_defaults {
             }) + select(release_flag("RELEASE_NPUMANAGER_MODULE"), {
                 true: [
                     "com.android.npumanager", // base_system (RELEASE_NPUMANAGER_MODULE)
+                ],
+                default: [],
+            }) + select(release_flag("RELEASE_WEBAPP_MODULE"), {
+                true: [
+                    "com.android.webapp", // base_system (RELEASE_WEBAPP_MODULE)
                 ],
                 default: [],
             }),

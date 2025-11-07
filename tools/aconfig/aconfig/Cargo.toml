@@ -7,6 +7,7 @@ edition = "2021"
 default = ["cargo"]
 cargo = []
 default_exported_reads_to_disabled = []
+generate_checks_sdk_annotation = []
 
 [dependencies]
 anyhow = "1.0.69"

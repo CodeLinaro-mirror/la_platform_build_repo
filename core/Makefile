@@ -7907,6 +7907,7 @@ include $(BUILD_SYSTEM)/layoutlib_data.mk
 # -----------------------------------------------------------------
 # Desktop pack common variables.
 PACK_IMAGE_SCRIPT := $(HOST_OUT_EXECUTABLES)/pack_image
+PACK_IMAGE_ARGS :=
 PACK_IMAGE_DEPS := $(PACK_IMAGE_SCRIPT) \
 	$(SGDISK) \
 	$(INSTALLED_BOOTIMAGE_TARGET) \
@@ -7921,12 +7922,23 @@ ifneq (,$(strip $(PACK_DESKTOP_ESP_IMAGE)))
   PACK_IMAGE_DEPS += $(INSTALLED_ESPIMAGE_TARGET)
 endif # PACK_DESKTOP_ESP_IMAGE
 
+ifneq ($(filter dtb, $(AB_OTA_PARTITIONS)),)
+  PACK_IMAGE_DEPS += $(PRODUCT_OUT)/dtb.img
+  PACK_IMAGE_ARGS += --dtb-image $(PRODUCT_OUT)/dtb.img
+endif
+
+ifneq ($(filter dtbo, $(AB_OTA_PARTITIONS)),)
+  PACK_IMAGE_DEPS += $(INSTALLED_DTBOIMAGE_TARGET)
+  PACK_IMAGE_ARGS += --dtbo-image $(INSTALLED_DTBOIMAGE_TARGET)
+endif
+
 # -----------------------------------------------------------------
 # Desktop generated firmware filesystem.
 # This artifact is used in two places:
 # 1. Packed into the recovery image.
 # 2. Added into DIST_DIR so that lab provisioning can download the firmware.
-GENERATED_FW_IMAGE := $(call module-built-files,desktop-firmware-squashfs)
+DESKTOP_FIRMWARE_MODULE ?= desktop-firmware-squashfs
+GENERATED_FW_IMAGE := $(call module-built-files,$(DESKTOP_FIRMWARE_MODULE))
 
 # The lab provisioning script expects the format BOARD-firmware.img.
 ifneq (,$(GENERATED_FW_IMAGE))
@@ -7943,7 +7955,7 @@ ifneq (,$(strip $(PACK_DESKTOP_FILESYSTEM_IMAGES)))
 PACK_IMAGE_TARGET := $(PRODUCT_OUT)/android-desktop_image.bin
 
 $(PACK_IMAGE_TARGET): $(PACK_IMAGE_DEPS)
-	$(PACK_IMAGE_SCRIPT) --out_dir $(PRODUCT_OUT) --noarchive
+	$(PACK_IMAGE_SCRIPT) --out_dir $(PRODUCT_OUT) --noarchive $(PACK_IMAGE_ARGS)
 
 PACKED_IMAGE_ARCHIVE_TARGET := $(PACK_IMAGE_TARGET).gz
 
@@ -7974,7 +7986,7 @@ PACK_RECOVERY_IMAGE_ARGS += --experimental
 endif # PACK_RECOVERY_IMAGE_EXPERIMENTAL
 
 $(PACK_RECOVERY_IMAGE_TARGET): $(PACK_IMAGE_DEPS) $(PRODUCT_OUT)/recovery-kernel $(GENERATED_FW_IMAGE) $(GENERATED_PARTITION_IMAGE)
-	$(PACK_IMAGE_SCRIPT) --out_dir $(PRODUCT_OUT) $(PACK_RECOVERY_IMAGE_ARGS)
+	$(PACK_IMAGE_SCRIPT) --out_dir $(PRODUCT_OUT) $(PACK_RECOVERY_IMAGE_ARGS) $(PACK_IMAGE_ARGS)
 
 PACKED_RECOVERY_IMAGE_ARCHIVE_TARGET := $(PACK_RECOVERY_IMAGE_TARGET).zst
 
@@ -8031,7 +8043,7 @@ PACK_UPDATE_IMAGE_ARGS += --experimental
 endif # PACK_UPDATE_IMAGE_EXPERIMENTAL
 
 $(PACK_UPDATE_IMAGE_TARGET): $(PACK_IMAGE_DEPS) $(PRODUCT_OUT)/update-kernel $(GENERATED_FW_IMAGE) $(GENERATED_PARTITION_IMAGE)
-	$(PACK_IMAGE_SCRIPT) --out_dir $(PRODUCT_OUT) $(PACK_UPDATE_IMAGE_ARGS)
+	$(PACK_IMAGE_SCRIPT) --out_dir $(PRODUCT_OUT) $(PACK_UPDATE_IMAGE_ARGS) $(PACK_IMAGE_ARGS)
 
 PACKED_UPDATE_IMAGE_ARCHIVE_TARGET := $(PACK_UPDATE_IMAGE_TARGET).zst
 
@@ -8053,7 +8065,7 @@ ifeq ($(ANDROID_DESKTOP_MIGRATION_IMAGE),true)
 PACK_MIGRATION_IMAGE_TARGET := $(PRODUCT_OUT)/android-desktop_migration_image.bin
 
 $(PACK_MIGRATION_IMAGE_TARGET): $(PACK_IMAGE_DEPS) $(PACK_MIGRATION_IMAGE_SCRIPT)
-	$(PACK_MIGRATION_IMAGE_SCRIPT) --out_dir $(PRODUCT_OUT) --noarchive
+	$(PACK_MIGRATION_IMAGE_SCRIPT) --out_dir $(PRODUCT_OUT) --noarchive $(PACK_IMAGE_ARGS)
 
 PACKED_MIGRATION_IMAGE_ARCHIVE_TARGET := $(PACK_MIGRATION_IMAGE_TARGET).zst
 
