@@ -164,6 +164,41 @@ ifneq (,$(_final_product_config_pass))
     endif
 endif
 
+ifeq (,$(_use_protobuf))
+# Choose flag files
+# Don't sort this, use it in the order they gave us.
+# Do allow duplicate entries, retaining only the first usage.
+flag_value_files :=
+
+# Apply overrides recursively
+#
+# $1 release config that we override
+applied_releases :=
+define _apply-release-config-overrides
+$(foreach r,$(1), \
+  $(if $(filter $(r),$(applied_releases)),, \
+    $(foreach o,$(_all_release_configs.$(r).OVERRIDES),$(call _apply-release-config-overrides,$(o)))\
+    $(eval applied_releases += $(r))\
+    $(foreach f,$(_all_release_configs.$(r).FILES), \
+      $(if $(filter $(f),$(flag_value_files)),,$(eval flag_value_files += $(f)))\
+    )\
+  )\
+)
+endef
+$(call _apply-release-config-overrides,$(TARGET_RELEASE))
+# Unset variables so they can't use them
+define declare-release-config
+$(error declare-release-config can only be called from inside release_config_map.mk files)
+endef
+define _apply-release-config-overrides
+$(error invalid use of apply-release-config-overrides)
+endef
+
+# use makefiles
+endif
+
+TARGET_RELEASE_PLATFORM:= $(TARGET_RELEASE)
+
 # TODO: Remove this check after enough people have sourced lunch that we don't
 # need to worry about it trying to do get_build_vars TARGET_RELEASE. Maybe after ~9/2023
 ifneq ($(CALLED_FROM_SETUP),true)
