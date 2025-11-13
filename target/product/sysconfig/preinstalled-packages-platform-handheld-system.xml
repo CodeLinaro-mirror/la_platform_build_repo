@@ -61,4 +61,11 @@
         <install-in user-type="android.os.usertype.profile.MANAGED" />
         <install-in user-type="android.os.usertype.profile.PRIVATE" />
     </install-in-user-type>
+
+    <!-- ExternalStorageProvider implements DocumentsProvider for external storage. -->
+    <install-in-user-type package="com.android.externalstorage">
+        <install-in user-type="FULL" />
+        <install-in user-type="android.os.usertype.profile.MANAGED" />
+        <install-in user-type="android.os.usertype.profile.PRIVATE" />
+    </install-in-user-type>
 </config>
