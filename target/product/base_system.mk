@@ -76,6 +76,7 @@ PRODUCT_PACKAGES += \
     com.android.sdkext \
     com.android.tethering \
     $(RELEASE_PACKAGE_TZDATA_MODULE) \
+    com.android.uprobestats \
     com.android.uwb \
     com.android.virt \
     com.android.wifi \
@@ -341,19 +342,6 @@ endif
 ifneq ($(RELEASE_CONSCRYPT_NSC),true)
   PRODUCT_PACKAGES += \
         framework-network-security-config \
-
-endif
-
-
-# When we release uprobestats module
-ifeq ($(RELEASE_UPROBESTATS_MODULE),true)
-    PRODUCT_PACKAGES += \
-        com.android.uprobestats \
-
-else
-    PRODUCT_PACKAGES += \
-        uprobestats \
-        libuprobestats_client \
 
 endif
 
