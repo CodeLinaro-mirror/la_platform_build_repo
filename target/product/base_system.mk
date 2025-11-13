@@ -47,6 +47,7 @@ PRODUCT_PACKAGES += \
     bugreport \
     bugreportz \
     build_flag_system \
+    casefolding_remover \
     cgroups.json \
     charger \
     cmd \
@@ -413,6 +414,11 @@ endif
 ifneq (,$(RELEASE_RANGING_STACK))
     PRODUCT_PACKAGES += \
         com.android.ranging
+endif
+
+ifeq ($(RELEASE_PROCESS_MEMORY_GUARDIAN_DAEMON),true)
+  PRODUCT_PACKAGES += \
+        pmg_daemon
 endif
 
 # VINTF data for system image

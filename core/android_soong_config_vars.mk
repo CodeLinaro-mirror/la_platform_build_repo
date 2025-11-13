@@ -250,8 +250,10 @@ else
 
 endif
 
-# Add uprobestats build flag to soong
+# Add uprobestats build flags to soong
 $(call soong_config_set,ANDROID,release_uprobestats_module,$(RELEASE_UPROBESTATS_MODULE))
+$(call soong_config_set,ANDROID,release_uprobestats_bridge_service,$(RELEASE_UPROBESTATS_BRIDGE_SERVICE))
+$(call soong_config_set,bootclasspath,release_uprobestats_bridge_service,$(RELEASE_UPROBESTATS_BRIDGE_SERVICE))
 # Add uprobestats file move flags to soong, for both platform and module
 ifeq (true,$(RELEASE_UPROBESTATS_FILE_MOVE))
   $(call soong_config_set,ANDROID,uprobestats_files_in_module,true)
