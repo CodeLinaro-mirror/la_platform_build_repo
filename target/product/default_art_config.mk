@@ -178,6 +178,12 @@ ifeq ($(RELEASE_NPUMANAGER_MODULE),true)
 
 endif
 
+ifeq ($(RELEASE_UPROBESTATS_BRIDGE_SERVICE),true)
+    PRODUCT_APEX_BOOT_JARS += \
+        com.android.uprobestats:framework-uprobestats \
+
+endif
+
 # List of system_server classpath jars delivered via apex.
 # Keep the list sorted by module names and then library names.
 # Note: For modules available in Q, DO NOT add new entries here.

@@ -47,6 +47,7 @@ PRODUCT_PACKAGES += \
     bugreport \
     bugreportz \
     build_flag_system \
+    casefolding_remover \
     cgroups.json \
     charger \
     cmd \
@@ -75,6 +76,7 @@ PRODUCT_PACKAGES += \
     com.android.sdkext \
     com.android.tethering \
     $(RELEASE_PACKAGE_TZDATA_MODULE) \
+    com.android.uprobestats \
     com.android.uwb \
     com.android.virt \
     com.android.wifi \
@@ -83,6 +85,7 @@ PRODUCT_PACKAGES += \
     CtsShimPrebuilt \
     CtsShimPrivPrebuilt \
     debuggerd\
+    default-permissions-virtualization.xml \
     device_config \
     dmctl \
     dnsmasq \
@@ -342,19 +345,6 @@ ifneq ($(RELEASE_CONSCRYPT_NSC),true)
 
 endif
 
-
-# When we release uprobestats module
-ifeq ($(RELEASE_UPROBESTATS_MODULE),true)
-    PRODUCT_PACKAGES += \
-        com.android.uprobestats \
-
-else
-    PRODUCT_PACKAGES += \
-        uprobestats \
-        libuprobestats_client \
-
-endif
-
 # These packages are not used on Android TV
 ifneq ($(PRODUCT_IS_ATV),true)
   PRODUCT_PACKAGES += \
@@ -412,6 +402,11 @@ endif
 ifneq (,$(RELEASE_RANGING_STACK))
     PRODUCT_PACKAGES += \
         com.android.ranging
+endif
+
+ifeq ($(RELEASE_PROCESS_MEMORY_GUARDIAN_DAEMON),true)
+  PRODUCT_PACKAGES += \
+        pmg_daemon
 endif
 
 # VINTF data for system image

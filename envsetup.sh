@@ -393,8 +393,7 @@ function addcompletions()
         # TODO(b/244559459): Support b autocompletion for zsh
         complete -F _bazel__complete -o nospace b
     fi
-    complete -F _lunch lunch
-    complete -F _lunch_completion lunch2
+    complete -F _lunch_completion lunch
 
     complete -F _complete_android_module_names pathmod
     complete -F _complete_android_module_names gomod
@@ -494,23 +493,6 @@ function _lunch_meat()
     if [[ -n "${CHECK_MU_CONFIG:-}" ]]; then
       check_mu_config
     fi
-}
-
-unset COMMON_LUNCH_CHOICES_CACHE
-# Tab completion for lunch.
-function _lunch()
-{
-    local cur prev opts
-    COMPREPLY=()
-    cur="${COMP_WORDS[COMP_CWORD]}"
-    prev="${COMP_WORDS[COMP_CWORD-1]}"
-
-    if [ -z "$COMMON_LUNCH_CHOICES_CACHE" ]; then
-        COMMON_LUNCH_CHOICES_CACHE=$(TARGET_BUILD_APPS= _get_build_var_cached COMMON_LUNCH_CHOICES)
-    fi
-
-    COMPREPLY=( $(compgen -W "${COMMON_LUNCH_CHOICES_CACHE}" -- ${cur}) )
-    return 0
 }
 
 function _lunch_usage()
