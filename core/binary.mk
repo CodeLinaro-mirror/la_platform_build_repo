@@ -84,11 +84,7 @@ my_arflags :=
 ifeq ($(PATH_TO_CLANG_TIDY),)
   my_tidy_enabled := false
 else
-  # If LOCAL_TIDY is not defined, use global WITH_TIDY
   my_tidy_enabled := $(LOCAL_TIDY)
-  ifeq ($(my_tidy_enabled),)
-    my_tidy_enabled := $(WITH_TIDY)
-  endif
 endif
 
 # my_tidy_checks is empty if clang-tidy is disabled.

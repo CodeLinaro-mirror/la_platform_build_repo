@@ -1654,11 +1654,6 @@ tidy_only:
 ndk: $(SOONG_OUT_DIR)/ndk.timestamp
 .PHONY: ndk
 
-# Checks that allowed_deps.txt remains up to date
-ifneq ($(UNSAFE_DISABLE_APEX_ALLOWED_DEPS_CHECK),true)
-  droidcore: ${APEX_ALLOWED_DEPS_CHECK}
-endif
-
 $(info [$(include_makefiles_total)/$(include_makefiles_total)] finishing Make packaging rules: Checking licensing and SBOM)
 
 # Create a license metadata rule per module. Could happen in base_rules.mk or

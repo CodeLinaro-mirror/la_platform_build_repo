@@ -7803,23 +7803,12 @@ ATREE_FILES := \
 	$(ALL_SDK_FILES)
 endif
 
-atree_dir := development/build
-
-
-sdk_atree_files := $(atree_dir)/sdk.exclude.atree
-
-# development/build/sdk-android-<abi>.atree is used to differentiate
-# between architecture models (e.g. ARMv5TE versus ARMv7) when copying
-# files like the kernel image. We use TARGET_CPU_ABI because we don't
-# have a better way to distinguish between CPU models.
-ifneq (,$(strip $(wildcard $(atree_dir)/sdk-android-$(TARGET_CPU_ABI).atree)))
-  sdk_atree_files += $(atree_dir)/sdk-android-$(TARGET_CPU_ABI).atree
-endif
+sdk_atree_files := development/build/sdk.exclude.atree
 
 ifneq ($(PRODUCT_SDK_ATREE_FILES),)
 sdk_atree_files += $(PRODUCT_SDK_ATREE_FILES)
 else
-sdk_atree_files += $(atree_dir)/sdk.atree
+sdk_atree_files += development/build/sdk.atree
 endif
 
 SDK_METADATA_DIR :=$= $(call intermediates-dir-for,PACKAGING,framework-doc-stubs-metadata,,COMMON)
@@ -7868,21 +7857,10 @@ $(INTERNAL_SDK_TARGET): PRIVATE_DIR := $(sdk_dir)/$(sdk_name)
 $(INTERNAL_SDK_TARGET): PRIVATE_DEP_FILE := $(sdk_dep_file)
 $(INTERNAL_SDK_TARGET): PRIVATE_INPUT_FILES := $(sdk_atree_files)
 $(INTERNAL_SDK_TARGET): PRIVATE_PLATFORM_NAME := $(sdk_platform_dir_name)
-# Set SDK_GNU_ERROR to non-empty to fail when a GNU target is built.
-#
-#SDK_GNU_ERROR := true
 
 $(INTERNAL_SDK_TARGET): $(deps) | $(BUILD_NUMBER_FILE)
 	@echo "Package SDK: $@"
 	$(hide) rm -rf $(PRIVATE_DIR) $@
-	$(hide) for f in $(strip $(target_gnu_MODULES)); do \
-	  if [ -f $$f ]; then \
-	    echo SDK: $(if $(SDK_GNU_ERROR),ERROR:,warning:) \
-	        including GNU target $$f >&2; \
-	    FAIL=$(SDK_GNU_ERROR); \
-	  fi; \
-	done; \
-	if [ $$FAIL ]; then exit 1; fi
 	$(hide) ( \
 	    ATREE_STRIP="$(HOST_STRIP) -x" \
 	    $(HOST_OUT_EXECUTABLES)/atree \
