@@ -496,3 +496,12 @@ $(call soong_config_set_bool,tradefed,use_prebuilt,false)
 endif
 
 $(call soong_config_set,berberis,target_native_bridge_abi,$(TARGET_NATIVE_BRIDGE_ABI))
+
+# Flags for SDK packages
+$(call soong_config_set,sdk,PLATFORM_VERSION,$(PLATFORM_VERSION))
+$(call soong_config_set,sdk,PLATFORM_SDK_VERSION,$(subst ",,$(PLATFORM_SDK_VERSION_FULL)))
+$(call soong_config_set,sdk,PLATFORM_SDK_EXTENSION_VERSION,$(PLATFORM_SDK_EXTENSION_VERSION))
+$(call soong_config_set,sdk,PLATFORM_IS_BASE_SDK,$(if $(filter $(PLATFORM_SDK_EXTENSION_VERSION),$(PLATFORM_BASE_SDK_EXTENSION_VERSION)),true,false))
+$(call soong_config_set,sdk,PLATFORM_VERSION_CODENAME,$(subst REL,,$(PLATFORM_VERSION_CODENAME)))
+$(call soong_config_set,sdk,PLATFORM_PREVIEW_SDK_VERSION,$(PLATFORM_PREVIEW_SDK_VERSION))
+$(call soong_config_set,sdk,BETA_SDK_VERSION,$(shell if [[ "$(PLATFORM_PREVIEW_SDK_VERSION)" =~ ^[0-9]{4}$$ ]]; then echo "$(PLATFORM_PREVIEW_SDK_VERSION)" | cut -c4 ; fi))
