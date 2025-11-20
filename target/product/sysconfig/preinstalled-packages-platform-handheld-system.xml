@@ -28,8 +28,17 @@
     <!--  Printer (BuiltInPrintService) (Does not show on launcher but shows on the share sheet) -->
     <install-in-user-type package="com.android.bips">
         <install-in user-type="FULL" />
-        <install-in user-type="PROFILE" />
-        <do-not-install-in user-type="android.os.usertype.profile.CLONE" />
+        <install-in user-type="android.os.usertype.profile.CLONE" />
+        <install-in user-type="android.os.usertype.profile.MANAGED" />
+        <install-in user-type="android.os.usertype.profile.PRIVATE" />
+    </install-in-user-type>
+
+    <!--  Print Spooler (PrintSpooler), part of the print framework -->
+    <install-in-user-type package="com.android.printspooler">
+        <install-in user-type="FULL" />
+        <install-in user-type="android.os.usertype.profile.CLONE" />
+        <install-in user-type="android.os.usertype.profile.MANAGED" />
+        <install-in user-type="android.os.usertype.profile.PRIVATE" />
     </install-in-user-type>
 
     <!--  Blocked Number Provider (BlockedNumberProvider) -->
@@ -62,6 +71,14 @@
         <install-in user-type="android.os.usertype.profile.PRIVATE" />
     </install-in-user-type>
 
+    <!-- Bluetooth MIDI Service (BluetoothMidiService) -->
+   <install-in-user-type package="com.android.bluetoothmidiservice">
+        <install-in user-type="FULL" />
+        <install-in user-type="android.os.usertype.profile.CLONE" />
+        <install-in user-type="android.os.usertype.profile.MANAGED" />
+        <install-in user-type="android.os.usertype.profile.PRIVATE" />
+    </install-in-user-type>
+
     <!-- ExternalStorageProvider implements DocumentsProvider for external storage. -->
     <install-in-user-type package="com.android.externalstorage">
         <install-in user-type="FULL" />
@@ -73,5 +90,21 @@
     <install-in-user-type package="com.android.phone">
         <install-in user-type="FULL" />
         <install-in user-type="android.os.usertype.profile.MANAGED" />
+        <install-in user-type="android.os.usertype.profile.SUPERVISING" />
+    </install-in-user-type>
+
+    <!-- Shared storage backup agent used by adb backup (SharedStorageBackup) -->
+    <install-in-user-type package="com.android.sharedstoragebackup">
+        <install-in user-type="FULL" />
+        <install-in user-type="android.os.usertype.profile.MANAGED" />
+    </install-in-user-type>
+
+    <!-- Fused location service (FusedLocation) -->
+    <install-in-user-type package="com.android.location.fused">
+        <install-in user-type="SYSTEM" />
+        <install-in user-type="FULL" />
+        <install-in user-type="android.os.usertype.profile.MANAGED" />
+        <install-in user-type="android.os.usertype.profile.PRIVATE" />
+        <install-in user-type="android.os.usertype.profile.CLONE" />
     </install-in-user-type>
 </config>
