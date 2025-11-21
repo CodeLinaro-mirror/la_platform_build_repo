@@ -308,6 +308,8 @@ endef
 # use makefiles
 endif
 
+TARGET_RELEASE_PLATFORM:= $(TARGET_RELEASE)
+
 # TODO: Remove this check after enough people have sourced lunch that we don't
 # need to worry about it trying to do get_build_vars TARGET_RELEASE. Maybe after ~9/2023
 ifneq ($(CALLED_FROM_SETUP),true)

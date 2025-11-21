@@ -220,6 +220,7 @@ $(call add_json_str,  BoardSepolicyVers,                 $(BOARD_SEPOLICY_VERS))
 $(call add_json_str,  SystemExtSepolicyPrebuiltApiDir,   $(BOARD_SYSTEM_EXT_PREBUILT_DIR))
 $(call add_json_str,  ProductSepolicyPrebuiltApiDir,     $(BOARD_PRODUCT_PREBUILT_DIR))
 $(call add_json_str,  BoardPlatform,                     $(TARGET_BOARD_PLATFORM))
+$(call add_json_str,  ReleasePlatform,                   $(TARGET_RELEASE_PLATFORM))
 
 $(call add_json_str,  PlatformSepolicyVersion,           $(PLATFORM_SEPOLICY_VERSION))
 $(call add_json_list, PlatformSepolicyCompatVersions,    $(PLATFORM_SEPOLICY_COMPAT_VERSIONS))
