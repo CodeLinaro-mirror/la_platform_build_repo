@@ -53,6 +53,7 @@ android.car.feature.supports_secure_passenger_users
 android.car.feature.switch_user_ignoring_uxr
 android.car.feature.variable_update_rate
 android.car.feature.visible_background_user_restrictions
+android.companion.expand_app_streaming_role_permissions
 android.companion.new_association_builder
 android.companion.ongoing_perm_sync
 android.companion.virtualdevice.flags.camera_multiple_input_streams

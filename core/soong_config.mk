@@ -678,6 +678,7 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
     $(call add_json_str, max_brightness_file, $(TARGET_RECOVERY_UI_MAX_BRIGHTNESS_FILE))
     $(call add_json_str, brightness_normal_percent, $(TARGET_RECOVERY_UI_BRIGHTNESS_NORMAL))
     $(call add_json_str, brightness_dimmed_percent, $(TARGET_RECOVERY_UI_BRIGHTNESS_DIMMED))
+    $(call add_json_int, graphics_timeout_ms, $(TARGET_RECOVERY_UI_GRAPHICS_TIMEOUT_MS))
   $(call end_json_map)
 
   $(call add_json_str, PrebuiltBootloader, $(BOARD_PREBUILT_BOOTLOADER))
