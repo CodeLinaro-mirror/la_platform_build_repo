@@ -33,7 +33,8 @@ PRODUCT_PACKAGES += \
     ONS \
     com.android.cellbroadcast \
     CellBroadcastLegacyApp \
-
+    
+endif #TARGET_HAS_QTI_OPTIMIZATIONS
 endif
 endif #TARGET_NO_TELEPHONY
 

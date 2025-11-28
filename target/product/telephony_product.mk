@@ -26,5 +26,4 @@ PRODUCT_PACKAGES += \
 endif
 PRODUCT_PACKAGES += \
     preinstalled-packages-platform-telephony-product.xml
-endif #TARGET_HAS_QTI_OPTIMIZATIONS
 endif #TARGET_NO_TELEPHONY
