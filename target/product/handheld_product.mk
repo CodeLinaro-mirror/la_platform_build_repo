@@ -24,9 +24,9 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/media_product.mk)
 PRODUCT_PACKAGES += \
     OneTimeInitializer \
     preinstalled-packages-platform-handheld-product.xml \
-    SettingsIntelligence
+    SettingsIntelligence \
 
-ifneq ($(TARGET_HAS_QTI_OPTIMIZATIONS), true)
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
 PRODUCT_PACKAGES += \
     Browser2 \
     Calendar \
@@ -37,8 +37,9 @@ PRODUCT_PACKAGES += \
     LatinIME \
     QuickSearchBox \
     Music \
-    frameworks-base-overlays
-endif #TARGET_HAS_QTI_OPTIMIZATIONS
+    frameworks-base-overlays \
+
+endif
 
 PRODUCT_PACKAGES_DEBUG += \
     frameworks-base-overlays-debug

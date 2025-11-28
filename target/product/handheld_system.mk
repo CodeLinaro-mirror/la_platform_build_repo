@@ -51,6 +51,8 @@ PRODUCT_PACKAGES += \
     ManagedProvisioning \
     MtpService \
     PacProcessor \
+    preinstalled-packages-platform-handheld-system.xml \
+    PrintSpooler \
     screenrecord \
     SharedStorageBackup \
     Telecom \
@@ -60,13 +62,27 @@ PRODUCT_PACKAGES += \
     VpnDialogs \
 
 ifneq ($(TARGET_NO_TELEPHONY), true)
-ifneq ($(TARGET_HAS_QTI_OPTIMIZATIONS), true)
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
 PRODUCT_PACKAGES += \
   MmsService
-endif #TARGET_HAS_QTI_OPTIMIZATIONS
+endif
 PRODUCT_PACKAGES += \
   TeleService
 endif #TARGET_NO_TELEPHONY
+
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
+PRODUCT_PACKAGES += \
+    BuiltInPrintService \
+    CalendarProvider \
+    DocumentsUI \
+    EasterEgg \
+    MusicFX \
+    PrintRecommendationService \
+    ProxyHandler \
+    SimAppDialog \
+    vr \
+
+endif
 
 ifneq ($(TARGET_HAS_LOW_RAM), true)
 PRODUCT_PACKAGES += \

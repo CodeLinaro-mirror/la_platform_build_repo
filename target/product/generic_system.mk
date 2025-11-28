@@ -88,6 +88,14 @@ PRODUCT_PACKAGES += \
     libnl \
     libprotobuf-cpp-full \
 
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
+PRODUCT_PACKAGES += \
+    LiveWallpapersPicker \
+    Tag \
+    android.hardware.biometrics.fingerprint@2.1 \
+
+endif
+
 # These libraries are empty and have been combined into libhidlbase, but are still depended
 # on by things off /system.
 # TODO(b/135686713): remove these

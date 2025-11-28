@@ -289,13 +289,13 @@ PRODUCT_PACKAGES += \
     wifi.rc \
     wm \
 
-ifneq ($(TARGET_HAS_QTI_OPTIMIZATIONS), true)
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
 PRODUCT_PACKAGES += \
     com.android.neuralnetworks \
     CtsShimPrebuilt \
     CtsShimPrivPrebuilt \
-    incidentd
-endif #TARGET_HAS_QTI_OPTIMIZATIONS
+
+endif
 
 ifneq ($(TARGET_HAS_LOW_RAM), true)
 PRODUCT_PACKAGES += \

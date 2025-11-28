@@ -119,12 +119,13 @@ PRODUCT_SYSTEM_PROPERTIES += \
     dalvik.vm.image-dex2oat-Xmx=64m \
     dalvik.vm.dex2oat-Xms=64m \
 
-ifneq ($(TARGET_HAS_QTI_OPTIMIZATIONS), true)
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
 PRODUCT_SYSTEM_PROPERTIES += \
-    dalvik.vm.dex2oat-Xmx=512m
+    dalvik.vm.dex2oat-Xmx=512m \
+
 else
 PRODUCT_SYSTEM_PROPERTIES += \
-    dalvik.vm.dex2oat-Xmx=256m
-endif #TARGET_HAS_QTI_OPTIMIZATIONS
+    dalvik.vm.dex2oat-Xmx=256m \
 
+endif
 PRODUCT_ENABLE_UFFD_GC := false  # TODO(jiakaiz): Change this to "default".
