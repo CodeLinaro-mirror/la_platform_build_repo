@@ -1891,6 +1891,7 @@ def _SignBootableImage(image_path, prebuilt_name, partition_name,
            "--partition_size", str(part_size), "--partition_name",
            partition_name]
     # Use sha256 of the kernel as salt for reproducible builds
+    salt = None
     with tempfile.TemporaryDirectory() as tmpdir:
       RunAndCheckOutput(["unpack_bootimg", "--boot_img", image_path, "--out", tmpdir])
       for filename in ["kernel", "ramdisk", "vendor_ramdisk00"]:

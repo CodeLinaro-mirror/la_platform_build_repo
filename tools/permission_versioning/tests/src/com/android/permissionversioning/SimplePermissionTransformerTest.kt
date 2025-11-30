@@ -76,14 +76,14 @@ class SimplePermissionTransformerTest {
     }
 
     @Test
-    fun testTransformPermissions_withPermissionRequiringSpecificPurposeWithDeprecatedPurpose() {
+    fun testTransformPermissions_withPermissionRequiringPurposeWithDeprecatedPurpose() {
         val inputXml =
             "<manifest xmlns:android='http://schemas.android.com/apk/res/android'>" +
                 "  <permission android:name='android.permission.TEST'" +
                 "              android:protectionLevel='normal'" +
-                "              android:requiresSpecificPurposeTargetSdkVersion='37'>" +
-                "    <valid-specific-purpose android:name='purpose1' />" +
-                "    <valid-specific-purpose android:name='purpose2' android:maxTargetSdkVersion='38' />" +
+                "              android:requiresPurposeTargetSdkVersion='37'>" +
+                "    <valid-purpose android:name='purpose1' />" +
+                "    <valid-purpose android:name='purpose2' android:maxTargetSdkVersion='38' />" +
                 "  </permission>" +
                 "</manifest>"
         val inputDoc = createDocument(inputXml)
@@ -92,9 +92,9 @@ class SimplePermissionTransformerTest {
         /*  Expected Artifact XML Representation:
             <permissions>
                 <permission name="android.permission.TEST"
-                            requiresSpecificPurposeMinTargetSdkVersion="37">
-                    <valid-specific-purpose name="purpose1" minSdkVersion="37" />
-                    <valid-specific-purpose name="purpose2" minSdkVersion="37" maxSdkVersion="38" />
+                            requiresPurposeMinTargetSdkVersion="37">
+                    <valid-purpose name="purpose1" minSdkVersion="37" />
+                    <valid-purpose name="purpose2" minSdkVersion="37" maxSdkVersion="38" />
                 </permission>
             </permissions>
         */
@@ -106,10 +106,10 @@ class SimplePermissionTransformerTest {
         val permissionElement = permissionNodes.item(0) as Element
         assertThat(permissionElement.attributes.length).isEqualTo(2)
         assertThat(permissionElement.getAttribute("name")).isEqualTo("android.permission.TEST")
-        assertThat(permissionElement.getAttribute("requiresSpecificPurposeMinTargetSdkVersion"))
+        assertThat(permissionElement.getAttribute("requiresPurposeMinTargetSdkVersion"))
             .isEqualTo("37")
         assertThat(permissionElement.childNodes.length).isEqualTo(2)
-        val purposeNodes = permissionElement.getElementsByTagName("valid-specific-purpose")
+        val purposeNodes = permissionElement.getElementsByTagName("valid-purpose")
         assertThat(purposeNodes.length).isEqualTo(2)
         val purpose1 = purposeNodes.item(0) as Element
         assertThat(purpose1.attributes.length).isEqualTo(2)
@@ -123,7 +123,7 @@ class SimplePermissionTransformerTest {
     }
 
     @Test
-    fun testTransformPermissions_withPermissionRequiringSpecificPurposeAndPurposeStringMigrationFlagDisabled() {
+    fun testTransformPermissions_withPermissionRequiringPurposeAndPurposeStringMigrationFlagDisabled() {
         val inputXml =
             "<manifest xmlns:android='http://schemas.android.com/apk/res/android'>" +
                 "  <permission android:name='android.permission.TEST'" +
@@ -132,9 +132,9 @@ class SimplePermissionTransformerTest {
                 "  <permission android:name='android.permission.TEST'" +
                 "              android:protectionLevel='normal'" +
                 "              android:requiresPurposeStringTargetSdkVersion='38'" +
-                "              android:requiresSpecificPurposeTargetSdkVersion='37'" +
+                "              android:requiresPurposeTargetSdkVersion='37'" +
                 "              android:featureFlag='test.package.flag'>" +
-                "    <valid-specific-purpose android:name='purpose1' />" +
+                "    <valid-purpose android:name='purpose1' />" +
                 "  </permission>" +
                 "</manifest>"
         val inputDoc = createDocument(inputXml)
@@ -153,7 +153,7 @@ class SimplePermissionTransformerTest {
     }
 
     @Test
-    fun testTransformPermissions_withPermissionRequiringSpecificPurposeAndPurposeStringMigrationFlagEnabled() {
+    fun testTransformPermissions_withPermissionRequiringPurposeAndPurposeStringMigrationFlagEnabled() {
         val inputXml =
             "<manifest xmlns:android='http://schemas.android.com/apk/res/android'>" +
                 "  <permission android:name='android.permission.TEST'" +
@@ -162,9 +162,9 @@ class SimplePermissionTransformerTest {
                 "  <permission android:name='android.permission.TEST'" +
                 "              android:protectionLevel='normal'" +
                 "              android:requiresPurposeStringTargetSdkVersion='38'" +
-                "              android:requiresSpecificPurposeTargetSdkVersion='37'" +
+                "              android:requiresPurposeTargetSdkVersion='37'" +
                 "              android:featureFlag='test.package.flag'>" +
-                "    <valid-specific-purpose android:name='purpose1' />" +
+                "    <valid-purpose android:name='purpose1' />" +
                 "  </permission>" +
                 "</manifest>"
         val inputDoc = createDocument(inputXml)
@@ -178,8 +178,8 @@ class SimplePermissionTransformerTest {
             <permissions>
                 <permission name="android.permission.TEST"
                             requiresPurposeStringMinTargetSdkVersion="38"
-                            requiresSpecificPurposeMinTargetSdkVersion="37">
-                    <valid-specific-purpose name="purpose1" minSdkVersion="37" />
+                            requiresPurposeMinTargetSdkVersion="37">
+                    <valid-purpose name="purpose1" minSdkVersion="37" />
                 </permission>
             </permissions>
         */
@@ -193,10 +193,10 @@ class SimplePermissionTransformerTest {
         assertThat(permissionElement.getAttribute("name")).isEqualTo("android.permission.TEST")
         assertThat(permissionElement.getAttribute("requiresPurposeStringMinTargetSdkVersion"))
             .isEqualTo("38")
-        assertThat(permissionElement.getAttribute("requiresSpecificPurposeMinTargetSdkVersion"))
+        assertThat(permissionElement.getAttribute("requiresPurposeMinTargetSdkVersion"))
             .isEqualTo("37")
         assertThat(permissionElement.childNodes.length).isEqualTo(1)
-        val purposeNodes = permissionElement.getElementsByTagName("valid-specific-purpose")
+        val purposeNodes = permissionElement.getElementsByTagName("valid-purpose")
         assertThat(purposeNodes.length).isEqualTo(1)
         val purpose1 = purposeNodes.item(0) as Element
         assertThat(purpose1.attributes.length).isEqualTo(2)
