@@ -96,6 +96,7 @@ android.media.tv.flags.tif_extension_standardization
 android.media.tv.flags.tif_unbind_inactive_tis
 android.multiuser.enable_biometrics_to_unlock_private_space
 android.net.platform.flags.autonomous_repairing_initiation
+android.net.platform.flags.bluetooth_pairing_hardening
 // TODO(b/411372618): remove after sdk version ramp up for 25Q4
 android.net.platform.flags.connectivity_service_destroy_socket
 // TODO(b/445555009): remove after sdk version ramp up for 26Q2
