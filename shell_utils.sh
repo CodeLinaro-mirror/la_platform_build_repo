@@ -146,10 +146,7 @@ function setup_cog_symlink() {
   if [[ -n "$cartfs_mount_point" ]]; then
     local cog_workspace_name="$(basename "$(dirname "${top}")")"
     link_destination="${cartfs_mount_point}/${cog_workspace_name}/out"
-    # TODO(b/454043953): Re-enable CartFS incremental builds if:
-    # 1. A bug causing filesystem commands to hang is found and fixed.
-    # 2. Disabling this feature doesn't improve the "hang" situation.
-    # setup_cartfs_incremental_build "${link_destination}" "${cartfs_mount_point}"
+    setup_cartfs_incremental_build "${link_destination}" "${cartfs_mount_point}"
   else
     # If CartFS is not mounted, check to see if it is installed (no mount but
     # being installed implies it was disabled). If it is installed, then don't
@@ -382,9 +379,9 @@ function setup_cartfs_incremental_build() {
   local repo="$(basename "${top}")"
   local current_cartfs_folder="$(dirname "${link_destination}")"
   local target_workspace="$(basename "${current_cartfs_folder}")"
-  local source_workspace
-  local copy_from
-  local folders
+  local source_workspace=""
+  local copy_from=""
+  local folders=""
 
   folders=$(stat -c "%Y %n" ${cartfs_mount_point}/*/out 2>/dev/null | sort -nr | sed 's/^[0-9]\+ //')
   if [[ -n "${folders}" ]]; then
@@ -414,17 +411,23 @@ function setup_cartfs_incremental_build() {
     echo "Copying content from $copy_from to $link_destination"
     # Filtering output to only include relevant information.
     local output_filter="connecting to|Rpc succeeded with OK status|Not yet implemented|success|Received trailing metadata from server"
-    grpc_cli call ${cartfs_endpoint} ${cartfs_rpc_copy_directory} \
-    'from_path: "'${copy_from#$cartfs_mount_point/}'"
-     to_path: "'${link_destination#$cartfs_mount_point/}'"' \
-      --channel_creds_type=insecure 2>&1 | grep -v -E "${output_filter}"
-    grpc_cli call ${cogfsd_endpoint} ${cogfsd_rpc_forkmtimes} \
+    if ! grpc_cli call ${cogfsd_endpoint} ${cogfsd_rpc_forkmtimes} \
     'source_workspace: "'${source_workspace}'"
      target_workspace: "'${target_workspace}'"' \
-      --channel_creds_type=insecure 2>&1 | grep -v -E "${output_filter}"
+      --channel_creds_type=insecure 2>&1 | grep -v -E "${output_filter}"; then
+      return 1
+    fi
+    if ! grpc_cli call ${cartfs_endpoint} ${cartfs_rpc_copy_directory} \
+    'from_path: "'${copy_from#$cartfs_mount_point/}'"
+     to_path: "'${link_destination#$cartfs_mount_point/}'"' \
+      --channel_creds_type=insecure 2>&1 | grep -v -E "${output_filter}"; then
+      return 1
+    fi
     # Adding a file to track that the workspace is an incremental
     # build from Cartfs. This will be used for metrics.
     echo "${source_workspace}" > "${link_destination}/.cartfs-copied"
+    # Don't carry over the leftovers file from previous workspace.
+    rm -f "${link_destination}/.leftovers"
   else
     echo "No suitable build outputs matching the same repository found."
     echo "Starting from a fresh build output directory."

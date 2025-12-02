@@ -607,6 +607,11 @@ else
         SecureElement
 endif
 
+ifneq (,$(RELEASE_AISEAL_FRAMEWORK))
+    PRODUCT_PACKAGES += \
+        aisealhostservice
+endif
+
 $(call inherit-product, $(SRC_TARGET_DIR)/product/runtime_libart.mk)
 
 # Ensure all trunk-stable flags are available.

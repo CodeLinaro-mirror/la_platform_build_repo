@@ -66,7 +66,7 @@ pub fn create_flag_value(
     }
 
     // initialize all header fields
-    list.header.boolean_value_offset = list.header.into_bytes().len() as u32;
+    list.header.boolean_value_offset = list.header.to_bytes().len() as u32;
     list.header.file_size = list.header.boolean_value_offset + num_boolean_flags;
 
     Ok(list)
