@@ -89,6 +89,7 @@
 
     <!-- ExternalStorageProvider implements DocumentsProvider for external storage. -->
     <install-in-user-type package="com.android.externalstorage">
+        <install-in user-type="SYSTEM" />
         <install-in user-type="FULL" />
         <install-in user-type="android.os.usertype.profile.MANAGED" />
         <install-in user-type="android.os.usertype.profile.PRIVATE" />
@@ -96,9 +97,12 @@
 
     <!-- Telephony -->
     <install-in-user-type package="com.android.phone">
+        <install-in user-type="SYSTEM" />
         <install-in user-type="FULL" />
         <install-in user-type="android.os.usertype.profile.MANAGED" />
         <install-in user-type="android.os.usertype.profile.SUPERVISING" />
+        <install-in user-type="android.os.usertype.profile.PRIVATE" />
+        <install-in user-type="android.os.usertype.profile.CLONE" />
     </install-in-user-type>
 
     <!-- Shared storage backup agent used by adb backup (SharedStorageBackup) -->
@@ -115,4 +119,15 @@
         <install-in user-type="android.os.usertype.profile.PRIVATE" />
         <install-in user-type="android.os.usertype.profile.CLONE" />
     </install-in-user-type>
+
+    <!-- Local HTTP proxy server (ProxyHandler) -->
+    <install-in-user-type package="com.android.proxyhandler">
+        <install-in user-type="SYSTEM" />
+    </install-in-user-type>
+
+    <!-- PAC Processor (PacProcessor) -->
+    <install-in-user-type package="com.android.pacprocessor">
+        <install-in user-type="SYSTEM" />
+    </install-in-user-type>
+
 </config>

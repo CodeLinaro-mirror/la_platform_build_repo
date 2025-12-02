@@ -105,6 +105,9 @@ android_filesystem_defaults {
         // Allowlist for handheld packages
         "preinstalled-packages-handheld-system-ext.xml",
 
+        // Allowlist for media system packages
+        "preinstalled-packages-media-system.xml",
+
         // telephony packages
         "CarrierConfig",
 

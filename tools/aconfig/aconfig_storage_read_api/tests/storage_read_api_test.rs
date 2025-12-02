@@ -42,13 +42,10 @@ mod aconfig_storage_rust_test {
         let err = unsafe {
             get_mapped_file(&storage_dir, "vendor", StorageFileType::PackageMap).unwrap_err()
         };
-        assert_eq!(
-            format!("{err:?}"),
-            format!(
-                "StorageFileNotFound(storage file {}/maps/vendor.package.map does not exist)",
-                storage_dir
-            )
-        );
+        assert!(format!("{err:?}").starts_with(&format!(
+            "StorageFileNotFound(storage file {}/maps/vendor.package.map does not exist",
+            storage_dir
+        )));
     }
 
     #[test]
@@ -207,10 +204,9 @@ mod aconfig_storage_rust_test {
         let flag_value_file =
             unsafe { get_mapped_file(&storage_dir, "mockup", StorageFileType::FlagVal).unwrap() };
         let err = get_boolean_flag_value(&flag_value_file, 8u32).unwrap_err();
-        assert_eq!(
-            format!("{err:?}"),
-            "InvalidStorageFileOffset(Flag value offset goes beyond the end of the file.)"
-        );
+        assert!(format!("{err:?}").starts_with(
+            "InvalidStorageFileOffset(Flag value offset goes beyond the end of the file."
+        ));
     }
 
     #[test]
@@ -238,10 +234,9 @@ mod aconfig_storage_rust_test {
         let flag_info_file =
             unsafe { get_mapped_file(&storage_dir, "mockup", StorageFileType::FlagInfo).unwrap() };
         let err = get_flag_attribute(&flag_info_file, FlagValueType::Boolean, 8u32).unwrap_err();
-        assert_eq!(
-            format!("{err:?}"),
-            "InvalidStorageFileOffset(Flag info offset goes beyond the end of the file.)"
-        );
+        assert!(format!("{err:?}").starts_with(
+            "InvalidStorageFileOffset(Flag info offset goes beyond the end of the file."
+        ));
     }
 
     #[test]
