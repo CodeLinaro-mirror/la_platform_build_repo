@@ -26,5 +26,17 @@
         <do-not-install-in user-type="android.os.usertype.profile.CLONE" />
         <do-not-install-in user-type="android.os.usertype.profile.PRIVATE" />
     </install-in-user-type>
+
+    <!--  GooglePackageInstaller default package installer that allows users to
+      install and uninstall apps -->
+    <install-in-user-type package="com.google.android.packageinstaller">
+        <!-- Needed for desktop mode -->
+        <install-in user-type="SYSTEM" />
+        <install-in user-type="FULL" />
+        <!-- Need to install for all profiles so users can install/uninstall apps there -->
+        <install-in user-type="android.os.usertype.profile.MANAGED" />
+        <install-in user-type="android.os.usertype.profile.PRIVATE" />
+        <install-in user-type="android.os.usertype.profile.CLONE" />
+    </install-in-user-type>
 </config>
 

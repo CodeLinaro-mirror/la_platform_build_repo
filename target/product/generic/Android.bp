@@ -659,6 +659,7 @@ system_image_defaults {
         "pm", // base_system
         "prefetch", //base_system
         "preinstalled-packages-asl-files.xml", // base_system
+        "preinstalled-packages-media-system.xml", // media_system
         "preinstalled-packages-platform-generic-system.xml", // generic_system
         "preinstalled-packages-platform-handheld-system.xml", // handheld_system
         "preinstalled-packages-platform.xml", // base_system
@@ -783,6 +784,11 @@ system_image_defaults {
     }) + select(release_flag("RELEASE_NATIVE_FRAMEWORK_PROTOTYPE"), {
         true: [
             "zygote_next", // base_system (RELEASE_NATIVE_FRAMEWORK_PROTOTYPE)
+        ],
+        default: [],
+    }) + select(release_flag("RELEASE_AISEAL_FRAMEWORK"), {
+        true: [
+            "aisealhostservice", // base_system (RELEASE_AISEAL_FRAMEWORK)
         ],
         default: [],
     }),

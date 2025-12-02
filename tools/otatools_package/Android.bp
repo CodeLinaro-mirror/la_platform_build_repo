@@ -76,6 +76,7 @@ cc_genrule {
         ":libext2fs",
         ":libext4_utils",
         ":libfec",
+        ":libfec_rs",
         ":libhidl-gen-utils",
         ":libhidlmetadata",
         ":libicui18n",

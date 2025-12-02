@@ -128,7 +128,7 @@ mod tests {
     use std::io::Read;
 
     fn get_boolean_flag_value_at_offset(file: &str, offset: u32) -> bool {
-        let mut f = File::open(&file).unwrap();
+        let mut f = File::open(file).unwrap();
         let mut bytes = Vec::new();
         f.read_to_end(&mut bytes).unwrap();
         find_boolean_flag_value(&bytes, offset).unwrap()
@@ -147,17 +147,17 @@ mod tests {
             for i in 0..8 {
                 set_boolean_flag_value(&mut file, i, true).unwrap();
                 let value = get_boolean_flag_value_at_offset(&flag_value_path, i);
-                assert_eq!(value, true);
+                assert!(value);
 
                 set_boolean_flag_value(&mut file, i, false).unwrap();
                 let value = get_boolean_flag_value_at_offset(&flag_value_path, i);
-                assert_eq!(value, false);
+                assert!(!value);
             }
         }
     }
 
     fn get_flag_attribute_at_offset(file: &str, value_type: FlagValueType, offset: u32) -> u8 {
-        let mut f = File::open(&file).unwrap();
+        let mut f = File::open(file).unwrap();
         let mut bytes = Vec::new();
         f.read_to_end(&mut bytes).unwrap();
         find_flag_attribute(&bytes, value_type, offset).unwrap()

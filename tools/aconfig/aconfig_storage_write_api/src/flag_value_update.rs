@@ -107,7 +107,6 @@ mod tests {
     #[test]
     fn test_int_flag_value_update_not_supported() {
         let flag_value_list = create_test_flag_value_list(4);
-        let value_offset = flag_value_list.header.int_value_offset;
         let mut content = flag_value_list.into_bytes();
 
         let error = update_int64_flag_value(

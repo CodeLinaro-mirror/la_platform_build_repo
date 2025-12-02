@@ -65,17 +65,17 @@ impl fmt::Debug for FlagValueHeader {
 
 impl FlagValueHeader {
     /// Serialize to bytes
-    pub fn into_bytes(&self) -> Vec<u8> {
+    pub fn to_bytes(&self) -> Vec<u8> {
         match self.version {
-            1..=3 => self.into_bytes_v1(),
-            4 if cfg!(enable_parse_v4) => self.into_bytes_v4(),
+            1..=3 => self.to_bytes_v1(),
+            4 if cfg!(enable_parse_v4) => self.to_bytes_v4(),
             // TODO(b/444251791): into_bytes should return a Result and panic
             // if version is not supported.
-            _ => self.into_bytes_v1(),
+            _ => self.to_bytes_v1(),
         }
     }
 
-    fn into_bytes_v1(&self) -> Vec<u8> {
+    fn to_bytes_v1(&self) -> Vec<u8> {
         let mut result = Vec::new();
         result.extend_from_slice(&self.version.to_le_bytes());
         let container_bytes = self.container.as_bytes();
@@ -89,7 +89,7 @@ impl FlagValueHeader {
         result
     }
 
-    fn into_bytes_v4(&self) -> Vec<u8> {
+    fn to_bytes_v4(&self) -> Vec<u8> {
         let mut result = Vec::new();
         result.extend_from_slice(&self.version.to_le_bytes());
         let container_bytes = self.container.as_bytes();
@@ -135,7 +135,7 @@ impl FlagValueHeader {
         version_from_bytes: u32,
         head: &mut usize,
     ) -> Result<Self, AconfigStorageError> {
-        return Ok(Self {
+        Ok(Self {
             version: version_from_bytes,
             container: read_str_from_bytes(bytes, head)?,
             file_type: read_u8_from_bytes(bytes, head)?,
@@ -144,7 +144,7 @@ impl FlagValueHeader {
             boolean_value_offset: read_u32_from_bytes(bytes, head)?,
             num_int_flags: 0u32,
             int_value_offset: 0u32,
-        });
+        })
     }
 
     fn from_bytes_v4(
@@ -152,7 +152,7 @@ impl FlagValueHeader {
         version_from_bytes: u32,
         head: &mut usize,
     ) -> Result<Self, AconfigStorageError> {
-        return Ok(Self {
+        Ok(Self {
             version: version_from_bytes,
             container: read_str_from_bytes(bytes, head)?,
             file_type: read_u8_from_bytes(bytes, head)?,
@@ -161,7 +161,7 @@ impl FlagValueHeader {
             boolean_value_offset: read_u32_from_bytes(bytes, head)?,
             num_int_flags: read_u32_from_bytes(bytes, head)?,
             int_value_offset: read_u32_from_bytes(bytes, head)?,
-        });
+        })
     }
 
     // Helper methods for read/write.
@@ -254,24 +254,24 @@ impl FlagValueList {
     /// Serialize to bytes
     pub fn into_bytes(&self) -> Vec<u8> {
         match self.header.version {
-            1..=3 => self.into_bytes_v1(),
-            4 if cfg!(enable_parse_v4) => self.into_bytes_v4(),
+            1..=3 => self.as_bytes_v1(),
+            4 if cfg!(enable_parse_v4) => self.as_bytes_v4(),
             // TODO(b/316357686): into_bytes should return a Result.
-            _ => self.into_bytes_v1(),
+            _ => self.as_bytes_v1(),
         }
     }
 
-    fn into_bytes_v1(&self) -> Vec<u8> {
+    fn as_bytes_v1(&self) -> Vec<u8> {
         [
-            self.header.into_bytes(),
+            self.header.to_bytes(),
             self.booleans.iter().map(|&v| u8::from(v).to_le_bytes()).collect::<Vec<_>>().concat(),
         ]
         .concat()
     }
 
-    fn into_bytes_v4(&self) -> Vec<u8> {
+    fn as_bytes_v4(&self) -> Vec<u8> {
         [
-            self.header.into_bytes(),
+            self.header.to_bytes(),
             self.booleans.iter().map(|&v| u8::from(v).to_le_bytes()).collect::<Vec<_>>().concat(),
             self.ints.iter().map(|&v| v.to_le_bytes()).collect::<Vec<_>>().concat(),
         ]
@@ -307,7 +307,7 @@ impl FlagValueList {
 
     fn from_bytes_v1(bytes: &[u8], header: FlagValueHeader) -> Result<Self, AconfigStorageError> {
         let num_flags = header.num_boolean_flags;
-        let mut head = header.into_bytes().len();
+        let mut head = header.to_bytes().len();
         let booleans =
             (0..num_flags).map(|_| read_u8_from_bytes(bytes, &mut head).unwrap() == 1).collect();
         let list = Self { header, booleans, ints: vec![] };
@@ -318,7 +318,7 @@ impl FlagValueList {
         let num_boolean_flags = header.num_boolean_flags;
         let num_int_flags = header.num_int_flags;
 
-        let mut head = header.into_bytes().len();
+        let mut head = header.to_bytes().len();
         let booleans = (0..num_boolean_flags)
             .map(|_| read_u8_from_bytes(bytes, &mut head).unwrap() == 1)
             .collect();
@@ -343,7 +343,7 @@ mod tests {
             let flag_value_list = create_test_flag_value_list(file_version);
 
             let header: &FlagValueHeader = &flag_value_list.header;
-            let reinterpreted_header = FlagValueHeader::from_bytes(&header.into_bytes());
+            let reinterpreted_header = FlagValueHeader::from_bytes(&header.to_bytes());
             assert!(reinterpreted_header.is_ok());
             assert_eq!(header, &reinterpreted_header.unwrap());
 
@@ -387,7 +387,7 @@ mod tests {
         // Boolean offset is 27 + 3 * 1 = 30.
         assert_eq!(offset, 30usize);
         // 3rd-index boolean is false.
-        assert_eq!(flag_value_list.booleans[3], false);
+        assert!(!flag_value_list.booleans[3]);
     }
 
     #[test]
