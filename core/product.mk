@@ -419,12 +419,6 @@ _product_single_value_vars += PRODUCT_AVF_REMOTE_ATTESTATION_DISABLED
 # If true, kernel with modules will be used for Microdroid VMs.
 _product_single_value_vars += PRODUCT_AVF_KERNEL_MODULES_ENABLED
 
-# If true, the memory controller will be force-enabled in the cgroup v2 hierarchy
-_product_single_value_vars += PRODUCT_MEMCG_V2_FORCE_ENABLED
-
-# If true, the cgroup v2 hierarchy will be split into apps/system subtrees
-_product_single_value_vars += PRODUCT_CGROUP_V2_SYS_APP_ISOLATION_ENABLED
-
 # If set, check treble labeling
 _product_single_value_vars += PRODUCT_ENFORCE_SELINUX_TREBLE_LABELING
 

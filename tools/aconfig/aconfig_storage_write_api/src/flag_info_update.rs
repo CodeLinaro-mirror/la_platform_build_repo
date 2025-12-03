@@ -39,6 +39,9 @@ fn get_flag_info_offset(
     // get byte offset to the flag info
     let head = match flag_type {
         FlagValueType::Boolean => (interpreted_header.boolean_flag_offset + flag_index) as usize,
+        // TODO(b/439864800): Support Int64 flag type to flag info files behind
+        // the enable_parse_v4 flag.
+        FlagValueType::Int64 => unimplemented!("Int364 not supported for flag info files yet."),
     };
 
     if head >= interpreted_header.file_size as usize {

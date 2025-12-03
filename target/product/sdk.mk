@@ -43,3 +43,4 @@ endif
 
 # Include Wear flag values so that Wear-related APIs are build in sdks.
 PRODUCT_RELEASE_CONFIG_MAPS += $(wildcard vendor/google_shared/wear/release/release_config_map.textproto)
+PRODUCT_SOONG_ONLY := $(RELEASE_SOONG_ONLY_SDK)

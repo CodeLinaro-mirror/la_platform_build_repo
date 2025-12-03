@@ -50,7 +50,7 @@ pub use package_table_query::PackageReadContext;
 use aconfig_storage_file::read_u32_from_bytes;
 use flag_info_query::find_flag_attribute;
 use flag_table_query::find_flag_read_context;
-use flag_value_query::find_boolean_flag_value;
+use flag_value_query::{find_boolean_flag_value, find_int64_flag_value};
 use package_table_query::find_package_read_context;
 
 use anyhow::anyhow;
@@ -123,6 +123,18 @@ pub fn get_flag_read_context(
 /// returns the error message.
 pub fn get_boolean_flag_value(file: &[u8], index: u32) -> Result<bool, AconfigStorageError> {
     find_boolean_flag_value(file, index)
+}
+
+/// Get the integer flag value.
+///
+/// \input file: a byte slice, can be either &Mmap or &MapMut
+/// \input index: int flag offset (from start of int flag section)
+///
+/// \return
+/// If the provided offset is valid, it returns the int flag value, otherwise it
+/// returns the error message.
+pub fn get_int64_flag_value(file: &[u8], index: u32) -> Result<i64, AconfigStorageError> {
+    find_int64_flag_value(file, index)
 }
 
 /// Get storage file version number
@@ -262,7 +274,7 @@ impl ffi::PackageReadContextQueryCXX {
             },
             Err(errmsg) => Self {
                 query_success: false,
-                error_message: format!("{:?}", errmsg),
+                error_message: format!("{errmsg:?}"),
                 package_exists: false,
                 package_id: 0,
                 boolean_start_index: 0,
@@ -294,7 +306,7 @@ impl ffi::FlagReadContextQueryCXX {
             },
             Err(errmsg) => Self {
                 query_success: false,
-                error_message: format!("{:?}", errmsg),
+                error_message: format!("{errmsg:?}"),
                 flag_exists: false,
                 flag_type: 0u16,
                 flag_index: 0u16,
@@ -312,7 +324,7 @@ impl ffi::BooleanFlagValueQueryCXX {
             }
             Err(errmsg) => Self {
                 query_success: false,
-                error_message: format!("{:?}", errmsg),
+                error_message: format!("{errmsg:?}"),
                 flag_value: false,
             },
         }
@@ -328,7 +340,7 @@ impl ffi::FlagAttributeQueryCXX {
             }
             Err(errmsg) => Self {
                 query_success: false,
-                error_message: format!("{:?}", errmsg),
+                error_message: format!("{errmsg:?}"),
                 flag_attribute: 0u8,
             },
         }
@@ -347,7 +359,7 @@ impl ffi::VersionNumberQueryCXX {
             },
             Err(errmsg) => Self {
                 query_success: false,
-                error_message: format!("{:?}", errmsg),
+                error_message: format!("{errmsg:?}"),
                 version_number: 0,
             },
         }

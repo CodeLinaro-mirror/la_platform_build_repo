@@ -129,15 +129,17 @@ impl PackageTableNode {
     /// Serialize to bytes
     pub fn into_bytes(&self, version: u32) -> Vec<u8> {
         match version {
-            1 => Self::into_bytes_v1(self),
-            2 => Self::into_bytes_v2(self),
-            3 => Self::into_bytes_v3(self),
-            // TODO(b/316357686): into_bytes should return a Result.
-            _ => Self::into_bytes_v2(&self),
+            1 => Self::as_bytes_v1(self),
+            2 => Self::as_bytes_v2(self),
+            3 => Self::as_bytes_v3(self),
+            4 if cfg!(enable_parse_v4) => Self::as_bytes_v3(self),
+            // TODO(b/444251791): into_bytes should return a Result and panic
+            // if version is not supported.
+            _ => Self::as_bytes_v2(&self),
         }
     }
 
-    fn into_bytes_v1(&self) -> Vec<u8> {
+    fn as_bytes_v1(&self) -> Vec<u8> {
         let mut result = Vec::new();
         let name_bytes = self.package_name.as_bytes();
         result.extend_from_slice(&(name_bytes.len() as u32).to_le_bytes());
@@ -148,7 +150,7 @@ impl PackageTableNode {
         result
     }
 
-    fn into_bytes_v2(&self) -> Vec<u8> {
+    fn as_bytes_v2(&self) -> Vec<u8> {
         let mut result = Vec::new();
         let name_bytes = self.package_name.as_bytes();
         result.extend_from_slice(&(name_bytes.len() as u32).to_le_bytes());
@@ -160,7 +162,7 @@ impl PackageTableNode {
         result
     }
 
-    fn into_bytes_v3(&self) -> Vec<u8> {
+    fn as_bytes_v3(&self) -> Vec<u8> {
         let mut result = Vec::new();
         let name_bytes = self.package_name.as_bytes();
         result.extend_from_slice(&(name_bytes.len() as u32).to_le_bytes());
@@ -179,12 +181,11 @@ impl PackageTableNode {
             1 => Self::from_bytes_v1(bytes),
             2 => Self::from_bytes_v2(bytes),
             3 => Self::from_bytes_v3(bytes),
-            _ => {
-                return Err(AconfigStorageError::BytesParseFail(anyhow!(
-                    "Binary file is an unsupported version: {}",
-                    version
-                )))
-            }
+            4 if cfg!(enable_parse_v4) => Self::from_bytes_v3(bytes),
+            _ => Err(AconfigStorageError::BytesParseFail(anyhow!(
+                "Binary file is an unsupported version: {}",
+                version
+            ))),
         }
     }
 
@@ -282,7 +283,7 @@ impl fmt::Debug for PackageTable {
         writeln!(f, "{:?}", self.buckets)?;
         writeln!(f, "Nodes:")?;
         for node in self.nodes.iter() {
-            write!(f, "{:?}", node)?;
+            write!(f, "{node:?}")?;
         }
         Ok(())
     }

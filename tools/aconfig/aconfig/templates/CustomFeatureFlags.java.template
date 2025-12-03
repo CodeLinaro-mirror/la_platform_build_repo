@@ -59,7 +59,7 @@ public class CustomFeatureFlags implements FeatureFlags \{
 
     @com.android.aconfig.annotations.AssumeTrueForR8
     private boolean isOptimizationEnabled() \{
-        return false;
+        return {optimize_read_only_getter};
     }
 {{ -endif }}
 

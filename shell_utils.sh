@@ -147,6 +147,16 @@ function setup_cog_symlink() {
     local cog_workspace_name="$(basename "$(dirname "${top}")")"
     link_destination="${cartfs_mount_point}/${cog_workspace_name}/out"
     setup_cartfs_incremental_build "${link_destination}" "${cartfs_mount_point}"
+  else
+    # If CartFS is not mounted, check to see if it is installed (no mount but
+    # being installed implies it was disabled). If it is installed, then don't
+    # display any messages to the user. If it isn't installed, then message the
+    # user to install it, but don't stop the script.
+    if ! command -v cartfs &> /dev/null; then
+      echo "***"
+      echo "🚨 Install CartFS for more reliable builds. See go/cartfs-with-cog for installation instructions! 🚨"
+      echo "***"
+    fi
   fi
 
   # remove existing out/ dir if it exists
@@ -201,13 +211,16 @@ function _wrap_build()
     local secs=$(($tdiff % 60))
     local ncolors=$(tput colors 2>/dev/null)
     if [ -n "$ncolors" ] && [ $ncolors -ge 8 ]; then
-        color_failed=$'\E'"[0;31m"
-        color_success=$'\E'"[0;32m"
-        color_warning=$'\E'"[0;33m"
+        color_failed=$'\E'"[0;31m"  # red
+        color_success=$'\E'"[0;32m"  # green
+        color_warning=$'\E'"[0;33m"  # yellow
+        color_info=$'\E'"[0;36m"  # cyan
         color_reset=$'\E'"[00m"
     else
         color_failed=""
         color_success=""
+        color_warning=""
+        color_info=""
         color_reset=""
     fi
 
@@ -224,7 +237,19 @@ function _wrap_build()
     elif [ $secs -gt 0 ] ; then
         printf "(%d seconds)" $secs
     fi
-    echo " ####${color_reset}"
+    echo " ####"
+    # Because SOONG_PARTIAL_COMPILE and SOONG_USE_PARTIAL_COMPILE are set via
+    # ANDROID_BUILD_ENVIRONMENT, we only have access to values explicitly set by the user.
+    if [[ ${TARGET_BUILD_VARIANT} = eng ]] && [[ $SOONG_USE_PARTIAL_COMPILE == false ]]; then
+      echo "${color_info}Partial compilation was disabled due to SOONG_USE_PARTIAL_COMPILE=false"
+      echo "See http://go/soong-partial-compile"
+    fi
+    if [[ ${SOONG_INCREMENTAL_ANALYSIS#true} = ${SOONG_INCREMENTAL_ANALYSIS} ]]; then
+      echo "${color_info}Try enabling incremental analysis for faster builds after changing Android.bp files."
+      echo "See http://go/soong-incremental-analysis"
+    fi
+    echo -n "${color_reset}"
+
     echo
     return $ret
 }
@@ -320,6 +345,11 @@ function setup_cartfs_incremental_build() {
     return
   fi
 
+  local link_destination=$1
+  if [[ -d "$link_destination" ]]; then
+    return
+  fi
+
   local cartfs_endpoint="127.0.0.1:65001"
   local cartfs_rpc_copy_directory="cartfs.Cartfs.CopyDirectory"
 
@@ -340,7 +370,6 @@ function setup_cartfs_incremental_build() {
 
   echo "Searching for recent build outputs in CartFS for incremental builds"
 
-  local link_destination=$1
   local cartfs_mount_point=$2
   local top=$(gettop)
   local repo="$(basename "${top}")"

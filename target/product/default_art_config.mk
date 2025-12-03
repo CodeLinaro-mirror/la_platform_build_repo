@@ -51,7 +51,6 @@ PRODUCT_BOOT_JARS += \
     framework-minus-apex \
     framework-graphics \
     framework-location \
-    framework-network-security-config \
     ext \
     telephony-common \
     voip-common \
@@ -118,7 +117,11 @@ endif
 # When we release NSC in Conscrypt.
 ifeq ($(RELEASE_CONSCRYPT_NSC),true)
     PRODUCT_APEX_BOOT_JARS += \
-    com.android.conscrypt:framework-conscrypt-nsc \
+        com.android.conscrypt:framework-conscrypt-nsc \
+
+else
+    PRODUCT_BOOT_JARS += \
+        framework-network-security-config \
 
 endif
 
@@ -240,9 +243,9 @@ ifneq (,$(RELEASE_RANGING_STACK))
         com.android.uwb:service-ranging
 endif
 
-ifeq ($(RELEASE_UPROBESTATS_SERVICE),true)
+ifeq ($(RELEASE_UPROBESTATS_BRIDGE_SERVICE),true)
     PRODUCT_APEX_STANDALONE_SYSTEM_SERVER_JARS += \
-        com.android.uprobestats:service-uprobestats
+        com.android.uprobestats:service-uprobestats-bridge
 endif
 
 # Overrides the (apex, jar) pairs above when determining the on-device location. The format is:

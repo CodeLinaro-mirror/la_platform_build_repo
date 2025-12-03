@@ -15,6 +15,9 @@
 #
 
 # Notice: this works only with Google's RBE service.
+
+# Always set RBE_container_image.
+RBE_container_image := docker://gcr.io/androidbuild-re-dockerimage/android-build-remoteexec-image@sha256:1eb7f64b9e17102b970bd7a1af7daaebdb01c3fb777715899ef462d6c6d01a45
 ifneq ($(filter-out false,$(USE_REWRAPPER)),)
   ifdef RBE_DIR
     rbe_dir := $(RBE_DIR)
@@ -64,7 +67,7 @@ ifneq ($(filter-out false,$(USE_REWRAPPER)),)
     d8_exec_strategy := remote_local_fallback
   endif
 
-  platform := container-image=docker://gcr.io/androidbuild-re-dockerimage/android-build-remoteexec-image@sha256:1eb7f64b9e17102b970bd7a1af7daaebdb01c3fb777715899ef462d6c6d01a45
+  platform := container-image=$(RBE_container_image)
   cxx_platform := $(platform),Pool=$(cxx_pool)
   java_r8_d8_platform := $(platform),Pool=$(java_pool)
 
@@ -90,4 +93,3 @@ ifneq ($(filter-out false,$(USE_REWRAPPER)),)
 
   rbe_dir :=
 endif
-

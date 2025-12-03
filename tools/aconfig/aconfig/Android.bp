@@ -24,6 +24,7 @@ rust_defaults {
         "libserde_json",
         "libtinytemplate",
         "libconvert_finalized_flags",
+        "libwalkdir",
     ],
     cfgs: select(release_flag("RELEASE_ACONFIG_FINGERPRINT_RUST"), {
         true: ["enable_fingerprint_rust"],
@@ -35,6 +36,10 @@ rust_defaults {
         }) +
         select(release_flag("RELEASE_JARJAR_FLAGS_IN_FRAMEWORK"), {
             true: ["enable_jarjar_flags_in_framwork"],
+            default: [],
+        }) +
+        select(release_flag("RELEASE_ACONFIG_OPTIMIZE_READ_ONLY_JAVA"), {
+            true: ["optimize_read_only_java"],
             default: [],
         }),
     features: select(release_flag("RELEASE_ACONFIG_DEFAULT_EXPORTED_READS_TO_DISABLED"), {
@@ -64,7 +69,7 @@ rust_test_host {
     ],
     test_suites: ["general-tests"],
     data: [
-        "tests/mainline_beta_namespaces.json",
+        "tests/golden/java/**/*.java.golden",
     ],
 }
 

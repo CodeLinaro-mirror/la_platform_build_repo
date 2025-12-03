@@ -101,7 +101,6 @@ PRODUCT_PACKAGES += \
     framework-location \
     framework-minus-apex \
     framework-minus-apex-install-dependencies \
-    framework-network-security-config \
     framework-sysconfig.xml \
     fsck.erofs \
     fsck_msdos \
@@ -334,6 +333,13 @@ ifneq ($(RELEASE_ONDEVICE_INTELLIGENCE_MODULE),true)
 
 endif
 
+# Non-updatable NSC classes. Replaced by framework-conscrypt-nsc.
+ifneq ($(RELEASE_CONSCRYPT_NSC),true)
+  PRODUCT_PACKAGES += \
+        framework-network-security-config \
+
+endif
+
 
 # When we release uprobestats module
 ifeq ($(RELEASE_UPROBESTATS_MODULE),true)
@@ -398,10 +404,17 @@ endif
 
 ifeq ($(RELEASE_MEMORY_MANAGEMENT_DAEMON),true)
   PRODUCT_PACKAGES += \
-        mm_daemon
+        mm_daemon \
+        mm_daemon_setup
 else
   PRODUCT_PACKAGES += \
         init-mmd-prop.rc
+endif
+
+
+ifeq ($(RELEASE_PROCESS_MEMORY_GUARDIAN_DAEMON),true)
+  PRODUCT_PACKAGES += \
+        pmg_daemon
 endif
 
 # VINTF data for system image
