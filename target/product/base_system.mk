@@ -599,7 +599,15 @@ ifneq (,$(RELEASE_NATIVE_FRAMEWORK_PROTOTYPE))
 endif
 
 # Whether to use Java or new native (Rust) OMAPI implementation
+LOCAL_USE_NATIVE_OMAPI := false
+ifeq ($(DEVICE_USE_NATIVE_OMAPI),true)
+    LOCAL_USE_NATIVE_OMAPI := true
+endif
 ifeq ($(RELEASE_NATIVE_OMAPI),true)
+    LOCAL_USE_NATIVE_OMAPI := true
+endif
+
+ifeq ($(LOCAL_USE_NATIVE_OMAPI),true)
     PRODUCT_PACKAGES += \
         omapi
 else
