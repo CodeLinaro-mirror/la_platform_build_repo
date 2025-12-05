@@ -297,6 +297,19 @@ function import_build_vars()
 }
 
 function cartfs_mount_point() {
+  if cartfs --is_running &>/dev/null; then
+    # TODO(b/465427340): Read the mount point from the output once CartFS
+    # exposes it. CartFS team is aware of this plan and will not change the
+    # mount point until we can programmatically read it.
+    echo "/google/cartfs/mount"
+    return
+  fi
+
+  # Fallback to the old findmnt while we wait for all users to update to the
+  # latest CartFS version.
+  # TODO(b/465427340): Remove this fallback at the same time we start reading
+  # the mount point from CartFS.
+
   # Make sure findmnt is installed.
   if ! command -v findmnt &> /dev/null; then
     return
