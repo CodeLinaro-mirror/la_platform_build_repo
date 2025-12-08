@@ -145,6 +145,7 @@ android.view.accessibility.a11y_is_visited_api
 android.view.accessibility.motion_event_observing
 android.view.contentcapture.flags.flush_after_each_frame
 android.view.flags.expected_presentation_time_api
+android.view.flags.sms_provider_redact_otp_app_compat_api
 android.view.flags.toolkit_frame_rate_touch_boost_25q1
 android.view.inputmethod.concurrent_input_methods
 android.view.inputmethod.ime_switcher_revamp

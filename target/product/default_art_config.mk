@@ -172,6 +172,12 @@ else
 
 endif
 
+ifeq ($(RELEASE_WEBAPP_MODULE),true)
+    PRODUCT_APEX_BOOT_JARS += \
+        com.android.webapp:framework-webapp \
+
+endif
+
 ifeq ($(RELEASE_NPUMANAGER_MODULE),true)
     PRODUCT_APEX_BOOT_JARS += \
         com.android.npumanager:framework-npumanager \

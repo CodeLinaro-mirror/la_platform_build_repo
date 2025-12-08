@@ -851,6 +851,7 @@ system_image_defaults {
                 "Tag", // generic_system
                 "TeleService", // handheld_system
                 "Telecom", // handheld_system
+                "TelecomUi", // handheld_system
                 "TelephonyProvider", // handheld_system
                 "Traceur", // handheld_system
                 "UserDictionaryProvider", // handheld_system
