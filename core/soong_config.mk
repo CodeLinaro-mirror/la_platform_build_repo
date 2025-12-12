@@ -303,6 +303,11 @@ $(call add_json_str,  DeviceCurrentApiLevelForVendorModules,  $(BOARD_CURRENT_AP
 
 $(call add_json_bool, CompressedApex, $(filter true,$(PRODUCT_COMPRESSED_APEX)))
 $(call add_json_str, DefaultApexPayloadType, $(PRODUCT_DEFAULT_APEX_PAYLOAD_TYPE))
+$(call add_json_str, DefaultApexPayloadErofsCompressor, $(PRODUCT_DEFAULT_APEX_PAYLOAD_EROFS_COMPRESSOR))
+$(call add_json_str, DefaultApexPayloadErofsCompressHints, $(PRODUCT_DEFAULT_APEX_PAYLOAD_EROFS_COMPRESS_HINTS))
+ifdef PRODUCT_DEFAULT_APEX_PAYLOAD_EROFS_PCLUSTER_SIZE
+  $(call add_json_val, DefaultApexPayloadErofsPclusterSize, $(PRODUCT_DEFAULT_APEX_PAYLOAD_EROFS_PCLUSTER_SIZE))
+endif
 
 $(call add_json_bool, BoardUsesRecoveryAsBoot, $(filter true,$(BOARD_USES_RECOVERY_AS_BOOT)))
 $(call add_json_bool, BoardUsesRamdiskAsBoot, $(filter true,$(BOARD_USES_RAMDISK_AS_BOOT)))
