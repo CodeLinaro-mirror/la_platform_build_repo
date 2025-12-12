@@ -53,6 +53,105 @@ class EditMonitorTest(unittest.TestCase):
     self.working_dir.cleanup()
     super().tearDown()
 
+  def test_log_single_edit_event_success_for_chrome(self):
+    # Create the .git file under the monitoring dir.
+    self.root_monitoring_path.joinpath('.git').touch()
+    fake_cclient = FakeClearcutClient(
+        log_output_file=self.log_event_dir.joinpath('logs.output')
+    )
+    p = self._start_test_edit_monitor_process(
+        fake_cclient, target_repo='chrome')
+
+    # Create and modify a file.
+    test_file = self.root_monitoring_path.joinpath('test.txt')
+    with open(test_file, 'w') as f:
+      f.write('something')
+    # Move the file.
+    test_file_moved = self.root_monitoring_path.joinpath('new_test.txt')
+    test_file.rename(test_file_moved)
+    # Delete the file.
+    test_file_moved.unlink()
+    # Give some time for the edit monitor to receive the edit event.
+    time.sleep(1)
+    # Stop the edit monitor and flush all events.
+    os.kill(p.pid, signal.SIGINT)
+    p.join()
+
+    logged_events = self._get_logged_events()
+    self.assertEqual(len(logged_events), 4)
+    expected_create_event = edit_event_pb2.EditEvent.SingleEditEvent(
+        file_path=str(
+            self.root_monitoring_path.joinpath('test.txt').resolve()
+        ),
+        edit_type=edit_event_pb2.EditEvent.CREATE,
+    )
+    expected_modify_event = edit_event_pb2.EditEvent.SingleEditEvent(
+        file_path=str(
+            self.root_monitoring_path.joinpath('test.txt').resolve()
+        ),
+        edit_type=edit_event_pb2.EditEvent.MODIFY,
+    )
+    expected_move_event = edit_event_pb2.EditEvent.SingleEditEvent(
+        file_path=str(
+            self.root_monitoring_path.joinpath('test.txt').resolve()
+        ),
+        edit_type=edit_event_pb2.EditEvent.MOVE,
+    )
+    expected_delete_event = edit_event_pb2.EditEvent.SingleEditEvent(
+        file_path=str(
+            self.root_monitoring_path.joinpath('new_test.txt').resolve()
+        ),
+        edit_type=edit_event_pb2.EditEvent.DELETE,
+    )
+    self.assertEqual(
+        expected_create_event,
+        edit_event_pb2.EditEvent.FromString(
+            logged_events[0].source_extension
+        ).single_edit_event,
+    )
+    self.assertEqual(
+        expected_modify_event,
+        edit_event_pb2.EditEvent.FromString(
+            logged_events[1].source_extension
+        ).single_edit_event,
+    )
+    self.assertEqual(
+        expected_move_event,
+        edit_event_pb2.EditEvent.FromString(
+            logged_events[2].source_extension
+        ).single_edit_event,
+    )
+    self.assertEqual(
+        expected_delete_event,
+        edit_event_pb2.EditEvent.FromString(
+            logged_events[3].source_extension
+        ).single_edit_event,
+    )
+
+  def test_do_not_log_edit_event_under_out_dir_for_chrome(self):
+    # Create the .git file under the monitoring dir.
+    self.root_monitoring_path.joinpath('.git').touch()
+    fake_cclient = FakeClearcutClient(
+        log_output_file=self.log_event_dir.joinpath('logs.output')
+    )
+    p = self._start_test_edit_monitor_process(
+        fake_cclient, target_repo='chrome')
+
+    # Create out directory
+    self.root_monitoring_path.joinpath('out').mkdir()
+    # Create a file under out directory
+    test_file = self.root_monitoring_path.joinpath('out', 'test.txt')
+    with open(test_file, 'w') as f:
+      f.write('something')
+    # Give some time for the edit monitor to receive the edit event.
+    time.sleep(1)
+    # Stop the edit monitor and flush all events.
+    os.kill(p.pid, signal.SIGINT)
+    p.join()
+
+    logged_events = self._get_logged_events()
+    self.assertEqual(len(logged_events), 0)
+
   def test_log_single_edit_event_success(self):
     # Create the .git file under the monitoring dir.
     self.root_monitoring_path.joinpath('.git').touch()
@@ -273,7 +372,7 @@ class EditMonitorTest(unittest.TestCase):
     self.assertEqual(len(logged_events), 0)
 
   def _start_test_edit_monitor_process(
-      self, cclient
+      self, cclient, target_repo='android'
   ) -> multiprocessing.Process:
     receiver, sender = multiprocessing.Pipe()
     # Start edit monitor in a subprocess.
@@ -282,6 +381,7 @@ class EditMonitorTest(unittest.TestCase):
         args=(
             str(self.root_monitoring_path.resolve()),
             False,
+            target_repo,
             0.5,
             5,
             cclient,

@@ -186,6 +186,7 @@ class ClearcutEventHandler(PatternMatchingEventHandler):
 def start(
     path: str,
     is_dry_run: bool = False,
+    target_repo: str = 'android',
     flush_interval_sec: int = DEFAULT_FLUSH_INTERVAL_SECONDS,
     single_events_size_threshold: int = DEFAULT_SINGLE_EVENTS_SIZE_THRESHOLD,
     cclient: clearcut_client.Clearcut | None = None,
@@ -209,6 +210,10 @@ def start(
       cclient,
   )
   observer = Observer()
+
+  if target_repo == 'chrome':
+    logging.info("Starting observer on path %s for chrome.", path)
+    observer.schedule(event_handler, path, recursive=False)
 
   out_dir = os.environ.get("OUT_DIR", "out")
   sub_dirs = [
