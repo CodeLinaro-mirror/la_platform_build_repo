@@ -42,6 +42,14 @@ def create_arg_parser():
   )
 
   parser.add_argument(
+      '--target_repo',
+      type=str,
+      choices=['android', 'chrome'],
+      default='android',
+      help='Target repository to monitor.',
+  )
+
+  parser.add_argument(
       '--dry_run',
       action='store_true',
       help='Dry run the edit monitor. This starts the edit monitor process without actually send the edit logs to clearcut.',
@@ -99,7 +107,8 @@ def main(argv: list[str]):
   dm = daemon_manager.DaemonManager(
       binary_path=argv[0],
       daemon_target=edit_monitor.start,
-      daemon_args=(args.path, args.dry_run),
+      daemon_args=(args.path, args.dry_run, args.target_repo),
+      target_repo=args.target_repo,
   )
 
   try:

@@ -15,6 +15,7 @@
 """Unittests for DaemonManager."""
 
 import fcntl
+import hashlib
 import logging
 import multiprocessing
 import os
@@ -127,6 +128,55 @@ class DaemonManagerTest(unittest.TestCase):
 
     self.assert_run_simple_daemon_success()
     existing_dm.stop()
+
+  def test_start_success_with_chrome_target_repo(self):
+    dm = daemon_manager.DaemonManager(
+        TEST_BINARY_FILE,
+        daemon_target=simple_daemon,
+        daemon_args=(
+            tempfile.NamedTemporaryFile(dir=self.working_dir.name).name,),
+        target_repo='chrome',
+    )
+    dm.start()
+    dm.monitor_daemon(interval=1)
+
+    # Verify the expected pid file is created based on the chrome key.
+    hash_object = hashlib.sha256()
+    hash_object.update('edit_monitor_chrome'.encode('utf-8'))
+    expected_pid_file_path = pathlib.Path(self.working_dir.name).joinpath(
+        'edit_monitor', hash_object.hexdigest() + '.lock'
+    )
+    self.assertTrue(expected_pid_file_path.exists())
+
+    dm.stop()
+
+  def test_start_chrome_monitor_kills_existing_instance_from_different_binary(
+      self,
+  ):
+    # Calculate the pid file path for chrome.
+    hash_object = hashlib.sha256()
+    hash_object.update('edit_monitor_chrome'.encode('utf-8'))
+    chrome_pid_file_name = hash_object.hexdigest() + '.lock'
+
+    # First start an instance based on "binary_path_1"
+    # We use a fake process to simulate the existing instance to avoid
+    # the race condition that the same process (test process) is used for
+    # both instances.
+    p = self._create_fake_deamon_process(name=chrome_pid_file_name)
+
+    # Then start another instance based on "binary_path_2"
+    dm = daemon_manager.DaemonManager(
+        'binary_path_2',
+        daemon_target=long_running_daemon,
+        target_repo='chrome',
+    )
+    dm.start()
+
+    # Verify that the first instance is killed and the second instance is alive.
+    self.assertFalse(p.is_alive())
+    self.assertTrue(dm.daemon_process.is_alive())
+
+    dm.stop()
 
   def test_start_return_directly_if_block_sign_exists(self):
     # Creates the block sign.
