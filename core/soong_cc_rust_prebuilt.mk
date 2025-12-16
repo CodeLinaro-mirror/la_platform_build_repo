@@ -198,6 +198,7 @@ ifndef LOCAL_IS_HOST_MODULE
 
       ALL_MODULES.$(my_register_name).SYMBOLIC_OUTPUT_PATH := $(symbolic_output)
       ALL_MODULES.$(my_register_name).ELF_SYMBOL_MAPPING_PATH := $(elf_symbol_mapping_path)
+      INSTALLED_SYMBOLS.$(symbolic_output) := true
 
       $(LOCAL_BUILT_MODULE): | $(symbolic_output)
     endif

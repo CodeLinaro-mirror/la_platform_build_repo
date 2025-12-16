@@ -15,6 +15,11 @@
 #
 
 # Base modules and settings for the system partition.
+#
+# When adding a module to this list, you must also add it to the deps of the system_image_defaults
+# module in target/product/generic/Android.bp. See tools/filelistdiff/README.md for more details.
+#
+# LINT.IfChange
 PRODUCT_PACKAGES += \
     abx \
     aconfigd-system \
@@ -307,16 +312,20 @@ PRODUCT_PACKAGES += \
     wificond \
     wifi.rc \
     wm \
+# LINT.ThenChange(/target/product/generic/Android.bp)
 
 ifeq ($(RELEASE_CROSS_DEVICE_SYNC),true)
   PRODUCT_PACKAGES += \
         CrossDeviceSync
 endif
 
-# Once Telecom is APEX, we will consolidate all deps
+# This is the telecom cmd binary, NOT Telecom APK.
+PRODUCT_PACKAGES += \
+    telecom
+
+# Once framework-telecom is APEX, the code will be included there.
 ifneq ($(RELEASE_TELECOM_MAINLINE_MODULE),true)
   PRODUCT_PACKAGES += \
-      telecom \
       framework-telecom
 
 endif

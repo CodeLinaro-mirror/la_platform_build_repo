@@ -366,15 +366,17 @@ def BuildImageMkfs(in_dir, prop_dict, out_file, target_out, fs_config):
       build_command.extend(["-T", str(prop_dict["timestamp"])])
     if "uuid" in prop_dict:
       build_command.extend(["-U", prop_dict["uuid"]])
-    if "block_list" in prop_dict:
-      build_command.extend(["--block-list-file", prop_dict["block_list"]])
     if "erofs_pcluster_size" in prop_dict:
       build_command.extend(["-C", prop_dict["erofs_pcluster_size"]])
+    erofs_extended_options = []
+    if "erofs_use_legacy_compression" in prop_dict:
+      erofs_extended_options.append("legacy-compress")
     if "erofs_share_dup_blocks" in prop_dict:
       build_command.extend(["--chunksize", "4096"])
-    if "erofs_use_legacy_compression" in prop_dict:
-      build_command.extend(["-E", "legacy-compress"])
-
+    if "erofs_enable_dedupe" in prop_dict:
+      erofs_extended_options.append("dedupe")
+    if erofs_extended_options:
+      build_command.extend(["-E", ",".join(erofs_extended_options)])
     build_command.extend([out_file, in_dir])
     if "erofs_sparse_flag" in prop_dict and not disable_sparse:
       manual_sparse = True
@@ -723,6 +725,7 @@ def ImagePropFromGlobalDict(glob_dict, mount_point):
       "erofs_default_compress_hints",
       "erofs_pcluster_size",
       "erofs_blocksize",
+      "erofs_enable_dedupe",
       "erofs_share_dup_blocks",
       "erofs_sparse_flag",
       "erofs_use_legacy_compression",
@@ -778,6 +781,7 @@ def ImagePropFromGlobalDict(glob_dict, mount_point):
       (True, "{}_erofs_pcluster_size", "erofs_pcluster_size"),
       (True, "{}_erofs_blocksize", "erofs_blocksize"),
       (True, "{}_erofs_share_dup_blocks", "erofs_share_dup_blocks"),
+      (True, "{}_erofs_enable_dedupe", "erofs_enable_dedupe"),
       (True, "{}_extfs_inode_count", "extfs_inode_count"),
       (True, "{}_f2fs_compress", "f2fs_compress"),
       (True, "{}_f2fs_sldc_flags", "f2fs_sldc_flags"),
