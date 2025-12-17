@@ -64,11 +64,16 @@ _protobuf_map_files := build/release/release_config_map.textproto \
 
 # PRODUCT_RELEASE_CONFIG_MAPS is set by Soong using an initial run of product
 # config to capture only the list of config maps needed by the build.
-# Keep them in the order provided, but remove duplicates.
-# Treat any .mk file as an error, since those have not worked since ap3a.
+# - Keep them in the order provided, but remove duplicates.
+# - Treat any .mk file as an error, since those have not worked since ap3a.
+# - Additionally, the release config map filename **must** be
+#   `release_config_map.textproto`, because finder looks for those files so that
+#   we can correctly build release config artifacts.
 $(foreach map,$(PRODUCT_RELEASE_CONFIG_MAPS), \
     $(if $(filter $(basename $(map)).mk,$(map)),\
         $(error $(map): use of release_config_map.mk files is not supported))\
+    $(if $(filter-out release_config_map.textproto,$(notdir $(map))),\
+        $(error $(map): must be named release_config_map.textproto))\
     $(if $(filter $(basename $(map)),$(basename $(_protobuf_map_files))),, \
         $(eval _protobuf_map_files += $(map))) \
 )

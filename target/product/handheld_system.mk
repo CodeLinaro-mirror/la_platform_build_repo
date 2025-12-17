@@ -115,14 +115,13 @@ PRODUCT_SYSTEM_SERVER_APPS += \
     FusedLocation \
     InputDevices \
     KeyChain \
+    Telecom \
 
 ifneq ($(RELEASE_TELECOM_MAINLINE_MODULE),true)
   PRODUCT_PACKAGES += \
-      Telecom \
       TelecomUi \
 
   PRODUCT_SYSTEM_SERVER_APPS += \
-      Telecom \
       TelecomUi \
 
 endif
