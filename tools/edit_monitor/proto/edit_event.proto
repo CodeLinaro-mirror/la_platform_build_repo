@@ -48,6 +48,10 @@ message EditEvent {
   string source_root = 2;
   // Name of the host workstation.
   string host_name = 3;
+  // The name of the repository that is being monitored.
+  // This is used to distinguish between different repositories,
+  // e.g. "android" or "chrome".
+  string target_repo = 7;
 
   oneof event {
     SingleEditEvent single_edit_event = 4;

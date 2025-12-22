@@ -1,4 +1,5 @@
 package {package_name}; {#- CODEGEN FOR TEST MODE #}
+
 /** @hide */
 public final class FeatureFlagsImpl implements FeatureFlags \{
 {{ for flag in flag_elements }}
@@ -10,5 +11,5 @@ public final class FeatureFlagsImpl implements FeatureFlags \{
         throw new UnsupportedOperationException(
             "Method is not implemented.");
     }
-{{ endfor- }}
+{{ endfor }}
 }

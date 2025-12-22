@@ -42,6 +42,10 @@ rust_defaults {
         select(release_flag("RELEASE_ACONFIG_OPTIMIZE_READ_ONLY_JAVA"), {
             true: ["optimize_read_only_java"],
             default: [],
+        }) +
+        select(release_flag("RELEASE_ACONFIG_PARSE_V4"), {
+            true: ["enable_parse_v4"],
+            default: [],
         }),
     features: select(release_flag("RELEASE_ACONFIG_DEFAULT_EXPORTED_READS_TO_DISABLED"), {
         true: ["default_exported_reads_to_disabled"],

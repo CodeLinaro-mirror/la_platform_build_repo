@@ -13,6 +13,7 @@ public final class ExportedFlags {
     private static boolean disabledRwExported = false;
     private static boolean enabledFixedRoExported = false;
     private static boolean enabledRoExported = false;
+
     private ExportedFlags() {}
 
     private void init() {
@@ -31,6 +32,7 @@ public final class ExportedFlags {
         }
         isCached = true;
     }
+
     @androidx.annotation.ChecksSdkIntAtLeast(api=36)
     public static boolean disabledRwExported() {
         if (Build.VERSION.SDK_INT >= 36) {
@@ -41,17 +43,20 @@ public final class ExportedFlags {
         }
         return featureFlags.disabledRwExported;
     }
+
     public static boolean enabledFixedRoExported() {
         if (!featureFlags.isCached) {
             featureFlags.init();
         }
         return featureFlags.enabledFixedRoExported;
     }
+
     public static boolean enabledRoExported() {
         if (!featureFlags.isCached) {
             featureFlags.init();
         }
         return featureFlags.enabledRoExported;
     }
+
     private static ExportedFlags featureFlags = new ExportedFlags();
 }
