@@ -45,6 +45,7 @@ class ClearcutEventHandler(PatternMatchingEventHandler):
       single_events_size_threshold: int,
       is_dry_run: bool = False,
       cclient: clearcut_client.Clearcut | None = None,
+      target_repo: str = "android",
   ):
     super().__init__(patterns=["*"], ignore_directories=True)
     self.root_monitoring_path = path
@@ -52,6 +53,7 @@ class ClearcutEventHandler(PatternMatchingEventHandler):
     self.single_events_size_threshold = single_events_size_threshold
     self.is_dry_run = is_dry_run
     self.cclient = cclient or clearcut_client.Clearcut(LOG_SOURCE)
+    self.target_repo = target_repo
 
     self.user_name = getpass.getuser()
     self.host_name = platform.node()
@@ -110,6 +112,7 @@ class ClearcutEventHandler(PatternMatchingEventHandler):
           user_name=self.user_name,
           host_name=self.host_name,
           source_root=self.source_root,
+          target_repo=self.target_repo,
       )
       event_proto.single_edit_event.CopyFrom(
           edit_event_pb2.EditEvent.SingleEditEvent(
@@ -161,6 +164,7 @@ class ClearcutEventHandler(PatternMatchingEventHandler):
           user_name=self.user_name,
           host_name=self.host_name,
           source_root=self.source_root,
+          target_repo=self.target_repo,
       )
       aggregated_event_proto.aggregated_edit_event.CopyFrom(
           edit_event_pb2.EditEvent.AggregatedEditEvent(
@@ -208,6 +212,7 @@ def start(
       single_events_size_threshold,
       is_dry_run,
       cclient,
+      target_repo,
   )
   observer = Observer()
 

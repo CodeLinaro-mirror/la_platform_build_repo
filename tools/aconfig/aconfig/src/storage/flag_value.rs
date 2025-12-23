@@ -69,6 +69,14 @@ pub fn create_flag_value(
     list.header.boolean_value_offset = list.header.to_bytes().len() as u32;
     list.header.file_size = list.header.boolean_value_offset + num_boolean_flags;
 
+    // TODO(b/439864800): Populate int information when v4+ and flag enabled.
+    if cfg!(enable_parse_v4) {
+        list.header.num_int_flags = 0;
+
+        // If no int flags, then the offset should be the same as the file size.
+        list.header.int_value_offset = list.header.file_size;
+    }
+
     Ok(list)
 }
 

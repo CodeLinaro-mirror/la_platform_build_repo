@@ -26,10 +26,10 @@ public interface FeatureFlags \{
 {{ -endif }}
 {{ -if not library_exported }}
     @com.android.aconfig.annotations.AconfigFlagAccessor
-{{ if support_uau_annotation- }}
+{{ -if support_uau_annotation }}
     @UnsupportedAppUsage
-{{ -endif }}
+{{  endif }}
 {{ -endif }}
     boolean {item.method_name}();
-{{ -endfor }}
+{{ endfor }}
 }

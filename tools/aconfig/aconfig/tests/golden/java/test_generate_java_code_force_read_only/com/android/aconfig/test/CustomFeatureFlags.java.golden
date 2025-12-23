@@ -15,43 +15,38 @@ public class CustomFeatureFlags implements FeatureFlags {
     public CustomFeatureFlags(BiPredicate<String, Predicate<FeatureFlags>> getValueImpl) {
         mGetValueImpl = getValueImpl;
     }
-    @Override
 
+    @Override
     public boolean disabledRo() {
         return getValue(Flags.FLAG_DISABLED_RO,
             FeatureFlags::disabledRo);
     }
 
     @Override
-
     public boolean disabledRw() {
         return getValue(Flags.FLAG_DISABLED_RW,
             FeatureFlags::disabledRw);
     }
 
     @Override
-
     public boolean disabledRwInOtherNamespace() {
         return getValue(Flags.FLAG_DISABLED_RW_IN_OTHER_NAMESPACE,
             FeatureFlags::disabledRwInOtherNamespace);
     }
 
     @Override
-
     public boolean enabledFixedRo() {
         return getValue(Flags.FLAG_ENABLED_FIXED_RO,
             FeatureFlags::enabledFixedRo);
     }
 
     @Override
-
     public boolean enabledRo() {
         return getValue(Flags.FLAG_ENABLED_RO,
             FeatureFlags::enabledRo);
     }
 
     @Override
-
     public boolean enabledRw() {
         return getValue(Flags.FLAG_ENABLED_RW,
             FeatureFlags::enabledRw);

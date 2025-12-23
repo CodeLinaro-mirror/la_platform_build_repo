@@ -457,6 +457,7 @@ class DaemonManager:
         user_name=self.user_name,
         host_name=self.host_name,
         source_root=self.source_root,
+        target_repo=self.target_repo or "",
     )
     edit_monitor_error_event_proto.edit_monitor_error_event.CopyFrom(
         edit_event_pb2.EditEvent.EditMonitorErrorEvent(error_type=error_type)

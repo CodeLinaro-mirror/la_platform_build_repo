@@ -110,10 +110,22 @@ class EditMonitorTest(unittest.TestCase):
         ).single_edit_event,
     )
     self.assertEqual(
+        'chrome',
+        edit_event_pb2.EditEvent.FromString(
+            logged_events[0].source_extension
+        ).target_repo,
+    )
+    self.assertEqual(
         expected_modify_event,
         edit_event_pb2.EditEvent.FromString(
             logged_events[1].source_extension
         ).single_edit_event,
+    )
+    self.assertEqual(
+        'chrome',
+        edit_event_pb2.EditEvent.FromString(
+            logged_events[1].source_extension
+        ).target_repo,
     )
     self.assertEqual(
         expected_move_event,
@@ -122,10 +134,22 @@ class EditMonitorTest(unittest.TestCase):
         ).single_edit_event,
     )
     self.assertEqual(
+        'chrome',
+        edit_event_pb2.EditEvent.FromString(
+            logged_events[2].source_extension
+        ).target_repo,
+    )
+    self.assertEqual(
         expected_delete_event,
         edit_event_pb2.EditEvent.FromString(
             logged_events[3].source_extension
         ).single_edit_event,
+    )
+    self.assertEqual(
+        'chrome',
+        edit_event_pb2.EditEvent.FromString(
+            logged_events[3].source_extension
+        ).target_repo,
     )
 
   def test_do_not_log_edit_event_under_out_dir_for_chrome(self):
@@ -202,10 +226,22 @@ class EditMonitorTest(unittest.TestCase):
         ).single_edit_event,
     )
     self.assertEqual(
+        'android',
+        edit_event_pb2.EditEvent.FromString(
+            logged_events[0].source_extension
+        ).target_repo,
+    )
+    self.assertEqual(
         expected_modify_event,
         edit_event_pb2.EditEvent.FromString(
             logged_events[1].source_extension
         ).single_edit_event,
+    )
+    self.assertEqual(
+        'android',
+        edit_event_pb2.EditEvent.FromString(
+            logged_events[1].source_extension
+        ).target_repo,
     )
     self.assertEqual(
         expected_move_event,
@@ -214,10 +250,22 @@ class EditMonitorTest(unittest.TestCase):
         ).single_edit_event,
     )
     self.assertEqual(
+        'android',
+        edit_event_pb2.EditEvent.FromString(
+            logged_events[2].source_extension
+        ).target_repo,
+    )
+    self.assertEqual(
         expected_delete_event,
         edit_event_pb2.EditEvent.FromString(
             logged_events[3].source_extension
         ).single_edit_event,
+    )
+    self.assertEqual(
+        'android',
+        edit_event_pb2.EditEvent.FromString(
+            logged_events[3].source_extension
+        ).target_repo,
     )
 
   def test_log_aggregated_edit_event_success(self):
