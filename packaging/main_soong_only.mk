@@ -18,7 +18,7 @@ endif
 
 $(info [1/4] initializing packaging system ...)
 
-.KATI_READONLY := KATI_PACKAGE_MK_DIR
+.KATI_READONLY := KATI_PACKAGE_MK_DIR KATI_SUFFIX
 
 include build/make/common/core.mk
 include build/make/common/strings.mk
@@ -48,7 +48,7 @@ include build/make/packaging/distdir.mk
 
 $(info [3/4] defining phony modules ...)
 
-include $(OUT_DIR)/soong/soong_phony_targets.mk
+include $(OUT_DIR)/soong/soong_phony_targets${KATI_SUFFIX}.mk
 
 goals := $(sort $(foreach pair,$(DIST_GOAL_OUTPUT_PAIRS),$(call word-colon,1,$(pair))))
 $(foreach goal,$(goals), \

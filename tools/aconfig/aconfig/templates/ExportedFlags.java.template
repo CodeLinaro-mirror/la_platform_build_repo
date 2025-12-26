@@ -35,6 +35,11 @@ public final class ExportedFlags \{
     }
 
 {{ -for flag in flag_elements }}
+    {{ -if generate_checks_sdk_annotation }}
+    {{ -if flag.finalized_sdk_present }}
+    {flag.finalized_sdk_annotation|unescaped}
+    {{ -endif}}  {#- end finalized_sdk_present #}
+    {{ -endif}}  {#- end generate_checks_sdk_annotation #}
     public static boolean {flag.method_name}() \{
         {{ -if flag.finalized_sdk_present }}
         if ({flag.finalized_sdk_check|unescaped}) \{

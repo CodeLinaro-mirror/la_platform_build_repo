@@ -172,6 +172,18 @@ else
 
 endif
 
+ifeq ($(RELEASE_NPUMANAGER_MODULE),true)
+    PRODUCT_APEX_BOOT_JARS += \
+        com.android.npumanager:framework-npumanager \
+
+endif
+
+ifeq ($(RELEASE_UPROBESTATS_BRIDGE_SERVICE),true)
+    PRODUCT_APEX_BOOT_JARS += \
+        com.android.uprobestats:framework-uprobestats \
+
+endif
+
 # List of system_server classpath jars delivered via apex.
 # Keep the list sorted by module names and then library names.
 # Note: For modules available in Q, DO NOT add new entries here.
@@ -198,6 +210,13 @@ endif
 ifeq ($(RELEASE_ONDEVICE_INTELLIGENCE_MODULE),true)
     PRODUCT_APEX_SYSTEM_SERVER_JARS += \
         com.android.neuralnetworks:service-ondeviceintelligence
+
+endif
+
+# When we release npumanager module
+ifeq ($(RELEASE_NPUMANAGER_MODULE),true)
+    PRODUCT_APEX_SYSTEM_SERVER_JARS += \
+        com.android.npumanager:service-npumanager \
 
 endif
 

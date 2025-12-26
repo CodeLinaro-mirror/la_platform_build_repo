@@ -418,9 +418,7 @@ class Runner():
                 return
         try:
 
-            extra_env = {
-                    "SOONG_HONOR_USE_PARTIAL_COMPILE": "true",
-            }
+            extra_env = {}
             # Measured build
             ns = self._run_build(lunch, benchmark_log_dir.joinpath("measured"), benchmark, extra_env)
             report.duration_ns = ns

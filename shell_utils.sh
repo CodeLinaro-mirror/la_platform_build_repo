@@ -146,7 +146,10 @@ function setup_cog_symlink() {
   if [[ -n "$cartfs_mount_point" ]]; then
     local cog_workspace_name="$(basename "$(dirname "${top}")")"
     link_destination="${cartfs_mount_point}/${cog_workspace_name}/out"
-    setup_cartfs_incremental_build "${link_destination}" "${cartfs_mount_point}"
+    # TODO(b/454043953): Re-enable CartFS incremental builds if:
+    # 1. A bug causing filesystem commands to hang is found and fixed.
+    # 2. Disabling this feature doesn't improve the "hang" situation.
+    # setup_cartfs_incremental_build "${link_destination}" "${cartfs_mount_point}"
   else
     # If CartFS is not mounted, check to see if it is installed (no mount but
     # being installed implies it was disabled). If it is installed, then don't
@@ -161,7 +164,7 @@ function setup_cog_symlink() {
 
   # remove existing out/ dir if it exists
   if [[ -d "$out_dir" ]]; then
-    echo "Detected existing out/ directory in the Cog workspace which is not supported. Repairing workspace by removing it and creating the symlink to ~/.cog/android-build-out"
+    echo "Detected existing out/ directory in the Cog workspace which is not supported. Repairing workspace by removing it and creating the symlink to ${link_destination}"
     if ! rm -rf "$out_dir"; then
       echo "Failed to remove existing out/ directory: $out_dir" >&2
       kill -INT $$ # exits the script without exiting the user's shell
@@ -303,7 +306,11 @@ function cartfs_mount_point() {
   fi
 
   local cartfs_user_id="$(id -u cartfs 2>/dev/null)"
-  local cartfs_mount_point="$(findmnt -t fuse -O "user_id=${cartfs_user_id}" | tail -n +2 | awk '{print $1}')"
+
+  # To find the main CartFS mount point, filter mounts by cartfs user_id and
+  # look for the one where source is just /dev/fuse - that excludes bind mounts
+  # that may originate in CartFS.
+  local cartfs_mount_point="$(findmnt -t fuse -O "user_id=${cartfs_user_id}" --output "target,source" --raw | grep '/dev/fuse$' | tail -n +1 | awk '{print $1}')"
   # Making sure $cartfs_user_id is not empty since findmnt will return mounts
   # started by root when it is.
   if [[ -n "$cartfs_user_id" ]] && [[ -n "$cartfs_mount_point" ]] && findmnt "$cartfs_mount_point" >/dev/null 2>&1; then
@@ -328,7 +335,7 @@ function clean_deleted_workspaces_in_cartfs() {
           if [[ ! -d "${full_path}" ]]; then
             local log_timestamp=$(date +"%Y-%m-%d %H:%M:%S")
             echo "${log_timestamp}: The workspace ${workspace_name} does not exist, deleting ${folder} from cartfs" >> "${log_file}"
-            rm -Rf "${folder}"
+            rm -Rf "${folder}" &
           fi
         fi
       done <<< "$folders_list"

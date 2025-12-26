@@ -19,7 +19,6 @@ android.app.supervision.flags.enable_sync_with_dpm
 android.app.supervision.flags.enable_web_content_filters_screen
 android.app.supervision.flags.supervision_api
 android.app.supervision.flags.supervision_api_on_wear
-android.app.ui_rich_ongoing
 android.appwidget.flags.use_smaller_app_widget_system_radius
 android.car.feature.always_send_initial_value_event
 android.car.feature.android_b_vehicle_properties

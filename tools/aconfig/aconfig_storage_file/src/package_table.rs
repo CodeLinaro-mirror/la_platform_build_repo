@@ -403,9 +403,8 @@ mod tests {
         let mut package_table = create_test_package_table(DEFAULT_FILE_VERSION);
         package_table.header.file_type = 123u8;
         let error = PackageTable::from_bytes(&package_table.into_bytes()).unwrap_err();
-        assert_eq!(
-            format!("{:?}", error),
-            format!("BytesParseFail(binary file is not a package map)")
+        assert!(
+            format!("{:?}", error).starts_with("BytesParseFail(binary file is not a package map")
         );
     }
 }

@@ -339,6 +339,8 @@ _product_single_value_vars += PRODUCT_HIDL_ENABLED
 # system.img), so devices need to install the package in a system-only OTA manner.
 _product_single_value_vars += PRODUCT_BUILD_GENERIC_OTA_PACKAGE
 
+# Whether any paths are excluded from being set XOM when ENABLE_XOM=true
+_product_list_vars += PRODUCT_XOM_EXCLUDE_PATHS
 _product_list_vars += PRODUCT_MANIFEST_PACKAGE_NAME_OVERRIDES
 _product_list_vars += PRODUCT_PACKAGE_NAME_OVERRIDES
 _product_list_vars += PRODUCT_CERTIFICATE_OVERRIDES
@@ -502,6 +504,8 @@ _product_single_value_vars += PRODUCT_ANDROIDMK_ALLOWLIST_FILE
 # Setting PRODUCT_SOONG_ONLY will cause the build to default to --soong-only mode, and the main
 # kati invocation will not be run.
 _product_single_value_vars += PRODUCT_SOONG_ONLY
+# Setting PRODUCT_SOONG_INCREMENTAL_ANALYSIS will enable incremental analysis by default
+_product_single_value_vars +=  PRODUCT_SOONG_INCREMENTAL_ANALYSIS
 
 # To provide a symlink target for $(TARGET_ROOT_OUT)/bugreports instead of using the default location defined in system/core/rootdir/create_root_structure.mk
 _product_single_value_vars += PRODUCT_BUGREPORTS_SYMLINK_TARGET

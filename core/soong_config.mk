@@ -36,6 +36,7 @@ $(call add_json_str,  Platform_display_version_name,     $(PLATFORM_DISPLAY_VERS
 $(call add_json_str,  Platform_version_name,             $(PLATFORM_VERSION))
 $(call add_json_val,  Platform_sdk_version,              $(PLATFORM_SDK_VERSION))
 $(call add_json_val,  Platform_sdk_version_full,         $(PLATFORM_SDK_VERSION_FULL))
+$(call add_json_val,  Platform_prospective_sdk_version_full, $(PLATFORM_PROSPECTIVE_SDK_VERSION_FULL))
 $(call add_json_str,  Platform_sdk_codename,             $(PLATFORM_VERSION_CODENAME))
 $(call add_json_bool, Platform_sdk_final,                $(filter REL,$(PLATFORM_VERSION_CODENAME)))
 $(call add_json_val,  Platform_sdk_extension_version,    $(PLATFORM_SDK_EXTENSION_VERSION))
@@ -124,6 +125,12 @@ $(call add_json_bool, Safestack,                         $(filter true,$(USE_SAF
 $(call add_json_bool, EnableCFI,                         $(call invert_bool,$(filter false,$(ENABLE_CFI))))
 $(call add_json_list, CFIExcludePaths,                   $(CFI_EXCLUDE_PATHS) $(PRODUCT_CFI_EXCLUDE_PATHS))
 $(call add_json_list, CFIIncludePaths,                   $(CFI_INCLUDE_PATHS) $(PRODUCT_CFI_INCLUDE_PATHS))
+
+ifdef ENABLE_XOM
+$(call add_json_bool, EnableXOM,                         $(filter true,$(ENABLE_XOM)))
+endif
+
+$(call add_json_list, XOMExcludePaths,                   $(XOM_EXCLUDE_PATHS) $(PRODUCT_XOM_EXCLUDE_PATHS))
 $(call add_json_list, IntegerOverflowExcludePaths,       $(INTEGER_OVERFLOW_EXCLUDE_PATHS) $(PRODUCT_INTEGER_OVERFLOW_EXCLUDE_PATHS))
 $(call add_json_list, HWASanIncludePaths,                $(HWASAN_INCLUDE_PATHS) $(PRODUCT_HWASAN_INCLUDE_PATHS))
 $(call add_json_list, HWASanExcludePaths,                $(HWASAN_EXCLUDE_PATHS) $(PRODUCT_HWASAN_EXCLUDE_PATHS))
@@ -193,9 +200,6 @@ $(call end_json_map)
 
 $(call add_json_list, RamdiskSnapshotDirsIncluded,       $(RAMDISK_SNAPSHOT_DIRS_INCLUDED))
 $(call add_json_list, RamdiskSnapshotDirsExcluded,       $(RAMDISK_SNAPSHOT_DIRS_EXCLUDED))
-
-$(call add_json_bool, MultitreeUpdateMeta,               $(filter true,$(TARGET_MULTITREE_UPDATE_META)))
-
 $(call add_json_bool, Treble_linker_namespaces,          $(filter true,$(PRODUCT_TREBLE_LINKER_NAMESPACES)))
 $(call add_json_bool, Enforce_vintf_manifest,            $(filter true,$(PRODUCT_ENFORCE_VINTF_MANIFEST)))
 

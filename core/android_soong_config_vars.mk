@@ -250,8 +250,9 @@ else
 
 endif
 
-# Add uprobestats build flag to soong
-$(call soong_config_set,ANDROID,release_uprobestats_module,$(RELEASE_UPROBESTATS_MODULE))
+# Add uprobestats build flags to soong
+$(call soong_config_set,ANDROID,release_uprobestats_bridge_service,$(RELEASE_UPROBESTATS_BRIDGE_SERVICE))
+$(call soong_config_set,bootclasspath,release_uprobestats_bridge_service,$(RELEASE_UPROBESTATS_BRIDGE_SERVICE))
 # Add uprobestats file move flags to soong, for both platform and module
 ifeq (true,$(RELEASE_UPROBESTATS_FILE_MOVE))
   $(call soong_config_set,ANDROID,uprobestats_files_in_module,true)
@@ -275,6 +276,14 @@ $(call soong_config_set,ANDROID,release_telecom_mainline_module,$(RELEASE_TELECO
 # Add telephony build flag to soong
 $(call soong_config_set,ANDROID,release_telephony_module,$(RELEASE_TELEPHONY_MODULE))
 $(call soong_config_set,bootclasspath,release_telephony_module,$(RELEASE_TELEPHONY_MODULE))
+
+# Add npumanager build flag to soong
+$(call soong_config_set,ANDROID,release_npumanager_module,$(RELEASE_NPUMANAGER_MODULE))
+$(call soong_config_set,bootclasspath,release_npumanager_module,$(RELEASE_NPUMANAGER_MODULE))
+
+# Add webapp build flag to soong
+$(call soong_config_set,ANDROID,release_webapp_module,$(RELEASE_WEBAPP_MODULE))
+$(call soong_config_set,bootclasspath,release_webapp_module,$(RELEASE_WEBAPP_MODULE))
 
 # Add perf-setup build flag to soong
 # Note: BOARD_PERFSETUP_SCRIPT location must be under platform_testing/scripts/perf-setup/.
@@ -485,8 +494,5 @@ $(call soong_config_set_bool,tradefed,use_prebuilt,true)
 else
 $(call soong_config_set_bool,tradefed,use_prebuilt,false)
 endif
-
-# Add npumanager build flag to soong
-$(call soong_config_set,ANDROID,release_npumanager_module,$(RELEASE_NPUMANAGER_MODULE))
 
 $(call soong_config_set,berberis,target_native_bridge_abi,$(TARGET_NATIVE_BRIDGE_ABI))
