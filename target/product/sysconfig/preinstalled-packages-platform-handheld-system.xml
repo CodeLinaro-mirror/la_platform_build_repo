@@ -17,7 +17,7 @@
      Documentation at frameworks/base/data/etc/preinstalled-packages-platform.xml
 -->
 <config>
-    <!-- Files (DocumentsUI) TODO(b/258055479) -->
+    <!-- Files (DocumentsUI) -->
     <install-in-user-type package="com.android.documentsui">
         <install-in user-type="SYSTEM" />
         <install-in user-type="FULL" />

@@ -20,6 +20,7 @@ android.app.supervision.flags.enable_web_content_filters_screen
 android.app.supervision.flags.supervision_api
 android.app.supervision.flags.supervision_api_on_wear
 android.appwidget.flags.use_smaller_app_widget_system_radius
+android.bluetooth.platform.flags.autonomous_repairing_initiation
 android.car.feature.always_send_initial_value_event
 android.car.feature.android_b_vehicle_properties
 android.car.feature.android_vic_vehicle_properties
@@ -146,7 +147,7 @@ android.view.accessibility.a11y_is_visited_api
 android.view.accessibility.motion_event_observing
 android.view.contentcapture.flags.flush_after_each_frame
 android.view.flags.expected_presentation_time_api
-android.view.flags.sms_provider_redact_otp_app_compat_api
+android.view.flags.redact_otp_app_compat_api
 android.view.flags.toolkit_frame_rate_touch_boost_25q1
 android.view.inputmethod.concurrent_input_methods
 android.view.inputmethod.ime_switcher_revamp
