@@ -18,19 +18,14 @@ set -ex
 
 # This script will finalize resources and update the API signature files.
 # If run locally it will pick up whatever 'lunch' target is set, and if one isn't set then it will default to `sdk-sdk_finalization-userdebug`
-function pre_build_modifications() {
-    local top="$(dirname "$0")"/../../../..
-    export PATH="$top/${OUT_DIR:-out}/host/linux-x86/bin:$PATH"
-    local m="$top/build/soong/soong_ui.bash --make-mode TARGET_PRODUCT=${TARGET_PRODUCT:-sdk} TARGET_RELEASE=${TARGET_RELEASE:-sdk_finalization} TARGET_BUILD_VARIANT=${TARGET_BUILD_VARIANT:-userdebug}"
 
-    # Build finalize_res binary. It will include a copy of all_aconfig_declarations.pb that holds the state of the aconfig flags for the TARGET_RELEASE.
-    $m finalize_res
+source "$(dirname "$0")"/common.sh
 
-    # Finalize resources
-    finalize_res "$top/frameworks/base/core/res/res/values/public-staging.xml" "$top/frameworks/base/core/res/res/values/public-final.xml"
+# Build finalize_res binary. It will include a copy of all_aconfig_declarations.pb that holds the state of the aconfig flags for the TARGET_RELEASE.
+m finalize_res
 
-    # Update signature files
-    $m update-api
-}
+# Finalize resources
+finalize_res "$top/frameworks/base/core/res/res/values/public-staging.xml" "$top/frameworks/base/core/res/res/values/public-final.xml"
 
-pre_build_modifications
+# Update signature files
+m update-api

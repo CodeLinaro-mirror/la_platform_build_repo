@@ -242,6 +242,9 @@ A/B OTA specific options
   --enable_replace_zstd=<true|false>
       Whether to enable zstd compression for replace. Defaults to false.
 
+  --disable_replace_compression
+      Whether to disable compression for replace. Defaults to false.
+
   --enable_lz4diff
       Whether to enable lz4diff feature. Will generate smaller OTA for EROFS but
       uses more memory.
@@ -346,6 +349,7 @@ OPTIONS.compression_factor = None
 OPTIONS.full_ota_partitions = None
 OPTIONS.disable_ublk = False
 OPTIONS.enable_replace_zstd = False
+OPTIONS.disable_replace_compression = False
 
 
 POSTINSTALL_CONFIG = 'META/postinstall_config.txt'
@@ -1028,7 +1032,12 @@ def GenerateAbOtaPackage(target_file, output_file, source_file=None):
 
   if OPTIONS.enable_vabc_xor:
     additional_args += ["--enable_vabc_xor=true"]
-  if OPTIONS.enable_replace_zstd:
+  if OPTIONS.disable_replace_compression:
+    if OPTIONS.enable_replace_zstd:
+      logger.warning("--disable_replace_compression is set, disabling replace zstd")
+      OPTIONS.enable_replace_zstd = False
+    additional_args += ["--disable_replace_compression=true"]
+  elif OPTIONS.enable_replace_zstd:
     additional_args += ["--enable_replace_zstd=true"]
   if OPTIONS.compressor_types:
     additional_args += ["--compressor_types", OPTIONS.compressor_types]
@@ -1244,6 +1253,8 @@ def main(argv):
       assert a.lower() in ["true", "false"], \
           "Cannot parse value %r for option %r - expecting 'true' or 'false'" % (a, o)
       OPTIONS.enable_replace_zstd = a.lower() != "false"
+    elif o == "--disable_replace_compression":
+      OPTIONS.disable_replace_compression = True
     else:
       return False
     return True
@@ -1297,6 +1308,7 @@ def main(argv):
                                  "full_ota_partitions=",
                                  "disable_ublk",
                                  "enable_replace_zstd=",
+                                 "disable_replace_compression",
                              ], extra_option_handler=[option_handler, payload_signer.signer_options])
   common.InitLogging()
 
@@ -1462,7 +1474,7 @@ def main(argv):
       target_files_diff.recursiveDiff(
           '', source_dir, target_dir, out_file)
 
-  logger.info("done.")
+  logger.info("done. ", args[1])
 
 
 if __name__ == '__main__':

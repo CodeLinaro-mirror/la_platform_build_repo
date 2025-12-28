@@ -116,6 +116,12 @@ class EditMonitorTest(unittest.TestCase):
         ).target_repo,
     )
     self.assertEqual(
+        str(self.root_monitoring_path.resolve()),
+        edit_event_pb2.EditEvent.FromString(
+            logged_events[0].source_extension
+        ).source_root,
+    )
+    self.assertEqual(
         expected_modify_event,
         edit_event_pb2.EditEvent.FromString(
             logged_events[1].source_extension

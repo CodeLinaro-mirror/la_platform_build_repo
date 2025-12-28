@@ -57,7 +57,10 @@ class ClearcutEventHandler(PatternMatchingEventHandler):
 
     self.user_name = getpass.getuser()
     self.host_name = platform.node()
-    self.source_root = os.environ.get("ANDROID_BUILD_TOP", "")
+    if target_repo == "chrome":
+      self.source_root = self.root_monitoring_path
+    else:
+      self.source_root = os.environ.get("ANDROID_BUILD_TOP", "")
 
     self.pending_events = []
     self._scheduled_log_thread = None

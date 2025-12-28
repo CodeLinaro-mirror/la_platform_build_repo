@@ -1263,7 +1263,7 @@ def main(argv):
 
   AddImagesToTargetFiles(args[0])
   OptimizeCompressedEntries(args[0])
-  logger.info("done.")
+  logger.info("done. added image to target files %s", args[0])
 
 
 if __name__ == '__main__':

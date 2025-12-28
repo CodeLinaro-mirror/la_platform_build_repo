@@ -19,8 +19,9 @@ set -ex
 # This script will verify the SDK build. Point it to the out/dist folder of an sdk build by passing it as a flag.
 # If run locally it will pick up whatever 'lunch' target is set, and if one isn't set then it will default to `sdk-sdk_finalization-userdebug`
 
-top="$(dirname "$0")"/../../../..
-dist_path="$top/dist"
+source "$(dirname "$0")"/common.sh
+
+dist_path="$top/out/dist"
 max_sdk_version="37" # This should be read from the release configuration.
 
 while [[ $# -gt 0 ]]; do
@@ -41,19 +42,11 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-function post_build_verification() {
-    local dist_path="$1"
-    local max_sdk_version="$2"
-    local m="$top/build/soong/soong_ui.bash --make-mode TARGET_PRODUCT=${TARGET_PRODUCT:-sdk} TARGET_RELEASE=${TARGET_RELEASE:-sdk_finalization} TARGET_BUILD_VARIANT=${TARGET_BUILD_VARIANT:-userdebug}"
+# Build sdk-artifact-verifier binary.
+m sdk-artifact-verifier
 
-    # Build sdk-artifact-verifier binary.
-    $m sdk-artifact-verifier
-
-    # Verify that api-version.xml is internally consistent
-    sdk-artifact-verifier \
-        --api-versions-path "$dist_path/data/api-versions.xml" \
-        --deprecated-at-birth-allowlist-path "$top/build/make/tools/finalization/sdk-artifact-verifier/deprecated_at_birth_allowlist.txt" \
-        --max-sdk-version-full "$max_sdk_version"
-}
-
-post_build_verification "$dist_path" "$max_sdk_version"
+# Verify that api-version.xml is internally consistent
+ sdk-artifact-verifier \
+    --api-versions-path "$dist_path/data/api-versions.xml" \
+    --deprecated-at-birth-allowlist-path "$top/build/make/tools/finalization/sdk-artifact-verifier/deprecated_at_birth_allowlist.txt" \
+    --max-sdk-version-full "$max_sdk_version"

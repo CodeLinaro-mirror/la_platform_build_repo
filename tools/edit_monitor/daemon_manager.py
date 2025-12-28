@@ -68,7 +68,10 @@ class DaemonManager:
 
     self.user_name = getpass.getuser()
     self.host_name = platform.node()
-    self.source_root = os.environ.get("ANDROID_BUILD_TOP", "")
+    if target_repo == "chrome" and daemon_args:
+      self.source_root = daemon_args[0]
+    else:
+      self.source_root = os.environ.get("ANDROID_BUILD_TOP", "")
     self.pid = os.getpid()
     self.daemon_process = None
 
