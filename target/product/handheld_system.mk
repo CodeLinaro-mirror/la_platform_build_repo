@@ -69,6 +69,7 @@ PRODUCT_PACKAGES += \
     screenrecord \
     SharedStorageBackup \
     SimAppDialog \
+    Telecom \
     Traceur \
     UserDictionaryProvider \
     VpnDialogs \
