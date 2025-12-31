@@ -30,9 +30,7 @@ PRODUCT_PACKAGES += \
 
 # Applications
 PRODUCT_PACKAGES += \
-    LiveWallpapersPicker \
-    PartnerBookmarksProvider \
-    Tag \
+    PartnerBookmarksProvider
 
 ifneq ($(TARGET_NO_TELEPHONY), true)
 PRODUCT_PACKAGES += \
@@ -79,6 +77,12 @@ PRODUCT_PACKAGES += \
     libminui \
     libnl \
     libprotobuf-cpp-full \
+
+ifneq ($(TARGET_IS_QLMD), true)
+PRODUCT_PACKAGES += \
+    LiveWallpapersPicker \
+    Tag
+endif
 
 # These libraries are empty and have been combined into libhidlbase, but are still depended
 # on by things off /system.

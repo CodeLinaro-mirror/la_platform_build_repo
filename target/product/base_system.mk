@@ -78,7 +78,6 @@ PRODUCT_PACKAGES += \
     com.android.permission \
     com.android.resolv \
     com.android.rkpd \
-    com.android.neuralnetworks \
     com.android.scheduling \
     com.android.sdkext \
     com.android.tethering \
@@ -89,8 +88,6 @@ PRODUCT_PACKAGES += \
     com.android.wifi \
     ContactsProvider \
     content \
-    CtsShimPrebuilt \
-    CtsShimPrivPrebuilt \
     debuggerd\
     device_config \
     dmctl \
@@ -308,6 +305,13 @@ PRODUCT_PACKAGES += \
     wifi.rc \
     wm \
 # LINT.ThenChange(/target/product/generic/Android.bp)
+
+ifneq ($(TARGET_IS_QLMD), true)
+PRODUCT_PACKAGES += \
+    com.android.neuralnetworks \
+    CtsShimPrebuilt \
+    CtsShimPrivPrebuilt
+endif
 
 ifeq ($(RELEASE_CROSS_DEVICE_SYNC),true)
   PRODUCT_PACKAGES += \
