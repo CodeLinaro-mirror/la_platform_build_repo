@@ -435,7 +435,7 @@ mod tests {
         fs::copy(get_test_data_path(StorageFileType::FlagVal, 1), &flag_val).unwrap();
         fs::copy(get_test_data_path(StorageFileType::FlagInfo, 1), &flag_info).unwrap();
 
-        return storage_dir;
+        storage_dir
     }
 
     #[test]

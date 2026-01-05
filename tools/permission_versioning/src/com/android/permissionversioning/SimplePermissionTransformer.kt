@@ -71,15 +71,15 @@ class SimplePermissionTransformer {
         permissionElement: Element,
         enabledFlags: Set<String>,
     ): Boolean {
-        val requiresSpecificPurpose =
+        val requiresPurpose =
             permissionElement
-                .getAttributeNS(ANDROID_NS, MANIFEST_ATTR_REQUIRES_SPECIFIC_PURPOSE)
+                .getAttributeNS(ANDROID_NS, MANIFEST_ATTR_REQUIRES_PURPOSE)
                 .isNotEmpty()
         val requiresPurposeString =
             permissionElement
                 .getAttributeNS(ANDROID_NS, MANIFEST_ATTR_REQUIRES_PURPOSE_STRING)
                 .isNotEmpty()
-        if (!requiresSpecificPurpose && !requiresPurposeString) {
+        if (!requiresPurpose && !requiresPurposeString) {
             return false
         }
         val featureFlag = permissionElement.getAttributeNS(ANDROID_NS, MANIFEST_ATTR_FEATURE_FLAG)
@@ -112,23 +112,20 @@ class SimplePermissionTransformer {
             )
         }
 
-        // Set specific purpose requirement min SDK version attribute
-        val requiresSpecificPurposeTargetSdkVersion =
-            inputPermissionElement.getAttributeNS(
-                ANDROID_NS,
-                MANIFEST_ATTR_REQUIRES_SPECIFIC_PURPOSE,
-            )
-        if (requiresSpecificPurposeTargetSdkVersion.isEmpty()) {
+        // Set purpose requirement min SDK version attribute
+        val requiresPurposeTargetSdkVersion =
+            inputPermissionElement.getAttributeNS(ANDROID_NS, MANIFEST_ATTR_REQUIRES_PURPOSE)
+        if (requiresPurposeTargetSdkVersion.isEmpty()) {
             outputRoot.appendChild(newPermissionElement)
             return
         }
         newPermissionElement.setAttribute(
-            ARTIFACT_ATTR_SPECIFIC_PURPOSE_MIN,
-            requiresSpecificPurposeTargetSdkVersion,
+            ARTIFACT_ATTR_REQUIRES_PURPOSE_MIN,
+            requiresPurposeTargetSdkVersion,
         )
 
-        // Version the declared valid specific purposes
-        val purposeNodes = inputPermissionElement.getElementsByTagName(TAG_SPECIFIC_PURPOSE)
+        // Version the declared valid purposes
+        val purposeNodes = inputPermissionElement.getElementsByTagName(TAG_VALID_PURPOSE)
         for (i in 0..<purposeNodes.length) {
             val purposeNode = purposeNodes.item(i)
             if (purposeNode.nodeType == Node.ELEMENT_NODE) {
@@ -136,7 +133,7 @@ class SimplePermissionTransformer {
                     purposeNode as Element,
                     outputDoc,
                     newPermissionElement,
-                    requiresSpecificPurposeTargetSdkVersion,
+                    requiresPurposeTargetSdkVersion,
                 )
             }
         }
@@ -149,13 +146,13 @@ class SimplePermissionTransformer {
         newPermissionElement: Element,
         parentMinSdkVersion: String,
     ) {
-        // Create specific-purpose child element and set name
-        val newPurposeElement = outputDoc.createElement(TAG_SPECIFIC_PURPOSE)
+        // Create valid-purpose child element and set name
+        val newPurposeElement = outputDoc.createElement(TAG_VALID_PURPOSE)
         val purposeName = purposeElement.getAttributeNS(ANDROID_NS, ATTR_NAME)
         newPurposeElement.setAttribute(ATTR_NAME, purposeName)
 
         // Set min SDK version attribute for purpose. For now, it will be the same as
-        // the requiresSpecificPurposeTargetSdkVersion attribute from the permission element.
+        // the requiresPurposeTargetSdkVersion attribute from the permission element.
         newPurposeElement.setAttribute(ARTIFACT_ATTR_PURPOSE_MIN, parentMinSdkVersion)
 
         // If defined, set max SDK version for purpose to mark as deprecated.
@@ -176,22 +173,20 @@ class SimplePermissionTransformer {
         // Tags & attributes for manifest XML
         private const val MANIFEST_ATTR_FEATURE_FLAG = "featureFlag"
         private const val MANIFEST_ATTR_PURPOSE_MAX = "maxTargetSdkVersion"
-        private const val MANIFEST_ATTR_REQUIRES_SPECIFIC_PURPOSE =
-            "requiresSpecificPurposeTargetSdkVersion"
+        private const val MANIFEST_ATTR_REQUIRES_PURPOSE = "requiresPurposeTargetSdkVersion"
         private const val MANIFEST_ATTR_REQUIRES_PURPOSE_STRING =
             "requiresPurposeStringTargetSdkVersion"
 
         // Tags & attributes for artifact XML
         private const val ARTIFACT_TAG_ROOT = "permissions"
-        private const val ARTIFACT_ATTR_SPECIFIC_PURPOSE_MIN =
-            "requiresSpecificPurposeMinTargetSdkVersion"
+        private const val ARTIFACT_ATTR_REQUIRES_PURPOSE_MIN = "requiresPurposeMinTargetSdkVersion"
         private const val ARTIFACT_ATTR_PURPOSE_STRING_MIN =
             "requiresPurposeStringMinTargetSdkVersion"
         private const val ARTIFACT_ATTR_PURPOSE_MIN = "minSdkVersion"
         private const val ARTIFACT_ATTR_PURPOSE_MAX = "maxSdkVersion"
 
         // Common tags & attributes for manifest & artifact XML
-        private const val TAG_SPECIFIC_PURPOSE = "valid-specific-purpose"
+        private const val TAG_VALID_PURPOSE = "valid-purpose"
         private const val TAG_PERMISSION = "permission"
         private const val ATTR_NAME = "name"
     }

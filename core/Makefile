@@ -813,7 +813,8 @@ $(APKCERTS_FILE): $(make_apkcerts_file) $(soong_apkcerts_file_with_soong_and_mak
 	@rm -f $@
 	cat $(make_apkcerts_file) $(soong_apkcerts_file_with_soong_and_make_modules_removed) > $@
 	$(if $(filter true,$(PRODUCT_FSVERITY_GENERATE_METADATA)),\
-	  $(call _apkcerts_write_line,BuildManifest,$(FSVERITY_APK_KEY_PATH).x509.pem,$(FSVERITY_APK_KEY_PATH).pk8,,system,$@) \
+	  $(if $(filter true,$(BUILDING_SYSTEM_IMAGE)),\
+	    $(call _apkcerts_write_line,BuildManifest,$(FSVERITY_APK_KEY_PATH).x509.pem,$(FSVERITY_APK_KEY_PATH).pk8,,system,$@)) \
 	  $(if $(filter true,$(BUILDING_SYSTEM_EXT_IMAGE)),\
             $(call _apkcerts_write_line,BuildManifestSystemExt,$(FSVERITY_APK_KEY_PATH).x509.pem,$(FSVERITY_APK_KEY_PATH).pk8,,system_ext,$@)))
 	# In case value of PACKAGES is empty.
@@ -2659,7 +2660,8 @@ $(INSTALLED_RECOVERY_BUILD_PROP_TARGET): PRIVATE_RECOVERY_UI_PROPERTIES := \
     TARGET_RECOVERY_UI_BRIGHTNESS_FILE:brightness_file \
     TARGET_RECOVERY_UI_MAX_BRIGHTNESS_FILE:max_brightness_file \
     TARGET_RECOVERY_UI_BRIGHTNESS_NORMAL:brightness_normal_percent \
-    TARGET_RECOVERY_UI_BRIGHTNESS_DIMMED:brightness_dimmed_percent
+    TARGET_RECOVERY_UI_BRIGHTNESS_DIMMED:brightness_dimmed_percent \
+    TARGET_RECOVERY_UI_GRAPHICS_TIMEOUT_MS:graphics_timeout_ms
 
 # Parses the given list of build variables and writes their values as build properties if defined.
 # For example, if a target defines `TARGET_RECOVERY_UI_MARGIN_HEIGHT := 100`,
@@ -7834,7 +7836,7 @@ $(INTERNAL_SDK_TARGET): PRIVATE_DEP_FILE := $(sdk_dep_file)
 $(INTERNAL_SDK_TARGET): PRIVATE_INPUT_FILES := $(sdk_atree_files)
 $(INTERNAL_SDK_TARGET): PRIVATE_PLATFORM_NAME := $(sdk_platform_dir_name)
 
-$(INTERNAL_SDK_TARGET): $(deps) | $(BUILD_NUMBER_FILE)
+$(INTERNAL_SDK_TARGET): $(deps) | $(BUILD_NUMBER_FILE) $(BUILD_UUID_FILE)
 	@echo "Package SDK: $@"
 	$(hide) rm -rf $(PRIVATE_DIR) $@
 	$(hide) ( \
@@ -7858,7 +7860,7 @@ $(INTERNAL_SDK_TARGET): $(deps) | $(BUILD_NUMBER_FILE)
 	        development/build/tools/sdk_clean.sh $(PRIVATE_DIR) && \
 	    if [ "$(TARGET_BUILD_VARIANT)" != "user" ] && \
 	       { [ "$(PRODUCT_NAME)" = "sdk" ] || [ "$(PRODUCT_NAME)" = "sdk_with_runtime_apis" ]; }; then \
-	        sed -e "s/{BUILD_NUMBER}/`cat $(BUILD_NUMBER_FILE)`/" -e "s/{PRODUCT_EXPORT_RUNTIME_APIS}/$(PRODUCT_EXPORT_RUNTIME_APIS)/" build/make/core/build_properties_template.xml > $(PRIVATE_DIR)/build_properties.xml; \
+	        sed -e "s/{BUILD_NUMBER}/`cat $(BUILD_NUMBER_FILE)`/" -e "s/{PRODUCT_EXPORT_RUNTIME_APIS}/$(PRODUCT_EXPORT_RUNTIME_APIS)/" -e "s/{BUILD_UUID}/`cat $(BUILD_UUID_FILE)`/" build/make/core/build_properties_template.xml > $(PRIVATE_DIR)/build_properties.xml; \
 	    fi && \
 	    chmod -R ug+rwX $(PRIVATE_DIR) && \
 	    cd $(dir $@) && zip -rqX $(notdir $@) $(PRIVATE_NAME) \
@@ -7894,13 +7896,6 @@ $(info [$(include_makefiles_total)/$(include_makefiles_total)] finishing Make pa
 include $(BUILD_SYSTEM)/product-graph.mk
 
 # -----------------------------------------------------------------
-# Create SDK repository packages. Must be done after tasks/* since
-# we need the addon rules defined.
-ifneq ($(sdk_repo_goal),)
-include $(TOPDIR)development/build/tools/sdk_repo.mk
-endif
-
-# -----------------------------------------------------------------
 # Extract additional data files used in Layoutlib
 include $(BUILD_SYSTEM)/layoutlib_data.mk
 
@@ -7921,11 +7916,6 @@ UPDATE_PARTITION_SCRIPT := $(HOST_OUT_EXECUTABLES)/update-partition
 ifneq (,$(strip $(PACK_DESKTOP_ESP_IMAGE)))
   PACK_IMAGE_DEPS += $(INSTALLED_ESPIMAGE_TARGET)
 endif # PACK_DESKTOP_ESP_IMAGE
-
-ifneq ($(filter dtb, $(AB_OTA_PARTITIONS)),)
-  PACK_IMAGE_DEPS += $(PRODUCT_OUT)/dtb.img
-  PACK_IMAGE_ARGS += --dtb-image $(PRODUCT_OUT)/dtb.img
-endif
 
 ifneq ($(filter dtbo, $(AB_OTA_PARTITIONS)),)
   PACK_IMAGE_DEPS += $(INSTALLED_DTBOIMAGE_TARGET)

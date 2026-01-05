@@ -69,7 +69,7 @@ mod tests {
         for offset in 0..8 {
             let attribute =
                 find_flag_attribute(&flag_info_list[..], FlagValueType::Boolean, offset).unwrap();
-            assert_eq!((attribute & FlagInfoBit::HasServerOverride as u8) != 0u8, false);
+            assert!((attribute & FlagInfoBit::HasServerOverride as u8) == 0u8);
         }
     }
 
@@ -95,7 +95,7 @@ mod tests {
         for offset in 0..8 {
             let attribute =
                 find_flag_attribute(&flag_info_list[..], FlagValueType::Boolean, offset).unwrap();
-            assert_eq!((attribute & FlagInfoBit::HasLocalOverride as u8) != 0u8, false);
+            assert!((attribute & FlagInfoBit::HasLocalOverride as u8) == 0u8);
         }
     }
 

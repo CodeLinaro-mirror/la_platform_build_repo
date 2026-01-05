@@ -788,7 +788,7 @@ def WriteBytesToInputFile(input_file, fn, data):
     with input_file.open(fn, "w") as entry_fp:
       return entry_fp.write(data)
   elif zipfile.is_zipfile(input_file):
-    with zipfile.ZipFile(input_file, "r", allowZip64=True) as zfp:
+    with zipfile.ZipFile(input_file, "a", allowZip64=True) as zfp:
       with zfp.open(fn, "w") as entry_fp:
         return entry_fp.write(data)
   else:
@@ -1891,6 +1891,7 @@ def _SignBootableImage(image_path, prebuilt_name, partition_name,
            "--partition_size", str(part_size), "--partition_name",
            partition_name]
     # Use sha256 of the kernel as salt for reproducible builds
+    salt = None
     with tempfile.TemporaryDirectory() as tmpdir:
       RunAndCheckOutput(["unpack_bootimg", "--boot_img", image_path, "--out", tmpdir])
       for filename in ["kernel", "ramdisk", "vendor_ramdisk00"]:

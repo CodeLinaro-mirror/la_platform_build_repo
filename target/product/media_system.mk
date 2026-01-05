@@ -36,6 +36,9 @@ PRODUCT_PACKAGES += \
     make_f2fs \
     requestsync \
 
+# Allowlist for system packages included in media_system.mk
+PRODUCT_PACKAGES += preinstalled-packages-media-system.xml
+
 ifeq ($(RELEASE_PACKAGE_COMPUTER_CONTROL),true)
   PRODUCT_PACKAGES += VirtualDeviceManager
 endif

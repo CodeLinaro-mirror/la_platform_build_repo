@@ -129,6 +129,9 @@ ifdef PRODUCT_AVF_ENABLED
 $(call add_soong_config_var_value,ANDROID,avf_enabled,$(PRODUCT_AVF_ENABLED))
 endif
 
+$(call soong_config_set,ANDROID,platform_security_patch_timestamp_string,$(PLATFORM_SECURITY_PATCH_TIMESTAMP))
+$(call soong_config_set_int,ANDROID,platform_security_patch_timestamp,$(PLATFORM_SECURITY_PATCH_TIMESTAMP))
+
 # Enable AVF remote attestation according to the flag value if PRODUCT_AVF_REMOTE_ATTESTATION_DISABLED is not
 # set to true explicitly.
 ifneq (true,$(PRODUCT_AVF_REMOTE_ATTESTATION_DISABLED))
@@ -496,3 +499,16 @@ $(call soong_config_set_bool,tradefed,use_prebuilt,false)
 endif
 
 $(call soong_config_set,berberis,target_native_bridge_abi,$(TARGET_NATIVE_BRIDGE_ABI))
+
+# Flags for SDK packages
+$(call soong_config_set,sdk,PLATFORM_VERSION,$(PLATFORM_VERSION))
+$(call soong_config_set,sdk,PLATFORM_SDK_VERSION,$(subst ",,$(PLATFORM_SDK_VERSION_FULL)))
+$(call soong_config_set,sdk,PLATFORM_SDK_EXTENSION_VERSION,$(PLATFORM_SDK_EXTENSION_VERSION))
+$(call soong_config_set,sdk,PLATFORM_IS_BASE_SDK,$(if $(filter $(PLATFORM_SDK_EXTENSION_VERSION),$(PLATFORM_BASE_SDK_EXTENSION_VERSION)),true,false))
+$(call soong_config_set,sdk,PLATFORM_VERSION_CODENAME,$(subst REL,,$(PLATFORM_VERSION_CODENAME)))
+$(call soong_config_set,sdk,PLATFORM_PREVIEW_SDK_VERSION,$(PLATFORM_PREVIEW_SDK_VERSION))
+$(call soong_config_set,sdk,BETA_SDK_VERSION,$(shell if [[ "$(PLATFORM_PREVIEW_SDK_VERSION)" =~ ^[0-9]{4}$$ ]]; then echo "$(PLATFORM_PREVIEW_SDK_VERSION)" | cut -c4 ; fi))
+
+# Flags for the sdk platforms folder name
+sdk_platform_dir_name := android-$(PLATFORM_VERSION_CODENAME)
+$(call soong_config_set,sdk,sdk_platform_dir_name,$(sdk_platform_dir_name))

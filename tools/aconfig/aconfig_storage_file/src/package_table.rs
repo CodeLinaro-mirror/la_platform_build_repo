@@ -60,7 +60,7 @@ impl fmt::Debug for PackageTableHeader {
 
 impl PackageTableHeader {
     /// Serialize to bytes
-    pub fn into_bytes(&self) -> Vec<u8> {
+    pub fn as_bytes(&self) -> Vec<u8> {
         let mut result = Vec::new();
         result.extend_from_slice(&self.version.to_le_bytes());
         let container_bytes = self.container.as_bytes();
@@ -127,7 +127,7 @@ impl fmt::Debug for PackageTableNode {
 
 impl PackageTableNode {
     /// Serialize to bytes
-    pub fn into_bytes(&self, version: u32) -> Vec<u8> {
+    pub fn as_bytes(&self, version: u32) -> Vec<u8> {
         match version {
             1 => Self::as_bytes_v1(self),
             2 => Self::as_bytes_v2(self),
@@ -135,7 +135,7 @@ impl PackageTableNode {
             4 if cfg!(enable_parse_v4) => Self::as_bytes_v3(self),
             // TODO(b/444251791): into_bytes should return a Result and panic
             // if version is not supported.
-            _ => Self::as_bytes_v2(&self),
+            _ => Self::as_bytes_v2(self),
         }
     }
 
@@ -293,13 +293,9 @@ impl PackageTable {
     /// Serialize to bytes
     pub fn into_bytes(&self) -> Vec<u8> {
         [
-            self.header.into_bytes(),
+            self.header.as_bytes(),
             self.buckets.iter().map(|v| v.unwrap_or(0).to_le_bytes()).collect::<Vec<_>>().concat(),
-            self.nodes
-                .iter()
-                .map(|v| v.into_bytes(self.header.version))
-                .collect::<Vec<_>>()
-                .concat(),
+            self.nodes.iter().map(|v| v.as_bytes(self.header.version)).collect::<Vec<_>>().concat(),
         ]
         .concat()
     }
@@ -309,7 +305,7 @@ impl PackageTable {
         let header = PackageTableHeader::from_bytes(bytes)?;
         let num_packages = header.num_packages;
         let num_buckets = crate::get_table_size(num_packages)?;
-        let mut head = header.into_bytes().len();
+        let mut head = header.as_bytes().len();
         let buckets = (0..num_buckets)
             .map(|_| match read_u32_from_bytes(bytes, &mut head).unwrap() {
                 0 => None,
@@ -319,7 +315,7 @@ impl PackageTable {
         let nodes = (0..num_packages)
             .map(|_| {
                 let node = PackageTableNode::from_bytes(&bytes[head..], header.version)?;
-                head += node.into_bytes(header.version).len();
+                head += node.as_bytes(header.version).len();
                 Ok(node)
             })
             .collect::<Result<Vec<_>, AconfigStorageError>>()
@@ -347,14 +343,14 @@ mod tests {
         for file_version in 1..=MAX_SUPPORTED_FILE_VERSION {
             let package_table = create_test_package_table(file_version);
             let header: &PackageTableHeader = &package_table.header;
-            let reinterpreted_header = PackageTableHeader::from_bytes(&header.into_bytes());
+            let reinterpreted_header = PackageTableHeader::from_bytes(&header.as_bytes());
             assert!(reinterpreted_header.is_ok());
             assert_eq!(header, &reinterpreted_header.unwrap());
 
             let nodes: &Vec<PackageTableNode> = &package_table.nodes;
             for node in nodes.iter() {
                 let reinterpreted_node =
-                    PackageTableNode::from_bytes(&node.into_bytes(header.version), header.version)
+                    PackageTableNode::from_bytes(&node.as_bytes(header.version), header.version)
                         .unwrap();
                 assert_eq!(node, &reinterpreted_node);
             }

@@ -239,6 +239,9 @@ A/B OTA specific options
   --enable_puffdiff
       Whether to enable to puffdiff feature. Will generate smaller OTA but uses more memory, OTA generation will take longer.
 
+  --enable_replace_zstd=<true|false>
+      Whether to enable zstd compression for replace. Defaults to false.
+
   --enable_lz4diff
       Whether to enable lz4diff feature. Will generate smaller OTA for EROFS but
       uses more memory.
@@ -342,6 +345,7 @@ OPTIONS.vabc_cow_version = None
 OPTIONS.compression_factor = None
 OPTIONS.full_ota_partitions = None
 OPTIONS.disable_ublk = False
+OPTIONS.enable_replace_zstd = False
 
 
 POSTINSTALL_CONFIG = 'META/postinstall_config.txt'
@@ -1024,6 +1028,8 @@ def GenerateAbOtaPackage(target_file, output_file, source_file=None):
 
   if OPTIONS.enable_vabc_xor:
     additional_args += ["--enable_vabc_xor=true"]
+  if OPTIONS.enable_replace_zstd:
+    additional_args += ["--enable_replace_zstd=true"]
   if OPTIONS.compressor_types:
     additional_args += ["--compressor_types", OPTIONS.compressor_types]
   additional_args += ["--max_timestamp", max_timestamp]
@@ -1234,6 +1240,10 @@ def main(argv):
           a.strip().strip("\"").strip("'").split(","))
     elif o == "--disable_ublk":
       OPTIONS.disable_ublk = True
+    elif o == "--enable_replace_zstd":
+      assert a.lower() in ["true", "false"], \
+          "Cannot parse value %r for option %r - expecting 'true' or 'false'" % (a, o)
+      OPTIONS.enable_replace_zstd = a.lower() != "false"
     else:
       return False
     return True
@@ -1286,6 +1296,7 @@ def main(argv):
                                  "compression_factor=",
                                  "full_ota_partitions=",
                                  "disable_ublk",
+                                 "enable_replace_zstd=",
                              ], extra_option_handler=[option_handler, payload_signer.signer_options])
   common.InitLogging()
 

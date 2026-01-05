@@ -4472,5 +4472,10 @@ team {
     trendy_team_id: "6730550418440192",
 }
 
+team {
+    name: "trendy_team_network_security",
+    trendy_team_id: "6092250355695616",
+}
+
 // DON'T ADD NEW RULES HERE. For more details refer to
 // go/new-android-ownership-model

@@ -98,6 +98,7 @@ PRODUCT_PACKAGES += \
     E2eeContactKeysProvider \
     e2fsck \
     enhanced-confirmation.xml \
+    evemu-record \
     ExtShared \
     flags_health_check \
     framework-graphics \
@@ -536,7 +537,6 @@ PRODUCT_PACKAGES_DEBUG := \
     adevice_fingerprint \
     arping \
     dmuserd \
-    evemu-record \
     idlcli \
     init-debug.rc \
     iotop \
@@ -599,12 +599,25 @@ ifneq (,$(RELEASE_NATIVE_FRAMEWORK_PROTOTYPE))
 endif
 
 # Whether to use Java or new native (Rust) OMAPI implementation
+LOCAL_USE_NATIVE_OMAPI := false
+ifeq ($(DEVICE_USE_NATIVE_OMAPI),true)
+    LOCAL_USE_NATIVE_OMAPI := true
+endif
 ifeq ($(RELEASE_NATIVE_OMAPI),true)
+    LOCAL_USE_NATIVE_OMAPI := true
+endif
+
+ifeq ($(LOCAL_USE_NATIVE_OMAPI),true)
     PRODUCT_PACKAGES += \
         omapi
 else
     PRODUCT_PACKAGES += \
         SecureElement
+endif
+
+ifneq (,$(RELEASE_AISEAL_FRAMEWORK))
+    PRODUCT_PACKAGES += \
+        aisealhostservice
 endif
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/runtime_libart.mk)

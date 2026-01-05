@@ -172,6 +172,12 @@ else
 
 endif
 
+ifeq ($(RELEASE_WEBAPP_MODULE),true)
+    PRODUCT_APEX_BOOT_JARS += \
+        com.android.webapp:framework-webapp \
+
+endif
+
 ifeq ($(RELEASE_NPUMANAGER_MODULE),true)
     PRODUCT_APEX_BOOT_JARS += \
         com.android.npumanager:framework-npumanager \
@@ -222,12 +228,6 @@ endif
 
 ifeq ($(RELEASE_AVF_ENABLE_LLPVM_CHANGES),true)
   PRODUCT_APEX_SYSTEM_SERVER_JARS += com.android.virt:service-virtualization
-endif
-
-# Use $(wildcard) to avoid referencing the profile in thin manifests that don't have the
-# art project.
-ifneq (,$(wildcard art))
-  PRODUCT_DEX_PREOPT_BOOT_IMAGE_PROFILE_LOCATION += art/build/boot/boot-image-profile.txt
 endif
 
 # List of jars on the platform that system_server loads dynamically using separate classloaders.
