@@ -859,12 +859,23 @@ else
 endif
 .KATI_READONLY := MAINLINE_SEPOLICY_DEV_CERTIFICATES
 
+# Certificate for the Bluetooth sepolicy context
 ifdef PRODUCT_MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES
-  MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES  := $(PRODUCT_MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES)
-else ifneq (,$(filter com.google.android.bt,$(PRODUCT_PACKAGES)))
-  MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES  := $(MAINLINE_SEPOLICY_DEV_CERTIFICATES)
+  # Priority 1: Use the product specific variable if defined
+  MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES := $(PRODUCT_MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES)
+else ifneq (,$(filter com.google.android.bt com.google.android.bt_compressed com.google.android.go.bt,$(PRODUCT_PACKAGES)))
+  # Priority 2: Use Mainline Sepolicy cert if the Bluetooth module is detected
+  MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES := $(MAINLINE_SEPOLICY_DEV_CERTIFICATES)
+else ifeq (,$(filter com.google.android.art com.google.android.art_compressed com.google.android.go.art,$(PRODUCT_PACKAGES)))
+  # Priority 3: AOSP / No-Mainline Detection
+  # If NO ART module package is found, we assume this is a legacy/AOSP build without mainline support.
+  # In this case, use the directory of the default system dev certificate.
+  MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES := $(dir $(DEFAULT_SYSTEM_DEV_CERTIFICATE))
 else
-  MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES  := $(dir build/make/target/product/security/testkey)
+  # Priority 4: Fallback
+  # We have some mainline modules (ART exists), but without the Bluetooth module.
+  # Use the standard testkey directory.
+  MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES := $(dir build/make/target/product/security/testkey)
 endif
 .KATI_READONLY := MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES
 
