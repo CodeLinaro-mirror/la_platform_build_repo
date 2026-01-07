@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package com.android.metadata.loader;
+package com.android.soong.api.loader;
 
+import com.android.soong.api.proto.Module;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.stream.JsonReader;
+import com.google.protobuf.util.JsonFormat;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -26,12 +28,15 @@ import java.sql.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-public class MetadataLoader {
+/**
+ * SoongApiLoader handles the ingestion of Soong metadata (JSON/ZIP) into a SQLite database.
+ */
+public class SoongApiLoader {
 
     /**
      * Executes the conversion logic: reads the input file and populates the SQLite database.
      *
-     * @param inputFile The input metadata.zip or metadata.json file.
+     * @param inputFile The input soong_metadata.zip or metadata.json file.
      * @param outputDb The output SQLite DB file.
      */
     public void load(File inputFile, File outputDb) throws IOException, SQLException {
@@ -63,6 +68,7 @@ public class MetadataLoader {
     private void initializeDb(Connection conn) throws SQLException {
         try (Statement stmt = conn.createStatement()) {
             stmt.execute("DROP TABLE IF EXISTS modules");
+            // metadata column stores the programmatic JSON representation of the Module proto.
             stmt.execute("CREATE TABLE modules (name TEXT, metadata TEXT)");
             stmt.execute("CREATE INDEX idx_name ON modules(name)");
         }
@@ -91,6 +97,9 @@ public class MetadataLoader {
 
     private void parseAndInsertMetadata(Connection conn, InputStreamReader isr) throws IOException, SQLException {
         Gson gson = new Gson();
+        JsonFormat.Parser parser = JsonFormat.parser().ignoringUnknownFields();
+        JsonFormat.Printer printer = JsonFormat.printer().omittingInsignificantWhitespace();
+
         String sql = "INSERT INTO modules (name, metadata) VALUES (?, ?)";
 
         try (JsonReader reader = new JsonReader(isr);
@@ -99,14 +108,26 @@ public class MetadataLoader {
             reader.beginArray(); // Start reading the JSON array [
 
             while (reader.hasNext()) {
-                // Stream reading: Read only one Module object into memory at a time.
-                JsonObject module = gson.fromJson(reader, JsonObject.class);
+                // Stream reading to minimize memory footprint.
+                JsonObject jsonObject = gson.fromJson(reader, JsonObject.class);
+                String rawJson = gson.toJson(jsonObject);
 
-                String name = module.has("name") ? module.get("name").getAsString() : "unknown";
-                String jsonStr = gson.toJson(module);
+                // Programmatic conversion from JSON to Protobuf for validation and access.
+                Module.Builder moduleBuilder = Module.newBuilder();
+                parser.merge(rawJson, moduleBuilder);
+                Module module = moduleBuilder.build();
+
+                String name = module.getName();
+                // Skip modules that do not have a name.
+                if (name.isEmpty()) {
+                    System.err.println("Warning: Skipping module with no name: " + rawJson);
+                    continue;
+                }
+                // Store the sanitized JSON string from Protobuf.
+                String protoJson = printer.print(module);
 
                 pstmt.setString(1, name);
-                pstmt.setString(2, jsonStr);
+                pstmt.setString(2, protoJson);
                 pstmt.addBatch();
             }
 
@@ -115,4 +136,3 @@ public class MetadataLoader {
         }
     }
 }
-

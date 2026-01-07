@@ -40,6 +40,9 @@ pub struct JavaCodegenConfig {
     pub support_uau_annotation: bool,
     // Whether to optimize read-only flag reads by short-circuiting test override support.
     pub optimize_read_only_getter: bool,
+    // Whether to allow streamlining and/or omission of the internal impl interface for
+    // supported read-only scenarios.
+    pub allow_impl_interface_removal: bool,
     pub generate_checks_sdk_annotation: bool,
 }
 
@@ -76,8 +79,22 @@ where
     let container = (flag_elements.first().expect("zero template flags").container).to_string();
     let is_platform_container =
         matches!(container.as_str(), "system" | "system_ext" | "product" | "vendor");
+    let preserve_impl_interface = !config.allow_impl_interface_removal;
+    // Flags that are overridable and should be preserved in the FeatureFlags API.
+    // In practice, we only omit flags when:
+    //      1) the flag is read-only,
+    //      2) read-only getter optimization is enabled, and
+    //      3) the impl interface is not explicitly preserved for the current target.
+    let overridable_flag_elements: Vec<FlagElement> = flag_elements
+        .iter()
+        .filter(|fe| {
+            fe.is_read_write || !config.optimize_read_only_getter || preserve_impl_interface
+        })
+        .cloned()
+        .collect();
     let context = Context {
         flag_elements,
+        overridable_flag_elements,
         namespace_flags,
         is_test_mode,
         runtime_lookup_required,
@@ -88,12 +105,16 @@ where
         is_platform_container,
         package_fingerprint: format!("0x{:X}L", config.package_fingerprint),
         single_exported_file: config.single_exported_file,
+        preserve_impl_interface,
         use_device_config,
         support_uau_annotation: config.support_uau_annotation,
         optimize_read_only_getter: config.optimize_read_only_getter,
         generate_checks_sdk_annotation: config.generate_checks_sdk_annotation,
     };
     let mut template = TinyTemplate::new();
+    // TODO(b/447177427): Add additional template logic to conditionally omit all impl classes
+    // completely if 1) all flags are (effectively) read-only, 2) read-only getters are optimized,
+    // and 3) the impl interface is not explicitly preserved.
     if library_exported && config.single_exported_file {
         template.add_template(
             "ExportedFlags.java",
@@ -159,6 +180,7 @@ fn gen_flags_by_namespace(flags: &[FlagElement]) -> Vec<NamespaceFlags> {
 #[derive(Serialize)]
 struct Context {
     pub flag_elements: Vec<FlagElement>,
+    pub overridable_flag_elements: Vec<FlagElement>,
     pub namespace_flags: Vec<NamespaceFlags>,
     pub is_test_mode: bool,
     pub runtime_lookup_required: bool,
@@ -169,6 +191,7 @@ struct Context {
     pub is_platform_container: bool,
     pub package_fingerprint: String,
     pub single_exported_file: bool,
+    pub preserve_impl_interface: bool,
     pub use_device_config: bool,
     pub support_uau_annotation: bool,
     pub optimize_read_only_getter: bool,
@@ -433,7 +456,11 @@ mod tests {
         }
     }
 
-    fn run_generate_java_code_production_test(test_name: &str, optimize_read_only_getter: bool) {
+    fn run_generate_java_code_production_test(
+        test_name: &str,
+        optimize_read_only_getter: bool,
+        allow_impl_interface_removal: bool,
+    ) {
         let parsed_flags = crate::test::parse_test_flags();
         let mode = CodegenMode::Production;
         let modified_parsed_flags =
@@ -445,6 +472,7 @@ mod tests {
             flag_ids,
             package_fingerprint: 5801144784618221668,
             optimize_read_only_getter,
+            allow_impl_interface_removal,
             ..Default::default()
         };
         let generated_files = generate_java_code(
@@ -458,14 +486,45 @@ mod tests {
 
     #[test]
     fn test_generate_java_code_production() {
-        run_generate_java_code_production_test("test_generate_java_code_production", false);
+        let optimize_read_only_getter = false;
+        let allow_impl_interface_removal = false;
+        run_generate_java_code_production_test(
+            "test_generate_java_code_production",
+            optimize_read_only_getter,
+            allow_impl_interface_removal,
+        );
+    }
+
+    #[test]
+    fn test_generate_java_code_production_allow_impl_removal() {
+        let optimize_read_only_getter = false;
+        let allow_impl_interface_removal = true;
+        run_generate_java_code_production_test(
+            "test_generate_java_code_production_allow_impl_removal",
+            optimize_read_only_getter,
+            allow_impl_interface_removal,
+        );
     }
 
     #[test]
     fn test_generate_java_code_production_optimize_ro() {
+        let optimize_read_only_getter = true;
+        let allow_impl_interface_removal = false;
         run_generate_java_code_production_test(
             "test_generate_java_code_production_optimize_ro",
-            true,
+            optimize_read_only_getter,
+            allow_impl_interface_removal,
+        );
+    }
+
+    #[test]
+    fn test_generate_java_code_production_optimize_ro_allow_impl_removal() {
+        let optimize_read_only_getter = true;
+        let allow_impl_interface_removal = true;
+        run_generate_java_code_production_test(
+            "test_generate_java_code_production_optimize_ro_allow_impl_removal",
+            optimize_read_only_getter,
+            allow_impl_interface_removal,
         );
     }
 

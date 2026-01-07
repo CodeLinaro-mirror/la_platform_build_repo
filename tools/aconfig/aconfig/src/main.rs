@@ -146,12 +146,14 @@ fn main() -> Result<()> {
             out_dir,
             mode,
             single_exported_file,
+            allow_impl_interface_removal,
         } => {
             let finalized_flags = load_finalized_flags()?;
             let generated_files = commands::create_java_lib(
                 open_single_file(&cache_path)?, // cache
                 mode,
                 single_exported_file,
+                allow_impl_interface_removal,
                 finalized_flags,
             )
             .context("failed to create java lib")?;

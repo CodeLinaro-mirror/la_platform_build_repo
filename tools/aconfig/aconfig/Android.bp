@@ -46,6 +46,10 @@ rust_defaults {
         select(release_flag("RELEASE_ACONFIG_PARSE_V4"), {
             true: ["enable_parse_v4"],
             default: [],
+        }) +
+        select(release_flag("RELEASE_ACONFIG_DEFAULT_ALLOW_JAVA_IMPL_INTERFACE_REMOVAL"), {
+            true: ["default_allow_java_impl_interface_removal"],
+            default: [],
         }),
     features: select(release_flag("RELEASE_ACONFIG_DEFAULT_EXPORTED_READS_TO_DISABLED"), {
         true: ["default_exported_reads_to_disabled"],

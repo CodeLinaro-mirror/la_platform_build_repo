@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.android.metadata.loader;
+package com.android.soong.api.loader;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -37,14 +37,17 @@ import java.sql.Statement;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+/**
+ * Tests for {@link SoongApiLoader}.
+ */
 @RunWith(JUnit4.class)
-public class MetadataLoaderTest {
+public class SoongApiLoaderTest {
 
     @Rule
     public TemporaryFolder tempFolder = new TemporaryFolder();
 
     private File outputDb;
-    private MetadataLoader loader;
+    private SoongApiLoader loader;
 
     // Mock two JSON records
     private final String jsonContent = "[\n" +
@@ -54,14 +57,14 @@ public class MetadataLoaderTest {
 
     @Before
     public void setUp() throws Exception {
-        loader = new MetadataLoader();
-        outputDb = tempFolder.newFile("test_metadata.db");
+        loader = new SoongApiLoader();
+        outputDb = tempFolder.newFile("test_soong_api.db");
     }
 
     @Test
     public void testLoad_fromZip_convertsJsonToSqlite() throws Exception {
-        // 1. Arrange: Create a mock metadata.zip
-        File inputZip = tempFolder.newFile("test_metadata.zip");
+        // 1. Arrange: Create a mock metadata.zip (Soong typically produces this)
+        File inputZip = tempFolder.newFile("soong_metadata.zip");
         createMockZipFile(inputZip, jsonContent);
 
         // 2. Act: Run the Loader
@@ -117,6 +120,7 @@ public class MetadataLoaderTest {
             rs = stmt.executeQuery("SELECT metadata FROM modules WHERE name = 'moduleA'");
             assertTrue("moduleA should exist", rs.next());
             String jsonA = rs.getString("metadata");
+            // Note: JsonFormat.printer() might change whitespace, but "contains" is safe.
             assertTrue("JSON A should contain type", jsonA.contains("\"type\":\"java_library\""));
             assertTrue("JSON A should contain install path", jsonA.contains("/system/lib/a.jar"));
 
@@ -128,4 +132,3 @@ public class MetadataLoaderTest {
         }
     }
 }
-

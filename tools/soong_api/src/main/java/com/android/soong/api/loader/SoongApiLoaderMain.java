@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package com.android.metadata.loader;
+package com.android.soong.api.loader;
 
 import java.io.File;
 
-public class MetadataLoaderMain {
+/**
+ * CLI entry point for the Soong API Database Loader.
+ */
+public class SoongApiLoaderMain {
     public static void main(String[] args) {
         String inputPath = null;
         String dbPath = null;
@@ -26,26 +29,25 @@ public class MetadataLoaderMain {
         for (int i = 0; i < args.length; i++) {
             if ("-i".equals(args[i]) && i + 1 < args.length) {
                 inputPath = args[i + 1];
-                i++; // Skip next argument
+                i++;
             } else if ("-o".equals(args[i]) && i + 1 < args.length) {
                 dbPath = args[i + 1];
-                i++; // Skip next argument
+                i++;
             }
         }
 
         if (inputPath == null || dbPath == null) {
-            System.err.println("Usage: metadata_db_loader -i <input.zip or input.json> -o <output.db>");
+            System.err.println("Usage: soong_api_db_loader -i <input.zip or input.json> -o <output.db>");
             System.exit(1);
         }
 
         try {
-            MetadataLoader loader = new MetadataLoader();
+            SoongApiLoader loader = new SoongApiLoader();
             loader.load(new File(inputPath), new File(dbPath));
-            System.out.println("Successfully generated: " + dbPath);
+            System.out.println("Successfully generated Soong API database: " + dbPath);
         } catch (Exception e) {
             e.printStackTrace();
             System.exit(1);
         }
     }
 }
-
