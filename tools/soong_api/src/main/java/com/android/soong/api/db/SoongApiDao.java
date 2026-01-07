@@ -63,8 +63,10 @@ public class SoongApiDao {
      * Retrieves modules that install a specific file.
      */
     public List<Module> getModulesByInstallPath(String installPath) throws SQLException {
-        String sql = "SELECT metadata FROM modules, json_each(modules.metadata, '$.install_files') " +
-                     "WHERE json_each.value = ?";
+        String sql = "SELECT metadata FROM modules WHERE EXISTS (" +
+                     "  SELECT 1 FROM json_each(modules.metadata, '$.install_files') " +
+                     "  WHERE value = ?" +
+                     ")";
         return queryAndAggregate(sql, installPath);
     }
 

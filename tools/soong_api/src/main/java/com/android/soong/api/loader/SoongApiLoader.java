@@ -98,7 +98,9 @@ public class SoongApiLoader {
     private void parseAndInsertMetadata(Connection conn, InputStreamReader isr) throws IOException, SQLException {
         Gson gson = new Gson();
         JsonFormat.Parser parser = JsonFormat.parser().ignoringUnknownFields();
-        JsonFormat.Printer printer = JsonFormat.printer().omittingInsignificantWhitespace();
+        JsonFormat.Printer printer = JsonFormat.printer()
+            .preservingProtoFieldNames() // Preserve `install_files` instead of `installFiles`
+            .omittingInsignificantWhitespace();
 
         String sql = "INSERT INTO modules (name, metadata) VALUES (?, ?)";
 

@@ -17,6 +17,7 @@
 package com.android.soong.api.loader;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
@@ -49,10 +50,20 @@ public class SoongApiLoaderTest {
     private File outputDb;
     private SoongApiLoader loader;
 
-    // Mock two JSON records
+    // Mock JSON content using snake_case as expected from Soong.
     private final String jsonContent = "[\n" +
-            "  {\"name\": \"moduleA\", \"type\": \"java_library\", \"install_files\": [\"/system/lib/a.jar\"]},\n" +
-            "  {\"name\": \"moduleB\", \"type\": \"cc_binary\", \"install_files\": []}\n" +
+            "  {\n" +
+            "    \"name\": \"moduleA\", \n" +
+            "    \"type\": \"java_library\", \n" +
+            "    \"path\": \"frameworks/base\", \n" +
+            "    \"install_files\": [\"/system/lib/a.jar\"]\n" +
+            "  },\n" +
+            "  {\n" +
+            "    \"name\": \"moduleB\", \n" +
+            "    \"type\": \"cc_binary\", \n" +
+            "    \"path\": \"system/core\", \n" +
+            "    \"install_files\": []\n" +
+            "  }\n" +
             "]";
 
     @Before
@@ -63,14 +74,14 @@ public class SoongApiLoaderTest {
 
     @Test
     public void testLoad_fromZip_convertsJsonToSqlite() throws Exception {
-        // 1. Arrange: Create a mock metadata.zip (Soong typically produces this)
+        // 1. Arrange: Create a mock soong_metadata.zip
         File inputZip = tempFolder.newFile("soong_metadata.zip");
         createMockZipFile(inputZip, jsonContent);
 
-        // 2. Act: Run the Loader
+        // 2. Act: Run the Loader to ingest data into SQLite
         loader.load(inputZip, outputDb);
 
-        // 3. Assert: Verify DB content
+        // 3. Assert: Verify the database structure and content
         assertDbContent();
     }
 
@@ -80,10 +91,10 @@ public class SoongApiLoaderTest {
         File inputJson = tempFolder.newFile("metadata.json");
         createMockJsonFile(inputJson, jsonContent);
 
-        // 2. Act: Run the Loader
+        // 2. Act: Run the Loader to ingest data into SQLite
         loader.load(inputJson, outputDb);
 
-        // 3. Assert: Verify DB content
+        // 3. Assert: Verify the database structure and content
         assertDbContent();
     }
 
@@ -104,31 +115,35 @@ public class SoongApiLoaderTest {
         }
     }
 
+    /**
+     * Helper method to assert the correctness of the generated database.
+     */
     private void assertDbContent() throws Exception {
         assertTrue("Output DB should exist", outputDb.exists());
 
-        try (Connection conn = DriverManager.getConnection("jdbc:sqlite:" + outputDb.getAbsolutePath());
+        String url = "jdbc:sqlite:" + outputDb.getAbsolutePath();
+        try (Connection conn = DriverManager.getConnection(url);
              Statement stmt = conn.createStatement()) {
 
-            // Verify total count
+            // Verify total module count
             ResultSet rs = stmt.executeQuery("SELECT count(*) FROM modules");
             assertTrue("Result set should have a row", rs.next());
-            int count = rs.getInt(1);
-            assertEquals("Should have 2 modules", 2, count);
+            assertEquals("Should have 2 modules", 2, rs.getInt(1));
 
             // Verify specific data for moduleA
             rs = stmt.executeQuery("SELECT metadata FROM modules WHERE name = 'moduleA'");
             assertTrue("moduleA should exist", rs.next());
             String jsonA = rs.getString("metadata");
-            // Note: JsonFormat.printer() might change whitespace, but "contains" is safe.
-            assertTrue("JSON A should contain type", jsonA.contains("\"type\":\"java_library\""));
-            assertTrue("JSON A should contain install path", jsonA.contains("/system/lib/a.jar"));
 
-            // Verify specific data for moduleB
-            rs = stmt.executeQuery("SELECT metadata FROM modules WHERE name = 'moduleB'");
-            assertTrue("moduleB should exist", rs.next());
-            String jsonB = rs.getString("metadata");
-            assertTrue("JSON B should contain type", jsonB.contains("\"type\":\"cc_binary\""));
+            // Verify content
+            assertTrue("JSON should contain type", jsonA.contains("\"type\":\"java_library\""));
+            assertTrue("JSON should contain install path", jsonA.contains("/system/lib/a.jar"));
+
+            // Verify fix for field naming: must be snake_case to support SQL JSON queries.
+            assertTrue("JSON must use snake_case 'install_files'",
+                       jsonA.contains("\"install_files\""));
+            assertFalse("JSON must NOT use camelCase 'installFiles'",
+                        jsonA.contains("\"installFiles\""));
         }
     }
 }
