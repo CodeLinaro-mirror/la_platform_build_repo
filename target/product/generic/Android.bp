@@ -791,6 +791,11 @@ system_image_defaults {
             "aisealhostservice", // base_system (RELEASE_AISEAL_FRAMEWORK)
         ],
         default: [],
+    }) + select(release_flag("RELEASE_WEBAPP_MODULE"), {
+        true: [
+            "default-permissions-webapp.xml", // base_system (RELEASE_WEBAPP_MODULE)
+        ],
+        default: [],
     }),
     multilib: {
         common: {
