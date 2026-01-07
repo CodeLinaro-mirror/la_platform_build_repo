@@ -1053,6 +1053,36 @@ BOARD_KERNEL_MODULES_16K := $(foreach \
 )
 endif # BOARD_KERNEL_MODULES_16K
 
+ifdef BOARD_KERNEL_MODULES_ZIP
+  disallowed_variables := \
+    BOARD_SYSTEM_KERNEL_MODULES \
+    BOARD_SYSTEM_KERNEL_MODULES_BLOCKLIST_FILE \
+    BOARD_SYSTEM_KERNEL_MODULES_LOAD \
+    BOARD_VENDOR_KERNEL_MODULES \
+    BOARD_VENDOR_KERNEL_MODULES_BLOCKLIST_FILE \
+    BOARD_VENDOR_KERNEL_MODULES_2ND_STAGE_16KB_MODE \
+    BOARD_VENDOR_KERNEL_MODULES_LOAD \
+    BOARD_DO_NOT_STRIP_VENDOR_MODULES \
+    BOARD_ODM_KERNEL_MODULES \
+    BOARD_ODM_KERNEL_MODULES_BLOCKLIST_FILE \
+    BOARD_VENDOR_RAMDISK_KERNEL_MODULES \
+    BOARD_VENDOR_RAMDISK_KERNEL_MODULES_BLOCKLIST_FILE \
+    BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD \
+    BOARD_VENDOR_RAMDISK_KERNEL_MODULES_OPTIONS_FILE \
+    BOARD_DO_NOT_STRIP_VENDOR_RAMDISK_MODULES \
+    BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES \
+    BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_BLOCKLIST_FILE \
+    # BOARD_KERNEL_MODULES_16K \ # TODO after ramdisk_16k supports zip files
+
+  # Additional kernel-module related variables that are allowed when using a kernel module zip:
+  # - BOARD_DO_NOT_STRIP_VENDOR_MODULES
+
+  # Could consider denying them, but it'll probably require a lot of product config changes.
+  $(foreach var,$(disallowed_variables), \
+    $(if $($(var)),$(eval $(var) :=)))
+
+  disallowed_variables :=
+endif
 
 # By default, we build the hidden API csv files from source. You can use
 # prebuilt hiddenapi files by setting BOARD_PREBUILT_HIDDENAPI_DIR to the name
