@@ -1474,7 +1474,7 @@ def main(argv):
       target_files_diff.recursiveDiff(
           '', source_dir, target_dir, out_file)
 
-  logger.info("done. ", args[1])
+  logger.info("done. %s", args[1])
 
 
 if __name__ == '__main__':

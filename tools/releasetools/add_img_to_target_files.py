@@ -617,9 +617,10 @@ def CreateImage(input_dir, info_dict, what, output_file, block_list=None):
   build_image.BuildImage(
       os.path.join(input_dir, what.upper()), image_props, output_file.name)
 
-  output_file.Write()
   if block_list and os.path.exists(block_list.name):
     block_list.Write()
+  is_erofs = image_props.get("fs_type", "").startswith("erofs")
+  output_file.Write(zipfile.ZIP_STORED if is_erofs else None)
 
   # Set the '_image_size' for given image size.
   is_verity_partition = "verity_block_device" in image_props

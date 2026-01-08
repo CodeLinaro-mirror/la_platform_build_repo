@@ -34,7 +34,7 @@ public class CustomFeatureFlags implements FeatureFlags \{
     public CustomFeatureFlags(BiPredicate<String, Predicate<FeatureFlags>> getValueImpl) \{
         mGetValueImpl = getValueImpl;
     }
-{{ for item in flag_elements}}
+{{ for item in overridable_flag_elements }}
     @Override
 {{ -if not library_exported }}
 {{ -if support_uau_annotation }}

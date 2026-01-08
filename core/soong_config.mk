@@ -601,6 +601,9 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_list, ProductLinkerConfigSrcs, $(PRODUCT_PRODUCT_LINKER_CONFIG_FRAGMENTS))
 
   # Used to generate _dlkm partitions
+  $(call add_json_str, BoardKernelModulesZip, $(BOARD_KERNEL_MODULES_ZIP))
+  $(call add_json_list, BoardKernelModulesZipExtraVendorKernelRamdiskLoads, $(BOARD_KERNEL_MODULES_ZIP_EXTRA_VENDOR_KERNEL_RAMDISK_LOADS))
+  $(call add_json_list, BoardKernelModulesZipExtraVendorKernelModules, $(BOARD_KERNEL_MODULES_ZIP_EXTRA_VENDOR_KERNEL_MODULES))
   $(call add_json_bool, BuildingSystemDlkmImage,               $(BUILDING_SYSTEM_DLKM_IMAGE))
   $(call add_json_list, SystemKernelModules, $(BOARD_SYSTEM_KERNEL_MODULES))
   $(call add_json_str, SystemKernelBlocklistFile, $(BOARD_SYSTEM_KERNEL_MODULES_BLOCKLIST_FILE))

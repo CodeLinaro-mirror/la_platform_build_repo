@@ -1075,5 +1075,7 @@ endif
 -include test/wvts/tools/build/config.mk
 # DTS-specific config.
 -include test/dts/tools/build/config.mk
+# CHDTS-specific config.
+-include system/chre/java/test/chdts/tools/build/config.mk
 # Include the google-specific config
 -include vendor/google/build/config.mk

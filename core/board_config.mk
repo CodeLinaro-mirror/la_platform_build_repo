@@ -134,6 +134,14 @@ _board_strip_readonly_list += BOARD_PREBUILT_INIT_BOOT_IMAGE
 # Defines the list of logical vendor ramdisk names to build or include in vendor_boot.
 _board_strip_readonly_list += BOARD_VENDOR_RAMDISK_FRAGMENTS
 
+_board_strip_readonly_list += BOARD_KERNEL_MODULES_ZIP
+_board_strip_readonly_list += BOARD_KERNEL_MODULES_ZIP_EXTRA_VENDOR_KERNEL_RAMDISK_LOADS
+_board_strip_readonly_list += BOARD_KERNEL_MODULES_ZIP_EXTRA_VENDOR_KERNEL_MODULES
+
+BOARD_KERNEL_MODULES_ZIP :=
+BOARD_KERNEL_MODULES_ZIP_EXTRA_VENDOR_KERNEL_RAMDISK_LOADS :=
+BOARD_KERNEL_MODULES_ZIP_EXTRA_VENDOR_KERNEL_MODULES :=
+
 # These are all variables used to build $(INSTALLED_MISC_INFO_TARGET)
 # in build/make/core/Makefile. Their values get used in command line
 # arguments, so they have to be stripped to make the ninja files stable.
