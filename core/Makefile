@@ -3870,15 +3870,32 @@ endef
 
 # MM AIS modules
 define ES_MOD_ORDER_AIS
-camcc-kalama
-qcom_ipc_lite
-synx-driver
+pinctrl-spmi-gpio
+minidump
+qcom_va_minidump
+smem
+qcom_glink
+qcom_glink_smem
+qcom_smd
+msm-mmrm
+camcc-canoe
+rproc_qcom_common
+qmi_helpers
+qcom_pdr_msg
+pdr_interface
+qti_pmic_glink
+panel_event_notifier
 qti_battery_charger
-leds-qti-flash
+leds-qcom-flash
+msm_hw_fence
+ipclite
+synx-driver
 mem_buf_dev
-llcc_qcom
 mdt_loader
+qcom-scm
+smmu_proxy_dlkm
 qcom_rpmh
+crm-v2
 camera
 
 endef
@@ -3893,8 +3910,17 @@ endef
 
 # MM RVC modules
 define ES_MOD_ORDER_RV
-dcvs_fp scc-sm8150
-qcom-dcvs gpucc-sm8150
+smem
+qcom_glink
+qcom_glink_smem
+qcom_smd
+rproc_qcom_common
+qmi_helpers
+heap_mem_ext_v01
+qcom-scm
+msm_memshare
+dcvs_fp
+qcom-dcvs
 nvmem_qfprom
 
 endef
@@ -4253,6 +4279,16 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libkernelmanager.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libllvm-qcom.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   cp -rf $(PRODUCT_OUT)/vendor/lib64/libllvm-qgl.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libais*.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libmmosal_vendor.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libC2D2.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/libc2d30_bltlib.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/libapexsupport.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common-V6-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator-V2-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.hexlp-V2-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/ais_server $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+  cp -rf $(PRODUCT_OUT)/vendor/bin/qcarcam_edrm_rvc $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
   cp -rf $(PRODUCT_OUT)/system/lib64/libexpat.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
   mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/acdbdata/canoe_cdp/; \
   cp -rf $(PRODUCT_OUT)/vendor/etc/acdbdata/canoe_cdp/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/acdbdata/canoe_cdp/ ;\
