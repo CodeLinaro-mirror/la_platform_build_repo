@@ -269,10 +269,6 @@ endif
 $(call soong_config_set,ANDROID,release_package_profiling_module,$(RELEASE_PACKAGE_PROFILING_MODULE))
 $(call soong_config_set,bootclasspath,release_package_profiling_module,$(RELEASE_PACKAGE_PROFILING_MODULE))
 
-# Enable anomaly detector inside the Profiling module. Also used by platform_bootclasspath.
-$(call soong_config_set,ANDROID,release_anomaly_detector,$(RELEASE_ANOMALY_DETECTOR))
-$(call soong_config_set,bootclasspath,release_anomaly_detector,$(RELEASE_ANOMALY_DETECTOR))
-
 # Move Telecom APIs into telephonycore; used by both platform and module
 $(call soong_config_set,ANDROID,release_telecom_mainline_module,$(RELEASE_TELECOM_MAINLINE_MODULE))
 

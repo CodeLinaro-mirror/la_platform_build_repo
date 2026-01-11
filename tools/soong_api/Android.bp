@@ -95,9 +95,44 @@ java_test_host {
     static_libs: [
         "soong_api_loader_lib",
         "soong_api_dao_lib",
+        "soong_api_grpc_proto",
+        "soong_api_server_lib",
         "junit",
+        "grpc-java-testing",
+        "grpc-java",
     ],
     test_options: {
         unit_test: true,
     },
+}
+
+// Server Library
+java_library_host {
+    name: "soong_api_server_lib",
+    srcs: ["src/main/java/com/android/soong/api/server/**/*.java"],
+    static_libs: [
+        "soong_api_dao_lib",
+        "soong_api_grpc_proto",
+        // gRPC runtime
+        "grpc-java",
+        "grpc-java-netty-shaded",
+        "guava",
+        "jsr305",
+        "perfmark-api-lib",
+    ],
+}
+
+// API Server Binary
+java_binary_host {
+    name: "soong_api_server",
+    main_class: "com.android.soong.api.server.SoongApiServer",
+    static_libs: [
+        "soong_api_server_lib",
+        "soong_api_dao_lib",
+        "soong_api_proto",
+        "gson",
+        "xerial-sqlite-jdbc",
+        "grpc-java",
+        "grpc-java-netty-shaded",
+    ],
 }

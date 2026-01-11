@@ -92,6 +92,10 @@ where
         })
         .cloned()
         .collect();
+    let is_read_only_optimized = overridable_flag_elements.is_empty()
+        && !is_test_mode
+        && !preserve_impl_interface
+        && !runtime_lookup_required;
     let context = Context {
         flag_elements,
         overridable_flag_elements,
@@ -110,40 +114,43 @@ where
         support_uau_annotation: config.support_uau_annotation,
         optimize_read_only_getter: config.optimize_read_only_getter,
         generate_checks_sdk_annotation: config.generate_checks_sdk_annotation,
+        is_read_only_optimized,
     };
     let mut template = TinyTemplate::new();
-    // TODO(b/447177427): Add additional template logic to conditionally omit all impl classes
-    // completely if 1) all flags are (effectively) read-only, 2) read-only getters are optimized,
-    // and 3) the impl interface is not explicitly preserved.
-    if library_exported && config.single_exported_file {
+    if !is_read_only_optimized {
+        if library_exported && config.single_exported_file {
+            template.add_template(
+                "ExportedFlags.java",
+                include_str!("../../templates/ExportedFlags.java.template"),
+            )?;
+        } else {
+            template.add_template(
+                "CustomFeatureFlags.java",
+                include_str!("../../templates/CustomFeatureFlags.java.template"),
+            )?;
+            template.add_template(
+                "FakeFeatureFlagsImpl.java",
+                include_str!("../../templates/FakeFeatureFlagsImpl.java.template"),
+            )?;
+        }
+        add_feature_flags_impl_template(&context, &mut template)?;
         template.add_template(
-            "ExportedFlags.java",
-            include_str!("../../templates/ExportedFlags.java.template"),
-        )?;
-    } else {
-        template.add_template(
-            "CustomFeatureFlags.java",
-            include_str!("../../templates/CustomFeatureFlags.java.template"),
-        )?;
-        template.add_template(
-            "FakeFeatureFlagsImpl.java",
-            include_str!("../../templates/FakeFeatureFlagsImpl.java.template"),
+            "FeatureFlags.java",
+            include_str!("../../templates/FeatureFlags.java.template"),
         )?;
     }
     template.add_template("Flags.java", include_str!("../../templates/Flags.java.template"))?;
-    add_feature_flags_impl_template(&context, &mut template)?;
-    template.add_template(
-        "FeatureFlags.java",
-        include_str!("../../templates/FeatureFlags.java.template"),
-    )?;
 
     let path: PathBuf = package.split('.').collect();
-    let mut files = vec!["Flags.java", "FeatureFlags.java", "FeatureFlagsImpl.java"];
-    if library_exported && config.single_exported_file {
-        files.push("ExportedFlags.java");
-    } else {
-        files.push("CustomFeatureFlags.java");
-        files.push("FakeFeatureFlagsImpl.java");
+    let mut files = vec!["Flags.java"];
+    if !is_read_only_optimized {
+        files.extend(vec!["FeatureFlags.java", "FeatureFlagsImpl.java"]);
+        if library_exported && config.single_exported_file {
+            files.push("ExportedFlags.java");
+        } else {
+            files.push("CustomFeatureFlags.java");
+            files.push("FakeFeatureFlagsImpl.java");
+        }
     }
     files
         .iter()
@@ -196,6 +203,7 @@ struct Context {
     pub support_uau_annotation: bool,
     pub optimize_read_only_getter: bool,
     pub generate_checks_sdk_annotation: bool,
+    pub is_read_only_optimized: bool,
 }
 
 #[derive(Serialize, Debug)]
@@ -776,6 +784,38 @@ mod tests {
             error.to_string(),
             "Package com.android.aconfig.test cannot contain both device_config and new storage stored flags",
         );
+    }
+
+    #[test]
+    fn test_generate_java_code_force_read_only_optimized() {
+        let parsed_flags = crate::test::parse_test_flags();
+        let mode = CodegenMode::ForceReadOnly;
+        let modified_parsed_flags =
+            crate::commands::modify_parsed_flags_based_on_mode(parsed_flags, mode).unwrap();
+        let flag_ids =
+            assign_flag_ids(crate::test::TEST_PACKAGE, modified_parsed_flags.iter()).unwrap();
+        let config = JavaCodegenConfig {
+            codegen_mode: mode,
+            flag_ids,
+            package_fingerprint: 5801144784618221668,
+            optimize_read_only_getter: true,
+            allow_impl_interface_removal: true,
+            ..Default::default()
+        };
+        let generated_files = generate_java_code(
+            crate::test::TEST_PACKAGE,
+            modified_parsed_flags.into_iter(),
+            config,
+        )
+        .unwrap();
+
+        assert_eq!(generated_files.len(), 1);
+        assert_eq!(
+            generated_files[0].path.to_str().unwrap(),
+            "com/android/aconfig/test/Flags.java"
+        );
+
+        compare_with_goldens("test_generate_java_code_force_read_only_optimized", generated_files);
     }
 
     #[test]
