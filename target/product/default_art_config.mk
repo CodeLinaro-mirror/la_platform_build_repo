@@ -138,12 +138,8 @@ endif
 # Check if build supports Profiling module.
 ifeq ($(RELEASE_PACKAGE_PROFILING_MODULE),true)
     PRODUCT_APEX_BOOT_JARS += \
-        com.android.profiling:framework-profiling
-    ifeq ($(RELEASE_ANOMALY_DETECTOR),true)
-        PRODUCT_APEX_BOOT_JARS += \
-            com.android.profiling:framework-anomaly-detector
-    endif
-
+        com.android.profiling:framework-profiling \
+        com.android.profiling:framework-anomaly-detector
 endif
 
 ifneq (,$(RELEASE_RANGING_STACK))
@@ -251,10 +247,8 @@ PRODUCT_APEX_STANDALONE_SYSTEM_SERVER_JARS := \
 ifeq ($(RELEASE_PACKAGE_PROFILING_MODULE),true)
     PRODUCT_APEX_STANDALONE_SYSTEM_SERVER_JARS += \
         com.android.profiling:service-profiling
-    ifeq ($(RELEASE_ANOMALY_DETECTOR),true)
-        PRODUCT_APEX_SYSTEM_SERVER_JARS += \
-            com.android.profiling:service-anomaly-detector
-    endif
+    PRODUCT_APEX_SYSTEM_SERVER_JARS+= \
+        com.android.profiling:service-anomaly-detector
 endif
 
 ifneq (,$(RELEASE_RANGING_STACK))
