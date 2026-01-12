@@ -92,8 +92,10 @@ PRODUCT_PACKAGES += \
 endif #TARGET_NO_TELEPHONY
 
 ifneq ($(TARGET_USES_QSPA), true)
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
 PRODUCT_PACKAGES += \
     PrintSpooler
+endif #TARGET_QCOM_IOT_LOW_RAM
 endif
 
 ifneq ($(TARGET_HAS_LOW_RAM), true)
