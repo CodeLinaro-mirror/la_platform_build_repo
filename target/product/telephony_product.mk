@@ -19,7 +19,10 @@
 
 # /product packages
 ifneq ($(TARGET_NO_TELEPHONY), true)
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
 PRODUCT_PACKAGES += \
-    ImsServiceEntitlement \
+    ImsServiceEntitlement
+endif #TARGET_QCOM_IOT_LOW_RAM
+PRODUCT_PACKAGES += \
     preinstalled-packages-platform-telephony-product.xml
 endif #TARGET_NO_TELEPHONY
