@@ -136,3 +136,28 @@ java_binary_host {
         "grpc-java-netty-shaded",
     ],
 }
+
+// For Soong API Python Client Library
+// Generate Python Protobuf & gRPC code
+genrule {
+    name: "soong_api_python_protoc_gen",
+    tools: [
+        "aprotoc",
+        "protoc-gen-grpc-python-plugin",
+    ],
+    srcs: [
+        "proto/soong_api.proto",
+    ],
+    out: [
+        "soong_api_pb2.py",
+        "soong_api_pb2_grpc.py",
+    ],
+    // Note: We strip the proto/ prefix so the generated files are at the root of the genDir
+    // allowing direct 'import soong_api_pb2' in the python code.
+    cmd: "$(location aprotoc) " +
+        "--plugin=protoc-gen-grpc=$(location protoc-gen-grpc-python-plugin) " +
+        "--python_out=$(genDir) " +
+        "--grpc_out=$(genDir) " +
+        "-I $$(dirname $(location proto/soong_api.proto)) " +
+        "$(location proto/soong_api.proto)",
+}

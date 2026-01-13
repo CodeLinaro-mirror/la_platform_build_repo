@@ -1,0 +1,28 @@
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+    default_team: "trendy_team_android_core_experiments",
+}
+
+rust_defaults {
+    name: "finalize-non-api-flags-defaults",
+    edition: "2021",
+    clippy_lints: "android",
+    lints: "android",
+    srcs: ["src/main.rs"],
+    rustlibs: [
+        "libanyhow",
+        "libclap",
+        "libregex",
+    ],
+}
+
+rust_binary_host {
+    name: "finalize-non-api-flags",
+    defaults: ["finalize-non-api-flags-defaults"],
+}
+
+rust_test_host {
+    name: "finalize-non-api-flags-test",
+    defaults: ["finalize-non-api-flags-defaults"],
+    test_suites: ["general-tests"],
+}
