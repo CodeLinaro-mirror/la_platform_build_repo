@@ -857,7 +857,6 @@ system_image_defaults {
                 "TeleService", // handheld_system
                 "Telecom", // handheld_system
                 "TelecomUi", // handheld_system
-                "TelephonyProvider", // handheld_system
                 "Traceur", // handheld_system
                 "UserDictionaryProvider", // handheld_system
                 "VpnDialogs", // handheld_system
@@ -982,6 +981,13 @@ system_image_defaults {
                     "com.android.webapp", // base_system (RELEASE_WEBAPP_MODULE)
                 ],
                 default: [],
+            }) + select(soong_config_variable("ANDROID_MULTIUSER", "PRODUCT_USE_HSUM"), {
+                true: [
+                    "TelephonyProviderHsum",
+                ],
+                default: [
+                    "TelephonyProvider", // handheld_system
+                ],
             }),
         },
         prefer32: {
