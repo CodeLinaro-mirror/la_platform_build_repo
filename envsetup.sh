@@ -880,6 +880,16 @@ function fastboot() {
     run_tool_with_logging "FASTBOOT" $FASTBOOT "${@}"
 }
 
+function flashall()
+{
+    local T=$(gettop)
+    if [ "$T" ]; then
+        "$T/vendor/google/tools/flashall" "$@"
+    else
+        echo "Couldn't locate the top of the tree.  Try setting TOP."
+    fi
+}
+
 # communicate with a running device or emulator, set up necessary state,
 # and run the hat command.
 function runhat()

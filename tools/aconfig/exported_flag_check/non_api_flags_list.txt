@@ -22,6 +22,7 @@ android.app.supervision.flags.supervision_api_on_wear
 android.appwidget.flags.use_smaller_app_widget_system_radius
 android.bluetooth.platform.flags.autonomous_repairing_initiation
 android.bluetooth.platform.flags.bluetooth_pairing_hardening
+android.bluetooth.platform.flags.strict_configuration_in_system_server
 android.car.feature.always_send_initial_value_event
 android.car.feature.android_b_vehicle_properties
 android.car.feature.android_vic_vehicle_properties

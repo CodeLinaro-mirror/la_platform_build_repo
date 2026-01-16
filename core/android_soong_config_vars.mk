@@ -487,7 +487,6 @@ $(call soong_config_set_bool,ANDROID,BUILD_HOST_static,$(if $(filter true 1,$(BU
 
 # Flags for CLOCKWORK
 $(call soong_config_set_bool,CLOCKWORK,CLOCKWORK_EMULATOR_PRODUCT,$(if $(filter true,$(CLOCKWORK_EMULATOR_PRODUCT)),true,false))
-$(call soong_config_set_bool,CLOCKWORK,CLOCKWORK_ENABLE_HEALTH_SERVICES_HAL,$(if $(filter true,$(CLOCKWORK_ENABLE_HEALTH_SERVICES_HAL)),true,false))
 $(call soong_config_set_bool,CLOCKWORK,CLOCKWORK_G3_BUILD,$(if $(filter true,$(CLOCKWORK_G3_BUILD)),true,false))
 
 # Flag for using SetupWizardCar certificate
