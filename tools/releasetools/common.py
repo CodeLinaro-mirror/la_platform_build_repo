@@ -294,7 +294,11 @@ def Run(args, verbose=None, **kwargs):
 
   # Don't log any if caller explicitly says so.
   if verbose:
-    logger.info("  Running: \"%s\"", " ".join(args))
+    cwd = kwargs.get("cwd")
+    if cwd:
+      logger.info("  Running: \"%s\" @ %s", " ".join(args), cwd)
+    else:
+      logger.info("  Running: \"%s\"", " ".join(args))
   return subprocess.Popen(args, **kwargs)
 
 

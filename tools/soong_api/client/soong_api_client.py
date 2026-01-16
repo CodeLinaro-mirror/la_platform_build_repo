@@ -17,9 +17,8 @@
 import grpc
 import os
 import platform
-import socket
 import subprocess
-import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -33,9 +32,8 @@ class SoongApiClient:
     A Python Client for the Soong API gRPC Service.
 
     This client handles the lifecycle of the local gRPC server automatically.
-    On initialization, it checks for the existence of soong_api.db. If missing,
-    it triggers a build using the Android build system. It then starts a local
-    soong_api_server instance on a free ephemeral port and establishes a channel.
+    The server is started on an ephemeral port (assigned by the OS), and the
+    port is communicated back via a temporary file.
     """
 
     SOONG_UI_BASH_REL = "build/soong/soong_ui.bash"
@@ -160,37 +158,17 @@ class SoongApiClient:
         except subprocess.CalledProcessError as e:
             raise RuntimeError(f"Build failed with exit code: {e.returncode}") from e
 
-    def _find_free_port(self):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(('localhost', 0))
-            return s.getsockname()[1]
-
-    def _wait_for_server_start(self, port):
-        start = time.time()
-        timeout = 5.0 # seconds
-
-        while time.time() - start < timeout:
-            if self.server_process.poll() is not None:
-                raise RuntimeError("Server process died unexpectedly during startup.")
-
-            try:
-                with socket.create_connection(("localhost", port), timeout=0.1):
-                    return # Connection successful
-            except (ConnectionRefusedError, OSError):
-                time.sleep(0.05) # Wait 50ms before retrying
-
-        raise TimeoutError(f"Timed out waiting for server to start on port {port}")
-
     def _start_server(self):
-        port = self._find_free_port()
-        print(f"Starting soong_api_server on port {port}...")
+        # Generate a unique timestamp token to avoid file collisions
+        timestamp_token = str(int(time.time() * 1000))
+
+        print(f"Starting soong_api_server...")
 
         cmd = [
             str(self.server_path),
             "--db_path", str(self.db_path),
-            "--port", str(port)
+            "--timestamp", timestamp_token
         ]
-
         # Suppress stdout/stderr to keep console clean, or inherit for debugging
         self.server_process = subprocess.Popen(
             cmd,
@@ -198,10 +176,37 @@ class SoongApiClient:
             stderr=subprocess.STDOUT
         )
 
-        self._wait_for_server_start(port)
-        print("Server started.")
+        # Handshake: Wait for the server to write its port to the temp file
+        actual_port = self._wait_for_port_file(timestamp_token)
 
-        self._create_channel(port)
+        print(f"Server detected on port {actual_port}.")
+        self._create_channel(actual_port)
+
+    def _wait_for_port_file(self, timestamp_token):
+        """Waits for the server to create a file containing the bound port."""
+        # Use system default temp directory to match server's behavior
+        tmp_dir = tempfile.gettempdir()
+        port_file = Path(tmp_dir) / f"SoongApiServer-{timestamp_token}.txt"
+
+        start_time = time.time()
+        timeout = 10.0 # seconds
+
+        while time.time() - start_time < timeout:
+            if self.server_process.poll() is not None:
+                raise RuntimeError("Server process exited prematurely.")
+
+            if port_file.exists():
+                try:
+                    content = port_file.read_text().strip()
+                    if content:
+                        return int(content)
+                except (ValueError, OSError):
+                    # File might be partially written or locked
+                    pass
+
+            time.sleep(0.1)
+
+        raise TimeoutError(f"Timed out waiting for port file: {port_file}")
 
     def _create_channel(self, port):
         self.channel = grpc.insecure_channel(f'localhost:{port}')
