@@ -40,17 +40,34 @@ class SoongApiClient:
     DEFAULT_OUT_DIR = "out"
     DEFAULT_HOST_OUT_REL = "out/host/linux-x86"
 
-    def __init__(self):
+    def __init__(self, db_path=None, rebuild=True):
+        """
+        Initializes the client.
+        Args:
+            db_path (str, optional): Path to a custom soong_api.db file.
+                If provided, build automation is bypassed.
+            rebuild (bool): Whether to trigger 'm soong_api.db' when using
+                the standard path. Defaults to True.
+        """
         self._check_os()
         self.android_top = self._find_android_top()
         self.soong_ui = self.android_top / self.SOONG_UI_BASH_REL
         self.server_path = self._resolve_server_path()
-        self.db_path = self._resolve_db_path()
+
+        # Handle custom vs standard database path
+        if db_path:
+            self.db_path = Path(db_path)
+            self._is_custom_db = True
+        else:
+            self.db_path = self._resolve_db_path()
+            self._is_custom_db = False
+
         self.server_process = None
         self.channel = None
         self.stub = None
+        self._port = None
 
-        self._ensure_build_artifacts()
+        self._ensure_build_artifacts(rebuild)
         self._start_server()
 
     def __enter__(self):
@@ -58,6 +75,11 @@ class SoongApiClient:
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
+
+    @property
+    def port(self):
+        """Returns the port number the local server is listening on."""
+        return self._port
 
     def close(self):
         if self.channel:
@@ -140,17 +162,35 @@ class SoongApiClient:
 
         return out_path / "soong/soong_api/soong_api.db"
 
-    def _ensure_build_artifacts(self):
-        if self.server_path.exists() and self.db_path.exists():
+    def _ensure_build_artifacts(self, rebuild):
+        """Follows the Decision Logic for custom vs. standard DB paths."""
+        # Case 1: Custom DB Path - Bypass build logic and only check existence
+        if self._is_custom_db:
+            if not self.db_path.exists():
+                raise FileNotFoundError(f"Custom database file not found: {self.db_path}")
             return
 
-        print("Soong API artifacts missing. Attempting to build...")
+        # Case 2: Standard DB Path - Freshness-first, Existence-fallback logic
+        artifacts_exist = self.server_path.exists() and self.db_path.exists()
+        has_lunch = os.environ.get('TARGET_PRODUCT') is not None
 
-        if not os.environ.get('TARGET_PRODUCT'):
-             raise EnvironmentError("Build environment not set. Please run 'lunch' first.")
+        if has_lunch:
+            if rebuild or not artifacts_exist:
+                print("Ensuring Soong API artifacts are up-to-date...")
+                self._run_build()
+            return
 
+        if artifacts_exist:
+            print("Warning: Build environment not detected. Using existing soong_api.db (may be stale).")
+            return
+
+        raise EnvironmentError(
+            "Soong API artifacts are missing and build environment (lunch) is not set. "
+            "Please run 'lunch' first or ensure soong_api.db exists."
+        )
+
+    def _run_build(self):
         cmd = [str(self.soong_ui), "--make-mode", "soong_api.db", "soong_api_server"]
-
         try:
             # Redirect output to inherit to show build progress
             subprocess.check_call(cmd, cwd=self.android_top)
@@ -169,18 +209,15 @@ class SoongApiClient:
             "--db_path", str(self.db_path),
             "--timestamp", timestamp_token
         ]
-        # Suppress stdout/stderr to keep console clean, or inherit for debugging
         self.server_process = subprocess.Popen(
             cmd,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.STDOUT
         )
 
-        # Handshake: Wait for the server to write its port to the temp file
-        actual_port = self._wait_for_port_file(timestamp_token)
-
-        print(f"Server detected on port {actual_port}.")
-        self._create_channel(actual_port)
+        self._port = self._wait_for_port_file(timestamp_token)
+        print(f"Server detected on port {self._port}.")
+        self._create_channel(self._port)
 
     def _wait_for_port_file(self, timestamp_token):
         """Waits for the server to create a file containing the bound port."""

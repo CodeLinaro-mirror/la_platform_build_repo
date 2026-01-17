@@ -2273,6 +2273,7 @@ $(if $(BOARD_EROFS_USE_LEGACY_COMPRESSION),$(hide) echo "erofs_use_legacy_compre
 $(if $(BOARD_EROFS_ENABLE_DEDUPE),$(hide) echo "erofs_enable_dedupe=$(BOARD_EROFS_ENABLE_DEDUPE)" >> $(1))
 $(if $(BOARD_EXT4_SHARE_DUP_BLOCKS),$(hide) echo "ext4_share_dup_blocks=$(BOARD_EXT4_SHARE_DUP_BLOCKS)" >> $(1))
 $(if $(BOARD_F2FS_BLOCKSIZE),$(hide) echo "f2fs_blocksize=$(BOARD_F2FS_BLOCKSIZE)" >> $(1))
+$(if $(BOARD_F2FS_PACKED_SSA),$(hide) echo "f2fs_packed_ssa=$(BOARD_F2FS_PACKED_SSA)" >> $(1))
 $(if $(BOARD_FLASH_LOGICAL_BLOCK_SIZE), $(hide) echo "flash_logical_block_size=$(BOARD_FLASH_LOGICAL_BLOCK_SIZE)" >> $(1))
 $(if $(BOARD_FLASH_ERASE_BLOCK_SIZE), $(hide) echo "flash_erase_block_size=$(BOARD_FLASH_ERASE_BLOCK_SIZE)" >> $(1))
 $(if $(filter eng, $(TARGET_BUILD_VARIANT)),$(hide) echo "verity_disable=true" >> $(1))

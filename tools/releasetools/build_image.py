@@ -443,6 +443,8 @@ def BuildImageMkfs(in_dir, prop_dict, out_file, target_out, fs_config):
         build_command.extend(sldc_flags)
     f2fs_blocksize = prop_dict.get("f2fs_blocksize", "4096")
     build_command.extend(["-b", f2fs_blocksize])
+    if prop_dict.get("f2fs_packed_ssa") == "1":
+      build_command.append("--packed_ssa")
   else:
     raise BuildImageError(
         "Error: unknown filesystem type: {}".format(fs_type))
@@ -736,6 +738,7 @@ def ImagePropFromGlobalDict(glob_dict, mount_point):
       "system_f2fs_sldc_flags",
       "f2fs_sparse_flag",
       "f2fs_blocksize",
+      "f2fs_packed_ssa",
       "skip_fsck",
       "ext_mkuserimg",
       "avb_enable",

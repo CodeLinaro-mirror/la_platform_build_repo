@@ -74,8 +74,8 @@ public class SoongApiLoaderTest {
 
     @Test
     public void testLoad_fromZip_convertsJsonToSqlite() throws Exception {
-        // 1. Arrange: Create a mock soong_metadata.zip
-        File inputZip = tempFolder.newFile("soong_metadata.zip");
+        // 1. Arrange: Create a mock soong_api.zip
+        File inputZip = tempFolder.newFile("soong_api.zip");
         createMockZipFile(inputZip, jsonContent);
 
         // 2. Act: Run the Loader to ingest data into SQLite
@@ -87,8 +87,8 @@ public class SoongApiLoaderTest {
 
     @Test
     public void testLoad_fromJson_convertsJsonToSqlite() throws Exception {
-        // 1. Arrange: Create a mock metadata.json
-        File inputJson = tempFolder.newFile("metadata.json");
+        // 1. Arrange: Create a mock soong_api.json
+        File inputJson = tempFolder.newFile("soong_api.json");
         createMockJsonFile(inputJson, jsonContent);
 
         // 2. Act: Run the Loader to ingest data into SQLite
@@ -102,7 +102,7 @@ public class SoongApiLoaderTest {
         try (FileOutputStream fos = new FileOutputStream(zipFile);
              ZipOutputStream zos = new ZipOutputStream(fos)) {
 
-            ZipEntry entry = new ZipEntry("metadata.json");
+            ZipEntry entry = new ZipEntry("soong_api.json");
             zos.putNextEntry(entry);
             zos.write(content.getBytes(StandardCharsets.UTF_8));
             zos.closeEntry();

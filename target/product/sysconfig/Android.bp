@@ -31,6 +31,13 @@ prebuilt_etc {
 }
 
 prebuilt_etc {
+    name: "preinstalled-packages-desktop-common.xml",
+    product_specific: true,
+    sub_dir: "sysconfig",
+    src: "preinstalled-packages-desktop-common.xml",
+}
+
+prebuilt_etc {
     name: "preinstalled-packages-platform-full-base.xml",
     sub_dir: "sysconfig",
     src: "preinstalled-packages-platform-full-base.xml",
