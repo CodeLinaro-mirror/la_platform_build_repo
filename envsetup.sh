@@ -635,6 +635,17 @@ function leftovers()
     local product release variant
     IFS=" " read -r product release variant < "$dot_leftovers"
 
+    # Check if the current environment matches the saved leftovers. Also check if TARGET_BUILD_APPS
+    # is empty because lunch unsets it, while tapas and banchan set it. This ensures that if tapas
+    # or banchan command was run after lunch, that it does not unset it.
+    if [[ "$product" == "$TARGET_PRODUCT" ]] &&
+       [[ "$release" == "$TARGET_RELEASE" ]] &&
+       [[ "$variant" == "$TARGET_BUILD_VARIANT" ]] &&
+       [[ -z "$TARGET_BUILD_APPS" ]]; then
+        echo "$INFO: Already lunched: ${style_bold}$product $release $variant${style_reset}"
+        return
+    fi
+
     echo "$INFO: Loading previous lunch: ${style_bold}$product $release $variant${style_reset}"
     lunch $product $release $variant
 }

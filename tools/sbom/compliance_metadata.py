@@ -228,3 +228,13 @@ class MetadataDb:
       return soong_module
 
     return None
+
+  def get_cipd_package_version(self, prebuilt_module_name):
+    cursor = self.conn.execute('select m2.cipd_version from modules m1 join modules m2 on m1.cipd_src = m2.name and m1.name=?',
+                               (prebuilt_module_name,))
+    rows = cursor.fetchall()
+    cursor.close()
+    if rows:
+      return rows[0]['cipd_version']
+
+    return None

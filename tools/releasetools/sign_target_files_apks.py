@@ -645,7 +645,7 @@ def GetOtaSigningArgs():
 def RegenerateKernelPartitions(input_tf_zip: zipfile.ZipFile, output_tf_dir: str, misc_info):
   """Re-generate boot and dtbo partitions using new signing configuration"""
   files_to_unzip = [
-      "PREBUILT_IMAGES/*", "BOOTABLE_IMAGES/*.img", "*/boot_16k.img", "*/dtbo_16k.img"]
+      "BOOTABLE_IMAGES/*.img", "*/boot_16k.img", "*/dtbo_16k.img", "*/boot.img", "*/dtbo.img"]
   if OPTIONS.input_tmp is None:
     OPTIONS.input_tmp = common.UnzipTemp(input_tf_zip.filename, files_to_unzip)
   else:
@@ -683,7 +683,7 @@ def RegenerateBootOTA(input_tf_zip: zipfile.ZipFile, filename, input_ota):
   unzip_dir = OPTIONS.input_tmp
   signed_boot_image = os.path.join(unzip_dir, "IMAGES", "boot.img")
   if not os.path.exists(signed_boot_image):
-    logger.warn("Need to re-generate boot OTA {} but failed to get signed boot image. 16K dev option will be impacted, after rolling back to 4K user would need to sideload/flash their device to continue receiving OTAs.")
+    logger.warn("Need to re-generate boot OTA %s but failed to get signed boot image. 16K dev option will be impacted, after rolling back to 4K user would need to sideload/flash their device to continue receiving OTAs.", filename)
     return
   signed_dtbo_image = os.path.join(unzip_dir, "IMAGES", "dtbo.img")
   if "dtbo" in partitions and not os.path.exists(signed_dtbo_image):
@@ -806,8 +806,7 @@ def ProcessTargetFileEntries(input_tf_zip: zipfile.ZipFile, output_tf_dir: str, 
         RegenerateBootOTA(input_tf_zip, filename, input_ota)
 
         SignOtaPackage(input_ota.name, output_ota.name)
-        WriteOutputFile(output_tf_dir, output_ota.name, filename,
-                        compress_type=zipfile.ZIP_STORED)
+        WriteOutputFile(output_tf_dir, output_ota.name, filename)
     # System properties.
     elif IsBuildPropFile(filename):
       print("Rewriting %s:" % (filename,))

@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2008 The Android Open Source Project
+# Copyright (C) 2026 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,13 +13,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# BUILD_ID is usually used to specify the branch name
-# (like "MAIN") or a branch name and a release candidate
-# (like "CRB01").  It must be a single word, and is
-# capitalized by convention.
 
-BUILD_ID=ZKQ1.260118.001
+# Contains standard elements for Android desktop devices.
 
+# Should generally be inherited first as using an HSUM configuration can affect downstream choices
+# (such as ensuring that the HSUM-variants of packages are selected).
 
+$(call inherit-product, build/make/target/product/hsu_as_login.mk)
 
-BUILD_ID:=${BUILD_ID}-CP2A.260116.004
+PRODUCT_PACKAGES += \
+    DesktopCommonConfigOverlay \
+    preinstalled-packages-desktop-common.xml

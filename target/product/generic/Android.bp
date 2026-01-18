@@ -634,7 +634,6 @@ system_image_defaults {
         "media_profiles_V1_0.dtd", // base_system
         "mediacodec.policy", // base_system
         "mediaextractor", // base_system
-        "mediametrics", // base_system
         "misctrl", // from base_system
         "mke2fs", // base_system
         "mkfs.erofs", // base_system
@@ -796,6 +795,13 @@ system_image_defaults {
             "default-permissions-webapp.xml", // base_system (RELEASE_WEBAPP_MODULE)
         ],
         default: [],
+    }) + select(release_flag("RELEASE_MEDIAMETRICS_MODULE"), {
+        true: [
+            "libmediametrics_packageinfo",
+        ],
+        default: [
+            "mediametrics", // base_system (RELEASE_MEDIAMETRICS_MODULE)
+        ],
     }),
     multilib: {
         common: {
@@ -855,7 +861,6 @@ system_image_defaults {
                 "Stk", // generic_system
                 "Tag", // generic_system
                 "TeleService", // handheld_system
-                "Telecom", // handheld_system
                 "TelecomUi", // handheld_system
                 "Traceur", // handheld_system
                 "UserDictionaryProvider", // handheld_system
@@ -967,8 +972,11 @@ system_image_defaults {
                     "framework-network-security-config", // base_system
                 ],
             }) + select(release_flag("RELEASE_TELECOM_MAINLINE_MODULE"), {
-                true: [],
+                true: [
+                    "TelecomShim", // handheld_system
+                ],
                 default: [
+                    "Telecom", // handheld_system
                     "framework-telecom", // base_system
                 ],
             }) + select(release_flag("RELEASE_NPUMANAGER_MODULE"), {

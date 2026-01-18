@@ -697,6 +697,8 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, ProductFsCasefold, $(PRODUCT_FS_CASEFOLD))
   $(call add_json_str, ProductQuotaProjid, $(PRODUCT_QUOTA_PROJID))
   $(call add_json_str, ProductFsCompression, $(PRODUCT_FS_COMPRESSION))
+  $(call add_json_str, BoardF2fsBlockSize, $(BOARD_F2FS_BLOCKSIZE))
+  $(call add_json_str, BoardF2fsPackedSsa, $(BOARD_F2FS_PACKED_SSA))
 
   $(call add_json_str, ReleaseToolsExtensionDir, $(firstword $(TARGET_RELEASETOOLS_EXTENSIONS) $($(TARGET_DEVICE_DIR)/../common)))
 
