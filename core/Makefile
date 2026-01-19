@@ -3947,89 +3947,65 @@ smp2p_sleepstate
 qcom_pil_info
 qcom_ramdump
 smp2p
+qcom_glink
 qcom_glink_spss
-qcom_sysmon frpc-adsprpc
+qmi_helpers
+qcom_glink_smem
+qcom_smd
+rproc_qcom_common
+smem-mailbox
+slimbus
+qcom_sysmon
+qcom_pdr_msg
+pdr_interface
+frpc-adsprpc
 qcom_q6v5
-qrtr-smd qcom_q6v5_pas qcom_spss
-snd_event_dlkm q6_pdr_dlkm stub_dlkm
+qrtr-smd
+qcom_q6v5_pas
+qcom_spss
+snd_event_dlkm
+q6_pdr_dlkm
+stub_dlkm
 q6_notifier_dlkm
 gpr_dlkm
 spf_core_dlkm
+audio_prm_dlkm
 audpkt_ion_dlkm
 audio_pkt_dlkm
 adsp_loader_dlkm
-q6_dlkm audio_prm_dlkm
+q6_dlkm
 pinctrl_lpi_dlkm
-swr_dlkm
-swr_ctrl_dlkm
 wcd_core_dlkm
+wcd_usbss_i2c
 mbhc_dlkm
+sdca_registers_dlkm
+swr_dlkm
 wcd9xxx_dlkm
-wcd937x_dlkm
-wcd937x_slave_dlkm
+wcd9378_dlkm
+wcd9378_slave_dlkm
 wcd938x_dlkm
 wcd938x_slave_dlkm
-wcd939x_dlkm
 wcd939x_slave_dlkm
+wcd939x_dlkm
 wsa883x_dlkm
 wsa884x_dlkm
+bam_dma
+slim-qcom-ngd-ctrl
+heap_mem_ext_v01
 swr_dmic_dlkm
+swr_ctrl_dlkm
 lpass_cdc_dlkm
+lpass_cdc_rx_macro_dlkm
 lpass_cdc_wsa2_macro_dlkm
 lpass_cdc_wsa_macro_dlkm
 lpass_cdc_va_macro_dlkm
 lpass_cdc_tx_macro_dlkm
-lpass_cdc_rx_macro_dlkm
-sdpm_clk
-qcom-spmi-temp-alarm
-ddr_cdev
-memlat
-memlat_vendor
-memlat_scmi
-subsystem_sleep_stats
-sys_pm_vx
-spcom
-qti_battery_charger
-qcom-hv-haptics
-smcinvoke_dlkm
-pci-msm-drv
-mhi
-cnss_utils
-cnss_prealloc
-cnss_plat_ipc_qmi_svc
-wlan_firmware_service
-qcom_esoc
-mhi_cntrl_qcom
-cnss2
-bam_dma
-slimbus
-slim-qcom-ngd-ctrl
-btpower
-bt_fm_slim
-sps_drv
-qce50_dlkm
-qcedev-mod_dlkm
-snd-soc-hdmi-codec
-heap_mem_ext_v01
-msm_memshare
-qrtr-mhi
-qrtr-gunyah
-snd-usb-audio-qmi
-hdmi_dlkm
+lpass_bt_swr_dlkm
 machine_dlkm
 endef
 
 # MM Audio modules (Elite)
 define ES_MOD_ORDER_AU
-qmi_helpers smp2p_sleepstate qcom_pil_info qcom_glink qcom_smd msm_gpi qcom_ramdump
-smp2p pdr_interface qcom_glink_smem qcom_glink_spss qrtr-smd snd_event_dlkm_legacy
-rproc_qcom_common stub_dlkm_legacy
-qcom_sysmon frpc-adsprpc q6_notifier_dlkm_legacy
-qcom_q6v5 apr_dlkm
-qcom_q6v5_pas adsp_loader_dlkm_legacy q6_dlkm_legacy
-platform_dlkm
-native_dlkm machine_dlkm_legacy
-
 endef
 
 ES_SYSTEM_DEPS := \
@@ -4122,6 +4098,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/ ;\
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lxc-data/; \
 	        $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/msm_kgsl.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/msm_kgsl.ko;\
+  cp -r $(PRODUCT_OUT)/system_dlkm/lib/modules/rfkill.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/rfkill.ko;\
         $(foreach fn, $(ES_MOD_ORDER_R_AU), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
 		$(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/camera.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/camera.ko;\
         $(foreach fn, $(ES_MOD_ORDER_AIS), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
@@ -4151,6 +4128,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   cp -r $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/bin/init_early_test $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
   cp -r $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/bin/init_early_lxc $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
   mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/firmware_mnt; \
+  mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/soccp_firmware; \
   mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/egl; \
   cp -r $(PRODUCT_OUT)/vendor_dlkm/lib/modules/pinctrl-spmi-gpio.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/ ;\
   cp -r $(PRODUCT_OUT)/vendor_dlkm/lib/modules/msm_video.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/ ;\
