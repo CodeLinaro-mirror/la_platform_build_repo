@@ -1,7 +1,7 @@
 package {package_name}; {#- CODEGEN FOR TEST MODE #}
 
 /** @hide */
-{{ if preserve_impl_interface }}public {{ endif }}final class FeatureFlagsImpl implements FeatureFlags \{
+public final class FeatureFlagsImpl implements FeatureFlags \{
 {{ for flag in overridable_flag_elements }}
     @Override
 {{ -if not library_exported }}

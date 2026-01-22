@@ -142,6 +142,7 @@ PRODUCT_PACKAGES += \
     iptables \
     javax.obex \
     kcmdlinectrl \
+    kcmdlinemodprobe \
     keystore2 \
     ld.mc \
     libaaudio \

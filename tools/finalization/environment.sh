@@ -2,7 +2,7 @@
 
 set -ex
 
-export FINAL_BUG_ID='0' # CI only
+export FINAL_BUG_ID='462135453' # CI only
 
 export FINAL_PLATFORM_CODENAME='VanillaIceCream'
 export CURRENT_PLATFORM_CODENAME='VanillaIceCream'

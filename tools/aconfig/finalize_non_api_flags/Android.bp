@@ -8,7 +8,6 @@ rust_defaults {
     edition: "2021",
     clippy_lints: "android",
     lints: "android",
-    srcs: ["src/main.rs"],
     rustlibs: [
         "libanyhow",
         "libclap",
@@ -19,10 +18,19 @@ rust_defaults {
 rust_binary_host {
     name: "finalize-non-api-flags",
     defaults: ["finalize-non-api-flags-defaults"],
+    crate_root: "src/main.rs",
+    srcs: ["src/*.rs"],
+    use_expansive_default_srcs: false,
 }
 
 rust_test_host {
     name: "finalize-non-api-flags-test",
     defaults: ["finalize-non-api-flags-defaults"],
+    crate_root: "src/main.rs",
+    srcs: [
+        "src/*.rs",
+        "tests/non_api_flags_list.txt",
+    ],
+    use_expansive_default_srcs: false,
     test_suites: ["general-tests"],
 }
