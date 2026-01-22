@@ -617,6 +617,7 @@ system_image_defaults {
         "ip", // base_system
         "iptables",
         "kcmdlinectrl",
+        "kcmdlinemodprobe",
         "kernel-lifetimes.xml", // base_system
         "keychars_data",
         "keylayout_data",

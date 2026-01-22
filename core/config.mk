@@ -903,6 +903,7 @@ PLATFORM_SEPOLICY_COMPAT_VERSIONS := \
 PLATFORM_SEPOLICY_COMPAT_VERSIONS += $(foreach ver,\
     202404 \
     202504 \
+    202604 \
     ,$(if $(filter true,$(call math_gt,$(PLATFORM_SEPOLICY_VERSION),$(ver))),$(ver)))
 
 .KATI_READONLY := \
