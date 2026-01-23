@@ -1905,7 +1905,7 @@ def main(argv):
   new_args.append(args[1])
   add_img_to_target_files.main(new_args)
 
-  print("done.")
+  print("done. ", args[1])
 
 
 if __name__ == '__main__':

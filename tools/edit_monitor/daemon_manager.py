@@ -58,15 +58,20 @@ class DaemonManager:
       daemon_target: callable = default_daemon_target,
       daemon_args: tuple = (),
       cclient: clearcut_client.Clearcut | None = None,
+      target_repo: str | None = None,
   ):
     self.binary_path = binary_path
     self.daemon_target = daemon_target
     self.daemon_args = daemon_args
     self.cclient = cclient or clearcut_client.Clearcut(LOG_SOURCE)
+    self.target_repo = target_repo
 
     self.user_name = getpass.getuser()
     self.host_name = platform.node()
-    self.source_root = os.environ.get("ANDROID_BUILD_TOP", "")
+    if target_repo == "chrome" and daemon_args:
+      self.source_root = daemon_args[0]
+    else:
+      self.source_root = os.environ.get("ANDROID_BUILD_TOP", "")
     self.pid = os.getpid()
     self.daemon_process = None
 
@@ -385,7 +390,10 @@ class DaemonManager:
     process.
     """
     hash_object = hashlib.sha256()
-    hash_object.update(self.binary_path.encode("utf-8"))
+    if self.target_repo == "chrome":
+      hash_object.update("edit_monitor_chrome".encode("utf-8"))
+    else:
+      hash_object.update(self.binary_path.encode("utf-8"))
     pid_file_path = pid_file_dir.joinpath(hash_object.hexdigest() + ".lock")
     logging.info("pid_file_path: %s", pid_file_path)
 
@@ -452,6 +460,7 @@ class DaemonManager:
         user_name=self.user_name,
         host_name=self.host_name,
         source_root=self.source_root,
+        target_repo=self.target_repo or "",
     )
     edit_monitor_error_event_proto.edit_monitor_error_event.CopyFrom(
         edit_event_pb2.EditEvent.EditMonitorErrorEvent(error_type=error_type)

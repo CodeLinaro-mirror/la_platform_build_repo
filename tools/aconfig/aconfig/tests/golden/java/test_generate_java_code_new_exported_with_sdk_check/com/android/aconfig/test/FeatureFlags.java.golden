@@ -4,6 +4,9 @@ package com.android.aconfig.test;
 public interface FeatureFlags {
 
     boolean disabledRwExported();
+
     boolean enabledFixedRoExported();
+
     boolean enabledRoExported();
+
 }

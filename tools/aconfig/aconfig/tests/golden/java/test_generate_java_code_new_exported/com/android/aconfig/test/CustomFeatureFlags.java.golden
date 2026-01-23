@@ -18,22 +18,20 @@ public class CustomFeatureFlags implements FeatureFlags {
     public CustomFeatureFlags(BiPredicate<String, Predicate<FeatureFlags>> getValueImpl) {
         mGetValueImpl = getValueImpl;
     }
-    @Override
 
+    @Override
     public boolean disabledRwExported() {
         return getValue(Flags.FLAG_DISABLED_RW_EXPORTED,
             FeatureFlags::disabledRwExported);
     }
 
     @Override
-
     public boolean enabledFixedRoExported() {
         return getValue(Flags.FLAG_ENABLED_FIXED_RO_EXPORTED,
             FeatureFlags::enabledFixedRoExported);
     }
 
     @Override
-
     public boolean enabledRoExported() {
         return getValue(Flags.FLAG_ENABLED_RO_EXPORTED,
             FeatureFlags::enabledRoExported);
@@ -57,6 +55,7 @@ public class CustomFeatureFlags implements FeatureFlags {
             ""
         )
     );
+
     private Map<String, Boolean> mFinalizedFlags = new HashMap<>(
         Map.ofEntries(
             Map.entry("", false)
@@ -69,4 +68,5 @@ public class CustomFeatureFlags implements FeatureFlags {
         }
         return mFinalizedFlags.get(flagName);
     }
+
 }

@@ -20,6 +20,8 @@ android.app.supervision.flags.enable_web_content_filters_screen
 android.app.supervision.flags.supervision_api
 android.app.supervision.flags.supervision_api_on_wear
 android.appwidget.flags.use_smaller_app_widget_system_radius
+android.bluetooth.platform.flags.autonomous_repairing_initiation
+android.bluetooth.platform.flags.bluetooth_pairing_hardening
 android.car.feature.always_send_initial_value_event
 android.car.feature.android_b_vehicle_properties
 android.car.feature.android_vic_vehicle_properties
@@ -128,6 +130,7 @@ android.permission.flags.permission_request_short_circuit_enabled
 android.permission.flags.rate_limit_batched_note_op_async_callbacks_enabled
 android.permission.flags.record_all_runtime_appops_sqlite
 android.permission.flags.sensitive_notification_app_protection
+android.permission.flags.skin_temp_oxygen_saturation_health_services_pregrant_enabled
 android.permission.flags.supervision_role_permission_update_enabled
 android.permission.flags.unknown_call_package_install_blocking_enabled
 android.permission.flags.unknown_call_setting_blocked_logging_enabled
@@ -145,7 +148,7 @@ android.view.accessibility.a11y_is_visited_api
 android.view.accessibility.motion_event_observing
 android.view.contentcapture.flags.flush_after_each_frame
 android.view.flags.expected_presentation_time_api
-android.view.flags.sms_provider_redact_otp_app_compat_api
+android.view.flags.redact_otp_app_compat_api
 android.view.flags.toolkit_frame_rate_touch_boost_25q1
 android.view.inputmethod.concurrent_input_methods
 android.view.inputmethod.ime_switcher_revamp

@@ -859,12 +859,23 @@ else
 endif
 .KATI_READONLY := MAINLINE_SEPOLICY_DEV_CERTIFICATES
 
+# Certificate for the Bluetooth sepolicy context
 ifdef PRODUCT_MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES
-  MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES  := $(PRODUCT_MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES)
-else ifneq (,$(filter com.google.android.bt,$(PRODUCT_PACKAGES)))
-  MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES  := $(MAINLINE_SEPOLICY_DEV_CERTIFICATES)
+  # Priority 1: Use the product specific variable if defined
+  MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES := $(PRODUCT_MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES)
+else ifneq (,$(filter com.google.android.bt com.google.android.bt_compressed com.google.android.go.bt,$(PRODUCT_PACKAGES)))
+  # Priority 2: Use Mainline Sepolicy cert if the Bluetooth module is detected
+  MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES := $(MAINLINE_SEPOLICY_DEV_CERTIFICATES)
+else ifeq (,$(filter com.google.android.art com.google.android.art_compressed com.google.android.go.art,$(PRODUCT_PACKAGES)))
+  # Priority 3: AOSP / No-Mainline Detection
+  # If NO ART module package is found, we assume this is a legacy/AOSP build without mainline support.
+  # In this case, use the directory of the default system dev certificate.
+  MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES := $(dir $(DEFAULT_SYSTEM_DEV_CERTIFICATE))
 else
-  MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES  := $(dir build/make/target/product/security/testkey)
+  # Priority 4: Fallback
+  # We have some mainline modules (ART exists), but without the Bluetooth module.
+  # Use the standard testkey directory.
+  MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES := $(dir build/make/target/product/security/testkey)
 endif
 .KATI_READONLY := MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES
 
@@ -1053,6 +1064,36 @@ BOARD_KERNEL_MODULES_16K := $(foreach \
 )
 endif # BOARD_KERNEL_MODULES_16K
 
+ifdef BOARD_KERNEL_MODULES_ZIP
+  disallowed_variables := \
+    BOARD_SYSTEM_KERNEL_MODULES \
+    BOARD_SYSTEM_KERNEL_MODULES_BLOCKLIST_FILE \
+    BOARD_SYSTEM_KERNEL_MODULES_LOAD \
+    BOARD_VENDOR_KERNEL_MODULES \
+    BOARD_VENDOR_KERNEL_MODULES_BLOCKLIST_FILE \
+    BOARD_VENDOR_KERNEL_MODULES_2ND_STAGE_16KB_MODE \
+    BOARD_VENDOR_KERNEL_MODULES_LOAD \
+    BOARD_DO_NOT_STRIP_VENDOR_MODULES \
+    BOARD_ODM_KERNEL_MODULES \
+    BOARD_ODM_KERNEL_MODULES_BLOCKLIST_FILE \
+    BOARD_VENDOR_RAMDISK_KERNEL_MODULES \
+    BOARD_VENDOR_RAMDISK_KERNEL_MODULES_BLOCKLIST_FILE \
+    BOARD_VENDOR_RAMDISK_KERNEL_MODULES_LOAD \
+    BOARD_VENDOR_RAMDISK_KERNEL_MODULES_OPTIONS_FILE \
+    BOARD_DO_NOT_STRIP_VENDOR_RAMDISK_MODULES \
+    BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES \
+    BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_BLOCKLIST_FILE \
+    # BOARD_KERNEL_MODULES_16K \ # TODO after ramdisk_16k supports zip files
+
+  # Additional kernel-module related variables that are allowed when using a kernel module zip:
+  # - BOARD_DO_NOT_STRIP_VENDOR_MODULES
+
+  # Could consider denying them, but it'll probably require a lot of product config changes.
+  $(foreach var,$(disallowed_variables), \
+    $(if $($(var)),$(eval $(var) :=)))
+
+  disallowed_variables :=
+endif
 
 # By default, we build the hidden API csv files from source. You can use
 # prebuilt hiddenapi files by setting BOARD_PREBUILT_HIDDENAPI_DIR to the name

@@ -2320,11 +2320,10 @@ def GetNonSparseImage(which, tmpdir):
     A Image object.
   """
   path = os.path.join(tmpdir, "IMAGES", which + ".img")
-  mappath = os.path.join(tmpdir, "IMAGES", which + ".map")
 
-  # The image and map files must have been created prior to calling
+  # The image (must) and map files (optional) must have been created prior to calling
   # ota_from_target_files.py (since LMP).
-  assert os.path.exists(path) and os.path.exists(mappath)
+  assert os.path.exists(path)
 
   return images.FileImage(path)
 
@@ -2347,10 +2346,11 @@ def GetSparseImage(which, tmpdir, input_zip, allow_shared_blocks):
   """
   path = os.path.join(tmpdir, "IMAGES", which + ".img")
   mappath = os.path.join(tmpdir, "IMAGES", which + ".map")
-
-  # The image and map files must have been created prior to calling
+  # The image (must) and map files (optional) must have been created prior to calling
   # ota_from_target_files.py (since LMP).
-  assert os.path.exists(path) and os.path.exists(mappath)
+  assert os.path.exists(path)
+  if not os.path.exists(mappath):
+    mappath = None
 
   # In ext4 filesystems, block 0 might be changed even being mounted R/O. We add
   # it to clobbered_blocks so that it will be written to the target

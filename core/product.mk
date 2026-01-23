@@ -294,6 +294,15 @@ _product_single_value_vars += PRODUCT_COMPRESSED_APEX
 # Default fs type for APEX payload image (apex_payload.img)
 _product_single_value_vars += PRODUCT_DEFAULT_APEX_PAYLOAD_TYPE
 
+# Default compressor for EROFS APEX payload image (apex_payload.img)
+_product_single_value_vars += PRODUCT_DEFAULT_APEX_PAYLOAD_EROFS_COMPRESSOR
+
+# Default compress_hints for EROFS APEX payload image (apex_payload.img)
+_product_single_value_vars += PRODUCT_DEFAULT_APEX_PAYLOAD_EROFS_COMPRESS_HINTS
+
+# Default pcluster_size (bytes) for EROFS APEX payload image (apex_payload.img)
+_product_single_value_vars += PRODUCT_DEFAULT_APEX_PAYLOAD_EROFS_PCLUSTER_SIZE
+
 # VNDK version of product partition. It can be 'current' if the product
 # partitions uses PLATFORM_VNDK_VERSION.
 _product_single_value_vars += PRODUCT_PRODUCT_VNDK_VERSION

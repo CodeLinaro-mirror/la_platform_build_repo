@@ -2175,6 +2175,7 @@ $(eval _var := $(call to-upper,$(1)))
 $(if $(BOARD_$(_var)IMAGE_EROFS_COMPRESSOR),$(hide) echo "$(1)_erofs_compressor=$(BOARD_$(_var)IMAGE_EROFS_COMPRESSOR)" >> $(2))
 $(if $(BOARD_$(_var)IMAGE_EROFS_COMPRESS_HINTS),$(hide) echo "$(1)_erofs_compress_hints=$(BOARD_$(_var)IMAGE_EROFS_COMPRESS_HINTS)" >> $(2))
 $(if $(BOARD_$(_var)IMAGE_EROFS_PCLUSTER_SIZE),$(hide) echo "$(1)_erofs_pcluster_size=$(BOARD_$(_var)IMAGE_EROFS_PCLUSTER_SIZE)" >> $(2))
+$(if $(BOARD_$(_var)IMAGE_EROFS_ENABLE_DEDUPE),$(hide) echo "$(1)_erofs_enable_dedupe=$(BOARD_$(_var)IMAGE_EROFS_ENABLE_DEDUPE)" >> $(2))
 $(if $(BOARD_$(_var)IMAGE_EROFS_BLOCKSIZE),$(hide) echo "$(1)_erofs_blocksize=$(BOARD_$(_var)IMAGE_EROFS_BLOCKSIZE)" >> $(2))
 $(if $(BOARD_$(_var)IMAGE_EXTFS_INODE_COUNT),$(hide) echo "$(1)_extfs_inode_count=$(BOARD_$(_var)IMAGE_EXTFS_INODE_COUNT)" >> $(2))
 $(if $(BOARD_$(_var)IMAGE_EXTFS_RSV_PCT),$(hide) echo "$(1)_extfs_rsv_pct=$(BOARD_$(_var)IMAGE_EXTFS_RSV_PCT)" >> $(2))
@@ -2269,6 +2270,7 @@ $(if $(BOARD_EROFS_PCLUSTER_SIZE),$(hide) echo "erofs_pcluster_size=$(BOARD_EROF
 $(if $(BOARD_EROFS_BLOCKSIZE),$(hide) echo "erofs_blocksize=$(BOARD_EROFS_BLOCKSIZE)" >> $(1))
 $(if $(BOARD_EROFS_SHARE_DUP_BLOCKS),$(hide) echo "erofs_share_dup_blocks=$(BOARD_EROFS_SHARE_DUP_BLOCKS)" >> $(1))
 $(if $(BOARD_EROFS_USE_LEGACY_COMPRESSION),$(hide) echo "erofs_use_legacy_compression=$(BOARD_EROFS_USE_LEGACY_COMPRESSION)" >> $(1))
+$(if $(BOARD_EROFS_ENABLE_DEDUPE),$(hide) echo "erofs_enable_dedupe=$(BOARD_EROFS_ENABLE_DEDUPE)" >> $(1))
 $(if $(BOARD_EXT4_SHARE_DUP_BLOCKS),$(hide) echo "ext4_share_dup_blocks=$(BOARD_EXT4_SHARE_DUP_BLOCKS)" >> $(1))
 $(if $(BOARD_F2FS_BLOCKSIZE),$(hide) echo "f2fs_blocksize=$(BOARD_F2FS_BLOCKSIZE)" >> $(1))
 $(if $(BOARD_FLASH_LOGICAL_BLOCK_SIZE), $(hide) echo "flash_logical_block_size=$(BOARD_FLASH_LOGICAL_BLOCK_SIZE)" >> $(1))
@@ -6553,6 +6555,7 @@ $(BUILT_TARGET_FILES_DIR): \
 	    $(INSTALLED_DTBIMAGE_TARGET) \
 	    $(INSTALLED_2NDBOOTLOADER_TARGET) \
 	    $(INSTALLED_VENDOR_KERNEL_RAMDISK_TARGET) \
+	    $(INSTALLED_INIT_BOOT_IMAGE_TARGET) \
 	    $(BUILT_RAMDISK_16K_TARGET) \
 	    $(BUILT_KERNEL_16K_TARGET) \
 	    $(BUILT_BOOTIMAGE_16K_TARGET) \
@@ -7997,55 +8000,8 @@ pack-recovery-image: $(PACK_RECOVERY_IMAGE_TARGET)
 
 RECOVERY_SWAP_KERNEL_TARGET := $(PRODUCT_OUT)/recovery-kernel-swap
 
-# Has swap kernel for insecure recovery image.
-ifeq ($(BOARD_USES_DESKTOP_RECOVERY_SWAP_KERNEL),true)
-
-$(call dist-for-goals,dist_files,$(RECOVERY_SWAP_KERNEL_TARGET))
-
-PACK_INSECURE_RECOVERY_IMAGE_TARGET := $(PRODUCT_OUT)/android-desktop_insecure_recovery_image.bin
-
-$(PACK_INSECURE_RECOVERY_IMAGE_TARGET): $(PACK_RECOVERY_IMAGE_TARGET) $(UPDATE_PARTITION_SCRIPT) $(RECOVERY_SWAP_KERNEL_TARGET) $(SGDISK)
-	@cp -f $< $@
-	(export SGDISK=$(SGDISK); $(UPDATE_PARTITION_SCRIPT) KERN-A $@ $(RECOVERY_SWAP_KERNEL_TARGET))
-
-PACKED_INSECURE_RECOVERY_IMAGE_ARCHIVE_TARGET := $(PACK_INSECURE_RECOVERY_IMAGE_TARGET).zst
-
-$(PACKED_INSECURE_RECOVERY_IMAGE_ARCHIVE_TARGET): $(PACK_INSECURE_RECOVERY_IMAGE_TARGET) | $(ZSTD)
-	$(ZSTD) -T0 -19 -fk $(PACK_INSECURE_RECOVERY_IMAGE_TARGET)
-
-$(call dist-for-goals,dist_files,$(PACKED_INSECURE_RECOVERY_IMAGE_ARCHIVE_TARGET))
-
-.PHONY: pack-insecure-recovery-image
-pack-insecure-recovery-image: $(PACK_INSECURE_RECOVERY_IMAGE_TARGET)
-
-endif # BOARD_USES_DESKTOP_RECOVERY_SWAP_KERNEL
 
 endif # BOARD_USES_DESKTOP_RECOVERY_IMAGE
-
-# -----------------------------------------------------------------
-# Desktop pack update image hook.
-ifeq ($(BOARD_USES_DESKTOP_UPDATE_IMAGE),true)
-PACK_UPDATE_IMAGE_TARGET := $(PRODUCT_OUT)/android-desktop_update_image.bin
-PACK_UPDATE_IMAGE_ARGS := --noarchive --update --firmware $(GENERATED_FW_IMAGE) --partition-image $(GENERATED_PARTITION_IMAGE)
-
-ifneq (,$(strip $(PACK_UPDATE_IMAGE_EXPERIMENTAL)))
-PACK_UPDATE_IMAGE_ARGS += --experimental
-endif # PACK_UPDATE_IMAGE_EXPERIMENTAL
-
-$(PACK_UPDATE_IMAGE_TARGET): $(PACK_IMAGE_DEPS) $(PRODUCT_OUT)/update-kernel $(GENERATED_FW_IMAGE) $(GENERATED_PARTITION_IMAGE)
-	$(PACK_IMAGE_SCRIPT) --out_dir $(PRODUCT_OUT) $(PACK_UPDATE_IMAGE_ARGS) $(PACK_IMAGE_ARGS)
-
-PACKED_UPDATE_IMAGE_ARCHIVE_TARGET := $(PACK_UPDATE_IMAGE_TARGET).zst
-
-$(PACKED_UPDATE_IMAGE_ARCHIVE_TARGET): $(PACK_UPDATE_IMAGE_TARGET) | $(ZSTD)
-	$(ZSTD) -T0 -19 -fk $(PACK_UPDATE_IMAGE_TARGET)
-
-$(call dist-for-goals,dist_files,$(PACKED_UPDATE_IMAGE_ARCHIVE_TARGET))
-
-.PHONY: pack-update-image
-pack-update-image: $(PACK_UPDATE_IMAGE_TARGET)
-
-endif # BOARD_USES_DESKTOP_UPDATE_IMAGE
 
 PACK_MIGRATION_IMAGE_SCRIPT := $(HOST_OUT_EXECUTABLES)/pack_migration_image
 

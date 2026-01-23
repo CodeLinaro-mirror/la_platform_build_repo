@@ -303,6 +303,11 @@ $(call add_json_str,  DeviceCurrentApiLevelForVendorModules,  $(BOARD_CURRENT_AP
 
 $(call add_json_bool, CompressedApex, $(filter true,$(PRODUCT_COMPRESSED_APEX)))
 $(call add_json_str, DefaultApexPayloadType, $(PRODUCT_DEFAULT_APEX_PAYLOAD_TYPE))
+$(call add_json_str, DefaultApexPayloadErofsCompressor, $(PRODUCT_DEFAULT_APEX_PAYLOAD_EROFS_COMPRESSOR))
+$(call add_json_str, DefaultApexPayloadErofsCompressHints, $(PRODUCT_DEFAULT_APEX_PAYLOAD_EROFS_COMPRESS_HINTS))
+ifdef PRODUCT_DEFAULT_APEX_PAYLOAD_EROFS_PCLUSTER_SIZE
+  $(call add_json_val, DefaultApexPayloadErofsPclusterSize, $(PRODUCT_DEFAULT_APEX_PAYLOAD_EROFS_PCLUSTER_SIZE))
+endif
 
 $(call add_json_bool, BoardUsesRecoveryAsBoot, $(filter true,$(BOARD_USES_RECOVERY_AS_BOOT)))
 $(call add_json_bool, BoardUsesRamdiskAsBoot, $(filter true,$(BOARD_USES_RAMDISK_AS_BOOT)))
@@ -416,6 +421,7 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
     $(call add_json_str, BoardErofsCompressor, $(BOARD_$(image_type)IMAGE_EROFS_COMPRESSOR)) \
     $(call add_json_str, BoardErofsCompressHints, $(BOARD_$(image_type)IMAGE_EROFS_COMPRESS_HINTS)) \
     $(call add_json_str, BoardErofsPclusterSize, $(BOARD_$(image_type)IMAGE_EROFS_PCLUSTER_SIZE)) \
+    $(call add_json_str, BoardErofsEnableDedupe, $(BOARD_$(image_type)IMAGE_EROFS_ENABLE_DEDUPE)) \
     $(call add_json_str, BoardErofsBlockSize, $(BOARD_$(image_type)IMAGE_EROFS_BLOCKSIZE)) \
     $(call add_json_str, BoardExtfsInodeCount, $(BOARD_$(image_type)IMAGE_EXTFS_INODE_COUNT)) \
     $(call add_json_str, BoardExtfsRsvPct, $(BOARD_$(image_type)IMAGE_EXTFS_RSV_PCT)) \
@@ -456,6 +462,7 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, BoardErofsBlockSize, $(BOARD_EROFS_BLOCKSIZE))
   $(call add_json_str, BoardErofsShareDupBlocks, $(BOARD_EROFS_SHARE_DUP_BLOCKS))
   $(call add_json_str, BoardErofsUseLegacyCompression, $(BOARD_EROFS_USE_LEGACY_COMPRESSION))
+  $(call add_json_str, BoardErofsEnableDedupe, $(BOARD_EROFS_ENABLE_DEDUPE))
   $(call add_json_str, BoardExt4ShareDupBlocks, $(BOARD_EXT4_SHARE_DUP_BLOCKS))
   $(call add_json_str, BoardFlashLogicalBlockSize, $(BOARD_FLASH_LOGICAL_BLOCK_SIZE))
   $(call add_json_str, BoardFlashEraseBlockSize, $(BOARD_FLASH_ERASE_BLOCK_SIZE))
@@ -594,6 +601,9 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_list, ProductLinkerConfigSrcs, $(PRODUCT_PRODUCT_LINKER_CONFIG_FRAGMENTS))
 
   # Used to generate _dlkm partitions
+  $(call add_json_str, BoardKernelModulesZip, $(BOARD_KERNEL_MODULES_ZIP))
+  $(call add_json_list, BoardKernelModulesZipExtraVendorKernelRamdiskLoads, $(BOARD_KERNEL_MODULES_ZIP_EXTRA_VENDOR_KERNEL_RAMDISK_LOADS))
+  $(call add_json_list, BoardKernelModulesZipExtraVendorKernelModules, $(BOARD_KERNEL_MODULES_ZIP_EXTRA_VENDOR_KERNEL_MODULES))
   $(call add_json_bool, BuildingSystemDlkmImage,               $(BUILDING_SYSTEM_DLKM_IMAGE))
   $(call add_json_list, SystemKernelModules, $(BOARD_SYSTEM_KERNEL_MODULES))
   $(call add_json_str, SystemKernelBlocklistFile, $(BOARD_SYSTEM_KERNEL_MODULES_BLOCKLIST_FILE))

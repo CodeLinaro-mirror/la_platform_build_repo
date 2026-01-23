@@ -348,6 +348,7 @@ pub fn create_java_lib(
     mut input: Input,
     codegen_mode: CodegenMode,
     single_exported_file: bool,
+    allow_impl_interface_removal: bool,
     finalized_flags: FinalizedFlagMap,
 ) -> Result<Vec<OutputFile>> {
     let parsed_flags = input.try_parse_flags()?;
@@ -367,6 +368,7 @@ pub fn create_java_lib(
         flag_ids,
         package_fingerprint,
         single_exported_file,
+        allow_impl_interface_removal,
         finalized_flags,
         support_uau_annotation: !cfg!(enable_jarjar_flags_in_framwork),
         optimize_read_only_getter,
