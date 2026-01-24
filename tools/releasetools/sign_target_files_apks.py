@@ -644,8 +644,11 @@ def GetOtaSigningArgs():
 
 def RegenerateKernelPartitions(input_tf_zip: zipfile.ZipFile, output_tf_dir: str, misc_info):
   """Re-generate boot and dtbo partitions using new signing configuration"""
+  # We need the 16KB images, and boot.img/dtbo.img in PREBUILT_IMAGES dir
+  # We can't unzip IMAGES/boot.img, because signer script will treat that
+  # image as pre-signed, and we need to re-sign boot.img
   files_to_unzip = [
-      "BOOTABLE_IMAGES/*.img", "*/boot_16k.img", "*/dtbo_16k.img", "*/boot.img", "*/dtbo.img"]
+      "BOOTABLE_IMAGES/*.img", "*/boot_16k.img", "*/dtbo_16k.img", "PREBUILT_IMAGES/boot.img", "PREBUILT_IMAGES/dtbo.img"]
   if OPTIONS.input_tmp is None:
     OPTIONS.input_tmp = common.UnzipTemp(input_tf_zip.filename, files_to_unzip)
   else:
@@ -657,6 +660,8 @@ def RegenerateKernelPartitions(input_tf_zip: zipfile.ZipFile, output_tf_dir: str
       "IMAGES/boot.img", "boot.img", unzip_dir, "BOOT", misc_info)
   if boot_image:
     boot_image.WriteToDir(output_tf_dir)
+    # Need to write to unzip_dir as well because RegenerateBootOTA uses it
+    boot_image.WriteToDir(unzip_dir)
   if misc_info.get("has_dtbo") == "true":
     add_img_to_target_files.AddDtbo(output_tf_dir)
   return unzip_dir
@@ -1225,6 +1230,11 @@ def ReplaceCerts(data):
                 for signer in root.findall('signer')]
   assert len(signatures) == len(set(signatures)), \
       "Found duplicate entries after cert replacement: {}".format(data)
+
+  # Verify that there are no placeholders anymore.
+  placeholders = [s for s in signatures if s.startswith("@")]
+  assert len(placeholders) == 0, \
+      "Found placeholders in mac_permissions.xml: {}".format(placeholders)
 
   return data
 
