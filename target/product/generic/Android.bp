@@ -789,6 +789,7 @@ system_image_defaults {
     }) + select(release_flag("RELEASE_AISEAL_FRAMEWORK"), {
         true: [
             "aisealhostservice", // base_system (RELEASE_AISEAL_FRAMEWORK)
+            "AppSearchAiSealConfig", // base_system (RELEASE_AISEAL_FRAMEWORK)
         ],
         default: [],
     }) + select(release_flag("RELEASE_WEBAPP_MODULE"), {
