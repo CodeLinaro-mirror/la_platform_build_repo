@@ -664,6 +664,9 @@ def RegenerateKernelPartitions(input_tf_zip: zipfile.ZipFile, output_tf_dir: str
     boot_image.WriteToDir(unzip_dir)
   if misc_info.get("has_dtbo") == "true":
     add_img_to_target_files.AddDtbo(output_tf_dir)
+    # Need to write to unzip_dir as well because RegenerateBootOTA uses it
+    shutil.copy(os.path.join(output_tf_dir, "IMAGES", "dtbo.img"),
+                os.path.join(unzip_dir, "IMAGES", "dtbo.img"))
   return unzip_dir
 
 
