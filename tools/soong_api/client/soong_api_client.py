@@ -160,7 +160,8 @@ class SoongApiClient:
         if not out_path.is_absolute():
             out_path = self.android_top / out_path
 
-        return out_path / "soong/soong_api/soong_api.db"
+        product = os.environ.get('TARGET_PRODUCT', 'generic')
+        return out_path / "soong" / "soong_api" / product / "soong_api.db"
 
     def _ensure_build_artifacts(self, rebuild):
         """Follows the Decision Logic for custom vs. standard DB paths."""

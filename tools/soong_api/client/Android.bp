@@ -43,3 +43,31 @@ python_binary_host {
         "libprotobuf-python", // For json_format
     ],
 }
+
+// Soong API Java Client Library
+java_library_host {
+    name: "soong_api_client_java_lib",
+    srcs: [
+        "src/main/java/com/android/soong/api/client/SoongApiClient.java",
+    ],
+    static_libs: [
+        "soong_api_grpc_proto",
+        "grpc-java",
+        "grpc-java-netty-shaded",
+        "guava",
+        "jsr305", // For Nullable annotations
+    ],
+}
+
+// Soong API Java Client Example
+java_binary_host {
+    name: "soong_api_client_java_example",
+    srcs: [
+        "src/main/java/com/android/soong/api/client/SoongApiClientExample.java",
+    ],
+    main_class: "com.android.soong.api.client.SoongApiClientExample",
+    static_libs: [
+        "soong_api_client_java_lib",
+        "libprotobuf-java-util-full", // For JsonFormat printer
+    ],
+}

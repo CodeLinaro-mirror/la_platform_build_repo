@@ -78,7 +78,6 @@ SOONG_PREBUILT_MODULE_TYPES = [
     'prebuilt_apex',
     'prebuilt_bootclasspath_fragment',
     'prebuilt_dsp',
-    'prebuilt_etc',
     'prebuilt_firmware',
     'prebuilt_kernel_modules',
     'prebuilt_rfsa',
