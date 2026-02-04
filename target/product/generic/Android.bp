@@ -1133,6 +1133,11 @@ system_image_defaults {
                 default: [
                     "libuprobestats_client", // base_system internal
                 ],
+            }) + select(release_flag("RELEASE_NATIVE_FRAMEWORK_PROTOTYPE"), {
+                true: [
+                    "libandroid_native_denylist", // base_system (RELEASE_NATIVE_FRAMEWORK_PROTOTYPE)
+                ],
+                default: [],
             }),
         },
     },
