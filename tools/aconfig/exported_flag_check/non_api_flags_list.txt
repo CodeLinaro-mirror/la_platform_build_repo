@@ -309,6 +309,7 @@ com.android.wifi.flags.network_provider_battery_charging_status
 com.android.wifi.flags.p2p_dialog2
 com.android.wifi.flags.shared_connectivity_broadcast_receiver_test_api
 com.android.wifi.flags.wep_disabled_in_apm
+com.android.window.flags.enable_less_activity_recreation_on_config_change
 com.android.window.flags.fix_hide_overlay_api
 com.android.window.flags.untrusted_embedding_state_sharing
 com.google.android.clockwork.pele.flags.koru_feature_cached_views

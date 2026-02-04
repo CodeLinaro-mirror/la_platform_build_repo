@@ -18,9 +18,13 @@ set -x
 
 source build/make/shell_utils.sh
 
-export TARGET_PRODUCT=aosp_arm64
-export TARGET_RELEASE=trunk_staging
-export TARGET_BUILD_VARIANT=eng
+# If the environment does not already specify TARGET_PRODUCT, TARGET_RELEASE,
+# and TARGET_BUILD_VARIANT, set them here.
+: ${TARGET_PRODUCT:=aosp_arm64}
+: ${TARGET_RELEASE:=trunk_staging}
+: ${TARGET_BUILD_VARIANT:=eng}
+
+export TARGET_PRODUCT TARGET_RELEASE TARGET_BUILD_VARIANT
 
 import_build_vars \
         OUT_DIR \

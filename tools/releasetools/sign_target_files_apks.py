@@ -168,6 +168,10 @@ Usage:  sign_target_files_apks [flags] input_target_files output_target_files
       If the signer uses a RSA key, this should be the number of bytes to
       represent the modulus. If it uses an EC key, this is the size of a
       DER-encoded ECDSA signature.
+
+  --apk_logging_on_success
+      Whether to log output of APK signing on success. Default behavior skips
+      logging output when signing an APK succeeds.
 """
 
 from __future__ import print_function
@@ -232,6 +236,7 @@ OPTIONS.override_apk_keys = None
 OPTIONS.override_apex_keys = None
 OPTIONS.input_tmp = None
 OPTIONS.threads = 1
+OPTIONS.apk_logging_on_success = False
 
 
 AVB_FOOTER_ARGS_BY_PARTITION = {
@@ -577,7 +582,8 @@ def SignApk(data, keyname, pw, platform_api_level, codename_to_api_level_map,
 
   common.SignFile(unsigned.name, signed.name, keyname, pw,
                   min_api_level=min_api_level,
-                  codename_to_api_level_map=codename_to_api_level_map)
+                  codename_to_api_level_map=codename_to_api_level_map,
+                  log_on_success=OPTIONS.apk_logging_on_success)
 
   data = None
   if is_compressed:
@@ -1953,6 +1959,7 @@ def main(argv):
           "override_apk_keys=",
           "override_apex_keys=",
           "threads=",
+          "apk_logging_on_success=",
       ],
       extra_option_handler=[option_handler, payload_signer.signer_options])
 

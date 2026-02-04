@@ -232,7 +232,6 @@ PRODUCT_PACKAGES += \
     mediacodec.policy \
     mediaextractor \
     media_profiles_V1_0.dtd \
-    MediaProviderLegacy \
     mediaserver \
     mediaserver64 \
     mediaserverwrapper \
@@ -410,10 +409,7 @@ ifeq ($(RELEASE_WEBAPP_MODULE),true)
        default-permissions-webapp.xml
 endif
 
-ifeq ($(RELEASE_MEDIAMETRICS_MODULE),true)
-    PRODUCT_PACKAGES += \
-        libmediametrics_packageinfo
-else
+ifneq ($(RELEASE_MEDIAMETRICS_MODULE),true)
     PRODUCT_PACKAGES += \
         mediametrics
 endif

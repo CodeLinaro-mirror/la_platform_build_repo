@@ -799,7 +799,6 @@ system_image_defaults {
         default: [],
     }) + select(release_flag("RELEASE_MEDIAMETRICS_MODULE"), {
         true: [
-            "libmediametrics_packageinfo",
         ],
         default: [
             "mediametrics", // base_system (RELEASE_MEDIAMETRICS_MODULE)
@@ -842,7 +841,6 @@ system_image_defaults {
                 "LiveWallpapersPicker", // generic_system, full_base
                 "LocalTransport", // base_system
                 "ManagedProvisioning", // handheld_system
-                "MediaProviderLegacy", // base_system
                 "MmsService", // handheld_system
                 "MtpService", // handheld_system
                 "MusicFX", // handheld_system
