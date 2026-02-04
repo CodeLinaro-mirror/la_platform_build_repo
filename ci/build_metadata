@@ -40,12 +40,15 @@ build/soong/bin/m dist ${TARGETS[@]} || exit $?
 # Generate all of the release configs for all of the named products.
 (
   PATH=$(gettop)/build/soong/bin:${PATH}
+  # Allow file location override.
+  : ${BROKEN_PRODUCTS_FILE:=vendor/google/build/broken_products_allowlist.txt}
+  : ${BROKEN_PROJECTS_FILE:=vendor/google/build/broken_projects_rw_dirs.txt}
   args=(--dist --intermediate-dir=${OUT_DIR}/soong/.intermediates/build/soong/scripts/product-configs --json --textproto)
-  if [[ -r vendor/google/build/broken_products_allowlist.txt ]]; then
-      args+=(--skip-file vendor/google/build/broken_products_allowlist.txt)
+  if [[ -r ${BROKEN_PRODUCTS_FILE} ]]; then
+      args+=(--skip-file ${BROKEN_PRODUCTS_FILE})
   fi
-  if [[ -r vendor/google/build/broken_projects_rw_dirs.txt ]]; then
-      args+=(--rw-dirs-file vendor/google/build/broken_projects_rw_dirs.txt)
+  if [[ -r ${BROKEN_PROJECTS_FILE} ]]; then
+      args+=(--rw-dirs-file ${BROKEN_PROJECTS_FILE})
   fi
   ./build/soong/scripts/product-configs ${args[@]}
 ) || exit $?
