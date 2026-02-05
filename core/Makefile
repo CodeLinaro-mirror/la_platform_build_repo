@@ -2186,10 +2186,6 @@ $(if $(BOARD_$(_var)IMAGE_FILE_SYSTEM_TYPE),$(hide) echo "$(1)_fs_type=$(BOARD_$
 $(if $(BOARD_$(_var)IMAGE_JOURNAL_SIZE),$(hide) echo "$(1)_journal_size=$(BOARD_$(_var)IMAGE_JOURNAL_SIZE)" >> $(2))
 $(if $(BOARD_$(_var)IMAGE_PARTITION_RESERVED_SIZE),$(hide) echo "$(1)_reserved_size=$(BOARD_$(_var)IMAGE_PARTITION_RESERVED_SIZE)" >> $(2))
 $(if $(BOARD_$(_var)IMAGE_PARTITION_SIZE),$(hide) echo "$(1)_size=$(BOARD_$(_var)IMAGE_PARTITION_SIZE)" >> $(2))
-$(if $(BOARD_$(_var)IMAGE_SQUASHFS_BLOCK_SIZE),$(hide) echo "$(1)_squashfs_block_size=$(BOARD_$(_var)IMAGE_SQUASHFS_BLOCK_SIZE)" >> $(2))
-$(if $(BOARD_$(_var)IMAGE_SQUASHFS_COMPRESSOR),$(hide) echo "$(1)_squashfs_compressor=$(BOARD_$(_var)IMAGE_SQUASHFS_COMPRESSOR)" >> $(2))
-$(if $(BOARD_$(_var)IMAGE_SQUASHFS_COMPRESSOR_OPT),$(hide) echo "$(1)_squashfs_compressor_opt=$(BOARD_$(_var)IMAGE_SQUASHFS_COMPRESSOR_OPT)" >> $(2))
-$(if $(BOARD_$(_var)IMAGE_SQUASHFS_DISABLE_4K_ALIGN),$(hide) echo "$(1)_squashfs_disable_4k_align=$(BOARD_$(_var)IMAGE_SQUASHFS_DISABLE_4K_ALIGN)" >> $(2))
 $(if $(PRODUCT_$(_var)_BASE_FS_PATH),$(hide) echo "$(1)_base_fs_file=$(PRODUCT_$(_var)_BASE_FS_PATH)" >> $(2))
 $(eval _size := $(BOARD_$(_var)IMAGE_PARTITION_SIZE))
 $(eval _reserved := $(BOARD_$(_var)IMAGE_PARTITION_RESERVED_SIZE))
@@ -2262,7 +2258,6 @@ $(if $(filter true,$(TARGET_USERIMAGES_USE_EXT2)),$(hide) echo "fs_type=ext2" >>
 
 $(if $(filter true,$(TARGET_USERIMAGES_SPARSE_EXT_DISABLED)),,$(hide) echo "extfs_sparse_flag=-s" >> $(1))
 $(if $(filter true,$(TARGET_USERIMAGES_SPARSE_EROFS_DISABLED)),,$(hide) echo "erofs_sparse_flag=-s" >> $(1))
-$(if $(filter true,$(TARGET_USERIMAGES_SPARSE_SQUASHFS_DISABLED)),,$(hide) echo "squashfs_sparse_flag=-s" >> $(1))
 $(if $(filter true,$(TARGET_USERIMAGES_SPARSE_F2FS_DISABLED)),,$(hide) echo "f2fs_sparse_flag=-S" >> $(1))
 $(if $(BOARD_EROFS_COMPRESSOR),$(hide) echo "erofs_default_compressor=$(BOARD_EROFS_COMPRESSOR)" >> $(1))
 $(if $(BOARD_EROFS_COMPRESS_HINTS),$(hide) echo "erofs_default_compress_hints=$(BOARD_EROFS_COMPRESS_HINTS)" >> $(1))
@@ -5805,7 +5800,6 @@ INTERNAL_OTATOOLS_MODULES := \
   mkfs.erofs \
   mkf2fsuserimg \
   mksquashfs \
-  mksquashfsimage \
   mkuserimg_mke2fs \
   ota_extractor \
   ota_from_target_files \

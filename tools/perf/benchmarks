@@ -755,7 +755,7 @@ benchmarks:
                       ),
             Benchmark(id="full_using_logs",
                       title="Full build using prior logs",
-                      change=Clean("^(ninja_(log|deps)|(.)?siso.*)$"),
+                      change=Clean(r"^(\.)?(ninja_(log|deps)|siso.*)$"),
                       modules=["droid"],
                       preroll=1,
                       postroll=3,
