@@ -4484,5 +4484,12 @@ team {
     trendy_team_id: "6092250355695616",
 }
 
+team {
+    name: "trendy_team_desktop_input",
+
+    // go/trendy/manage/engineers/5175303292157952
+    trendy_team_id: "5175303292157952",
+}
+
 // DON'T ADD NEW RULES HERE. For more details refer to
 // go/new-android-ownership-model

@@ -41,6 +41,12 @@ PRODUCT_SHIPPING_API_LEVEL := 34
 # Enable dynamic partitions to facilitate mixing onto Cuttlefish
 PRODUCT_USE_DYNAMIC_PARTITIONS := true
 
+# Force-set 16KB page size configuration to be explicit,
+# also because shipping API level on the GSI sometimes gets
+# updated late.
+PRODUCT_NO_BIONIC_PAGE_SIZE_MACRO := true
+PRODUCT_MAX_PAGE_SIZE_SUPPORTED := 16384
+
 # Enable dynamic partition size
 PRODUCT_USE_DYNAMIC_PARTITION_SIZE := true
 

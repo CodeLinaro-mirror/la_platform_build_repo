@@ -1,0 +1,98 @@
+#!/bin/bash
+#
+# Copyright (C) 2026 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+set -e
+source "$(dirname "$0")"/common.sh
+source "$(dirname "$0")"/config.sh
+
+command="$1"
+if [[ -z "$command" ]]; then
+    error "missing command"
+    exit 1
+fi
+shift
+
+patch_dir_in=""
+patch_dir_out=""
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --patch_dir_in)
+            if [[ -z "$2" ]]; then
+                error "missing flag value"
+                exit 1
+            fi
+            patch_dir_in="$(readlink -f "$2")"
+            shift 2
+            ;;
+        --patch_dir_out)
+            if [[ -z "$2" ]]; then
+                error "missing flag value"
+                exit 1
+            fi
+            patch_dir_out="$(readlink -f "$2")"
+            shift 2
+            ;;
+    esac
+done
+
+function require_patch_dir_in() {
+    if [[ -z "$patch_dir_in" ]]; then
+        error "command requires --patch_dir_in"
+        exit 1
+    fi
+}
+
+function require_patch_dir_out() {
+    if [[ -z "$patch_dir_out" ]]; then
+        error "command requires --patch_dir_out"
+        exit 1
+    fi
+}
+
+case "$command" in
+    finalize-module-sdks)
+        require_patch_dir_out
+        source "$(dirname "$0")"/finalize-module-sdks.sh
+        format_patches_into_patchdir "$patch_dir_out"
+        ;;
+    finalize-resources)
+        require_patch_dir_out
+        source "$(dirname "$0")"/finalize-resources.sh
+        format_patches_into_patchdir "$patch_dir_out"
+        ;;
+    finalize-ndk)
+        error "not yet implemented"
+        exit 1
+        ;;
+    finalize-platform-sdk)
+        error "not yet implemented"
+        exit 1
+        ;;
+    finalize-release-configs)
+        error "not yet implemented"
+        exit 1
+        ;;
+    apply-patches)
+        require_patch_dir_in
+        apply_patches_from_patchdir "$patch_dir_in"
+        ;;
+    *)
+        error "unexpected command: $command"
+        exit 1
+        ;;
+esac
+
+# vi: expandtab sw=4 ts=4

@@ -260,6 +260,7 @@ PRODUCT_PACKAGES += \
     platform.xml \
     pm \
     prefetch \
+    preinstalled-packages-app-lock-exempt.xml \
     preinstalled-packages-asl-files.xml \
     preinstalled-packages-platform.xml \
     preinstalled-packages-strict-signature.xml \

@@ -88,3 +88,9 @@ prebuilt_etc {
     sub_dir: "sysconfig",
     src: "preinstalled-packages-media-system.xml",
 }
+
+prebuilt_etc {
+    name: "preinstalled-packages-platform-telephony-system.xml",
+    sub_dir: "sysconfig",
+    src: "preinstalled-packages-platform-telephony-system.xml",
+}
