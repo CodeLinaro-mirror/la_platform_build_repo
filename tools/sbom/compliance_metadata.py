@@ -160,7 +160,7 @@ class MetadataDb:
 
   def get_soong_modules(self):
     # Get all records from table modules, which contains metadata of all soong modules
-    cursor = self.conn.execute('select name, package, package as module_path, module_type as soong_module_type, built_files, installed_files, static_dep_files, whole_static_dep_files from modules')
+    cursor = self.conn.execute('select name, package, package as module_path, module_type as soong_module_type, base_module_type as soong_base_module_type, built_files, installed_files, static_dep_files, whole_static_dep_files from modules')
     rows = cursor.fetchall()
     cursor.close()
     soong_modules = []
@@ -204,7 +204,7 @@ class MetadataDb:
     return licenses
 
   def get_soong_module_of_installed_file(self, installed_file):
-    cursor = self.conn.execute('select name, m.package, m.package as module_path, module_type as soong_module_type, built_files, installed_files, static_dep_files, whole_static_dep_files '
+    cursor = self.conn.execute('select name, m.package, m.package as module_path, module_type as soong_module_type, base_module_type as soong_base_module_type, built_files, installed_files, static_dep_files, whole_static_dep_files '
                                'from modules m join module_installed_file mif on m.id = mif.module_id '
                                'where mif.installed_file = ?',
                                (installed_file,))
@@ -217,7 +217,7 @@ class MetadataDb:
     return None
 
   def get_soong_module_of_built_file(self, built_file):
-    cursor = self.conn.execute('select name, m.package, m.package as module_path, module_type as soong_module_type, built_files, installed_files, static_dep_files, whole_static_dep_files '
+    cursor = self.conn.execute('select name, m.package, m.package as module_path, module_type as soong_module_type, base_module_type as soong_base_module_type, built_files, installed_files, static_dep_files, whole_static_dep_files '
                                'from modules m join module_built_file mbf on m.id = mbf.module_id '
                                'where mbf.built_file = ?',
                                (built_file,))

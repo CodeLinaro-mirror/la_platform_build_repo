@@ -1,5 +1,6 @@
+#!/bin/bash
 #
-# Copyright (C) 2008 The Android Open Source Project
+# Copyright (C) 2026 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +13,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# BUILD_ID is usually used to specify the branch name
-# (like "MAIN") or a branch name and a release candidate
-# (like "CRB01").  It must be a single word, and is
-# capitalized by convention.
-
-BUILD_ID=ZKQ1.260208.001
 
 
+UNBUNDLED_BUILD_SDKS_FROM_SOURCE=true vendor/google/build/mainline_modules_sdks.sh --build-release next
 
-BUILD_ID:=${BUILD_ID}-CP2A.260206.002
+m unpack-module-sdks
+projects="$(unpack-module-sdks \
+    --mainline-sdks-top "$top/out/dist" \
+    --android-top "$top" \
+    --sdk-ext-version $SDK_EXT_VERSION)"
+
+for project in $projects; do
+    git_commit \
+        $project \
+<<EOF
+Finalize SDK extension $SDK_EXT_VERSION
+
+Import module SDK artifacts from ab/$BUILD_NUMBER.
+EOF
+done
+
+# vi: expandtab sw=4 ts=4

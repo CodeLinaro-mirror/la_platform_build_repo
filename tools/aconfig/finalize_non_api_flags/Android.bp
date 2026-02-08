@@ -9,6 +9,7 @@ rust_defaults {
     clippy_lints: "android",
     lints: "android",
     rustlibs: [
+        "libaconfig_protos",
         "libanyhow",
         "libclap",
         "libregex",

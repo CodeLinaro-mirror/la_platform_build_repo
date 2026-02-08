@@ -58,8 +58,8 @@ function build_build_var_cache()
     local T=$(gettop)
     local one_true_awk=$T/prebuilts/build-tools/$(get_host_prebuilt_prefix)/bin/one-true-awk
     # Grep out the variable names from the script.
-    cached_vars=(`cat $T/build/envsetup.sh | tr '()' '  ' | $one_true_awk '{for(i=1;i<=NF;i++) if($i~/_get_build_var_cached/) print $(i+1)}' | sort -u | tr '\n' ' '`)
-    cached_abs_vars=(`cat $T/build/envsetup.sh | tr '()' '  ' | $one_true_awk '{for(i=1;i<=NF;i++) if($i~/_get_abs_build_var_cached/) print $(i+1)}' | sort -u | tr '\n' ' '`)
+    cached_vars=(`cat $T/build/envsetup.sh | tr '()' '  ' | $one_true_awk '{for(i=1;i<=NF;i++) if($i~/_get_build_var_cached/) print $(i+1)}' | grep -vE "^(print|COMMON_LUNCH_CHOICES)$" | sort -u | tr '\n' ' '`)
+    cached_abs_vars=(`cat $T/build/envsetup.sh | tr '()' '  ' | $one_true_awk '{for(i=1;i<=NF;i++) if($i~/_get_abs_build_var_cached/) print $(i+1)}' | grep -vE "^(print|COMMON_LUNCH_CHOICES)$" | sort -u | tr '\n' ' '`)
     # Call the build system to dump the "<val>=<value>" pairs as a shell script.
     build_dicts_script=`\builtin cd $T; build/soong/soong_ui.bash --dumpvars-mode \
                         --vars="${cached_vars[*]}" \
@@ -1118,36 +1118,45 @@ function source_vendorsetup() {
     unset VENDOR_PYTHONPATH
     local T="$(gettop)"
     local allowed=
-    for f in $(cd "$T" && find -L device vendor product -maxdepth 4 -name 'allowed-vendorsetup_sh-files' 2>/dev/null | sort); do
-        if [ -n "$allowed" ]; then
-            echo "More than one 'allowed_vendorsetup_sh-files' file found, not including any vendorsetup.sh files:"
-            echo "  $allowed"
-            echo "  $f"
-            return
-        fi
-        allowed="$T/$f"
-    done
+    local vendorsetups=()
 
-    local allowed_files=
-    [ -n "$allowed" ] && allowed_files=($(cat "$allowed"))
-    for dir in device vendor product; do
-        for f in $(cd "$T" && test -d $dir && \
-            find -L $dir -maxdepth 4 -name 'vendorsetup.sh' 2>/dev/null | sort); do
-
-            if [[ -z "$allowed" ]]; then
-                echo "including $f"; . "$T/$f"
-            else
-                local found=
-                for a in "${allowed_files[@]}"; do
-                    if [[ "$T/$f" =~ "$a" ]]; then
-                        echo "including $f"; . "$T/$f"
-                        found=y
-                        break
-                    fi
-                done
-                [[ -n ${found} ]] || echo "ignoring $f, not in $allowed"
+    # Find all relevant files in a single traversal to improve performance.
+    while IFS= read -r f; do
+        if [[ -z "$f" ]]; then continue; fi
+        if [[ "$f" == *allowed-vendorsetup_sh-files ]]; then
+            if [ -n "$allowed" ]; then
+                echo "More than one 'allowed_vendorsetup_sh-files' file found, not including any vendorsetup.sh files:"
+                echo "  $allowed"
+                echo "  $T/$f"
+                return
             fi
-        done
+            allowed="$T/$f"
+        elif [[ "$f" == *vendorsetup.sh ]]; then
+            vendorsetups+=("$f")
+        fi
+    done < <(cd "$T" && find -L device vendor product -maxdepth 4 \( -name 'allowed-vendorsetup_sh-files' -o -name 'vendorsetup.sh' \) 2>/dev/null | sort)
+
+    local allowed_files=()
+    if [ -n "$allowed" ]; then
+        allowed_files=($(cat "$allowed"))
+    fi
+
+    for f in "${vendorsetups[@]}"; do
+        if [ -z "$allowed" ]; then
+            echo "including $f"
+            . "$T/$f"
+        else
+            local found=
+            for a in "${allowed_files[@]}"; do
+                if [[ "$T/$f" == *"$a"* ]]; then
+                    echo "including $f"
+                    . "$T/$f"
+                    found=y
+                    break
+                fi
+            done
+            [[ -n ${found} ]] || echo "ignoring $f, not in $allowed"
+        fi
     done
 
     setup_cog_env_if_needed

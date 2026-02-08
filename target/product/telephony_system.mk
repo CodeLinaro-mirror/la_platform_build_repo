@@ -28,7 +28,8 @@ PRODUCT_PACKAGES += \
     CarrierDefaultApp \
     CallLogBackup \
     com.android.cellbroadcast \
-    CellBroadcastLegacyApp
+    CellBroadcastLegacyApp \
+    preinstalled-packages-platform-telephony-system.xml
 endif #TARGET_NO_TELEPHONY
 
 PRODUCT_COPY_FILES := \

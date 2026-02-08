@@ -1,5 +1,6 @@
+#!/bin/bash
 #
-# Copyright (C) 2008 The Android Open Source Project
+# Copyright (C) 2026 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,14 +13,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# BUILD_ID is usually used to specify the branch name
-# (like "MAIN") or a branch name and a release candidate
-# (like "CRB01").  It must be a single word, and is
-# capitalized by convention.
 
-BUILD_ID=ZKQ1.260208.001
+# The major part of the next $MAJOR.$MINOR SDK version to finalize
+MAJOR=37
 
+# The minor part of the next $MAJOR.$MINOR SDK version to finalize
+MINOR=0
 
+# The SDK extension version to finalize (as part of the platform)
+SDK_EXT_VERSION=22
 
-BUILD_ID:=${BUILD_ID}-CP2A.260206.002
+# The topic branch to perform the work on
+BRANCH="finalize-$MAJOR.$MINOR"
+
+# vi: expandtab sw=4 ts=4
