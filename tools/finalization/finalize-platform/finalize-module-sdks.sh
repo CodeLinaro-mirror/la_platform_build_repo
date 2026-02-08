@@ -14,12 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-UNBUNDLED_BUILD_SDKS_FROM_SOURCE=true vendor/google/build/mainline_modules_sdks.sh --build-release next
-
 m unpack-module-sdks
 projects="$(unpack-module-sdks \
-    --mainline-sdks-top "$top/out/dist" \
+    --mainline-sdks-top "$mainline_sdks_dir" \
     --android-top "$top" \
     --sdk-ext-version $SDK_EXT_VERSION)"
 
