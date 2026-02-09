@@ -71,6 +71,19 @@ rust_test_host {
     ],
 }
 
+// For having unit test coverage when the v4 parse flag is enabled.
+// This can be removed / flipped after we start to rollout that flag.
+rust_test_host {
+    name: "aconfig_storage_file.test.v4_enabled",
+    test_suites: ["general-tests"],
+    defaults: ["aconfig_storage_file.defaults"],
+    srcs: ["src/lib.rs"],
+    rustlibs: [
+        "libtempfile",
+    ],
+    cfgs: ["enable_parse_v4"],
+}
+
 rust_protobuf {
     name: "libaconfig_storage_protos",
     protos: ["protos/aconfig_storage_metadata.proto"],

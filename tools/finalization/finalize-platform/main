@@ -18,6 +18,15 @@ set -e
 source "$(dirname "$0")"/common.sh
 source "$(dirname "$0")"/config.sh
 
+function require_arg() {
+    local arg="$1"
+    local value="${!2}"
+    if [[ -z "$value" ]]; then
+        error "missing $arg <value>"
+        exit 1
+    fi
+}
+
 command="$1"
 if [[ -z "$command" ]]; then
     error "missing command"
@@ -25,53 +34,36 @@ if [[ -z "$command" ]]; then
 fi
 shift
 
-patch_dir_in=""
-patch_dir_out=""
+patch_dir=""
+mainline_sdks_dir=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --patch_dir_in)
+        --patch-dir)
             if [[ -z "$2" ]]; then
-                error "missing flag value"
+                error "--patch-dir: missing <value>"
                 exit 1
             fi
-            patch_dir_in="$(readlink -f "$2")"
+            patch_dir="$(readlink -f "$2")"
             shift 2
             ;;
-        --patch_dir_out)
+        --mainline-sdks-dir)
             if [[ -z "$2" ]]; then
-                error "missing flag value"
+                error "--mainline-sdks-dir: missing <value>"
                 exit 1
             fi
-            patch_dir_out="$(readlink -f "$2")"
+            mainline_sdks_dir="$(readlink -f "$2")"
             shift 2
             ;;
     esac
 done
 
-function require_patch_dir_in() {
-    if [[ -z "$patch_dir_in" ]]; then
-        error "command requires --patch_dir_in"
-        exit 1
-    fi
-}
-
-function require_patch_dir_out() {
-    if [[ -z "$patch_dir_out" ]]; then
-        error "command requires --patch_dir_out"
-        exit 1
-    fi
-}
-
 case "$command" in
     finalize-module-sdks)
-        require_patch_dir_out
+        require_arg "--mainline-sdks-dir" "mainline_sdks_dir"
         source "$(dirname "$0")"/finalize-module-sdks.sh
-        format_patches_into_patchdir "$patch_dir_out"
         ;;
     finalize-resources)
-        require_patch_dir_out
         source "$(dirname "$0")"/finalize-resources.sh
-        format_patches_into_patchdir "$patch_dir_out"
         ;;
     finalize-ndk)
         error "not yet implemented"
@@ -86,8 +78,12 @@ case "$command" in
         exit 1
         ;;
     apply-patches)
-        require_patch_dir_in
-        apply_patches_from_patchdir "$patch_dir_in"
+        require_arg "--patch-dir" "patch_dir"
+        apply_patches_from_patchdir "$patch_dir"
+        ;;
+    format-patches)
+        require_arg "--patch-dir" "patch_dir"
+        format_patches_into_patchdir "$patch_dir"
         ;;
     *)
         error "unexpected command: $command"

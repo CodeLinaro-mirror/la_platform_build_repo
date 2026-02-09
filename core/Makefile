@@ -4739,8 +4739,11 @@ BOARD_AVB_SYSTEM_DLKM_ADD_HASHTREE_FOOTER_ARGS += \
     --prop com.android.build.system_dlkm.os_version:$(SYSTEM_DLKM_OS_VERSION)
 
 # Appends fingerprint and security patch level as a AVB property descriptor.
+# TODO(b/437803910): Use $(BUILD_SYSTEM_FINGERPRINT_FROM_FILE) for the system
+# fingerprint. We are waiting for some tools to be fixed to read the correct
+# product fingerprint instead of the system fingerprint.
 BOARD_AVB_SYSTEM_ADD_HASHTREE_FOOTER_ARGS += \
-    --prop com.android.build.system.fingerprint:$(BUILD_SYSTEM_FINGERPRINT_FROM_FILE) \
+    --prop com.android.build.system.fingerprint:$(BUILD_FINGERPRINT_FROM_FILE) \
     --prop com.android.build.system.security_patch:$(PLATFORM_SECURITY_PATCH)
 
 BOARD_AVB_PRODUCT_ADD_HASHTREE_FOOTER_ARGS += \

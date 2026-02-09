@@ -129,6 +129,10 @@ ifdef PRODUCT_AVF_ENABLED
 $(call add_soong_config_var_value,ANDROID,avf_enabled,$(PRODUCT_AVF_ENABLED))
 endif
 
+ifdef BOARD_PVMFWIMAGE_PARTITION_SIZE
+$(call soong_config_set_int,ANDROID,pvmfw_partition_size,$(BOARD_PVMFWIMAGE_PARTITION_SIZE))
+endif
+
 $(call soong_config_set,ANDROID,platform_security_patch_timestamp_string,$(PLATFORM_SECURITY_PATCH_TIMESTAMP))
 $(call soong_config_set_int,ANDROID,platform_security_patch_timestamp,$(PLATFORM_SECURITY_PATCH_TIMESTAMP))
 
