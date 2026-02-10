@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e
+set -ex
 source "$(dirname "$0")"/common.sh
 source "$(dirname "$0")"/config.sh
 
@@ -54,6 +54,10 @@ while [[ $# -gt 0 ]]; do
             mainline_sdks_dir="$(readlink -f "$2")"
             shift 2
             ;;
+        *)
+            error "unexpected argument $1"
+            exit 1
+            ;;
     esac
 done
 
@@ -66,16 +70,13 @@ case "$command" in
         source "$(dirname "$0")"/finalize-resources.sh
         ;;
     finalize-ndk)
-        error "not yet implemented"
-        exit 1
+        info "not yet implemented"
         ;;
     finalize-platform-sdk)
-        error "not yet implemented"
-        exit 1
+        source "$(dirname "$0")"/finalize-platform-sdk.sh
         ;;
     finalize-release-configs)
-        error "not yet implemented"
-        exit 1
+        source "$(dirname "$0")"/finalize-release-configs.sh
         ;;
     apply-patches)
         require_arg "--patch-dir" "patch_dir"
@@ -85,10 +86,11 @@ case "$command" in
         require_arg "--patch-dir" "patch_dir"
         format_patches_into_patchdir "$patch_dir"
         ;;
+    setup-build-server)
+        setup_build_server
+        ;;
     *)
         error "unexpected command: $command"
         exit 1
         ;;
 esac
-
-# vi: expandtab sw=4 ts=4
