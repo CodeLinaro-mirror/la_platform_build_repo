@@ -14,26 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Calculate the top of the android source tree
-top="${ANDROID_BUILD_TOP:-$(dirname "${BASH_SOURCE[0]}")/../../../../..}"
-
-# Add the host bin directory to the PATH so that tools can be found by CI
-export PATH="$top/${OUT_DIR:-out}/host/linux-x86/bin:$PATH"
-
-# The current build ID (set if running on a build server)
-BUILD_NUMBER=${BUILD_NUMBER:=local-build}
-
-# Define the m function to run the build.
-# This function uses the TARGET_PRODUCT, TARGET_RELEASE, and TARGET_BUILD_VARIANT environment variables if they are set.
-# Otherwise, it uses default values (sdk, sdk_finalization, and userdebug respectively).
-function m() {
-    "$top/build/soong/soong_ui.bash" --make-mode \
-        "TARGET_PRODUCT=${TARGET_PRODUCT:-sdk}" \
-        "TARGET_RELEASE=${TARGET_RELEASE:-sdk_finalization}" \
-        "TARGET_BUILD_VARIANT=${TARGET_BUILD_VARIANT:-userdebug}" \
-        "$@"
-}
-
 # Print a debug message
 function info() {
     local timestamp="$(date +'%Y-%m-%d %H:%M:%S')"
@@ -54,18 +34,85 @@ function error() {
     fi
 }
 
+# Calculate the top of the android source tree
+TOP="${ANDROID_BUILD_TOP:-$(dirname "${BASH_SOURCE[0]}")/../../../../..}"
+
+# Directory that holds the static patches that are included in this script (in
+# contrast to the user supplied --patch-dir directory that is used to
+# dynamically create or apply patches)
+BUNDLED_PATCHES="$(readlink -f $(dirname "${BASH_SOURCE[0]}")/patches)"
+
+# Add the host bin directory to the PATH so that tools can be found by CI
+export PATH="$TOP/${OUT_DIR:-out}/host/linux-x86/bin:$PATH"
+
+# This is only set if running on the build server
+RUNNING_ON_BUILD_SERVER=${BUILD_NUMBER:=}
+
+# The current build ID (set if running on a build server)
+BUILD_NUMBER=${BUILD_NUMBER:=local-build}
+
+# Paths to all projects that this tool (potentially) modifies
+declare -a PROJECTS
+PROJECTS+=(build/release)
+PROJECTS+=(build/soong)
+PROJECTS+=(cts)
+PROJECTS+=(frameworks/base)
+PROJECTS+=(frameworks/libs/modules-utils)
+PROJECTS+=(libcore)
+PROJECTS+=(packages/apps/Settings)
+PROJECTS+=(packages/modules/SdkExtensions)
+PROJECTS+=(packages/modules/common)
+PROJECTS+=(platform_testing)
+PROJECTS+=(prebuilts/sdk)
+PROJECTS+=(tools/platform-compat)
+PROJECTS+=(vendor/google/release)
+PROJECTS+=(vendor/google_shared/build/release)
+PROJECTS+=($(cd $TOP && find prebuilts/module_sdk -mindepth 1 -maxdepth 1 -type d))
+
+for project in $(cd $BUNDLED_PATCHES && find * -type f | xargs dirname | sort -u); do
+    if [[ ! " ${PROJECTS[*]} " =~ " ${project} " ]]; then
+        error "$project has bundled patches but is not part of PROJECTS"
+        exit 1
+    fi
+done
+
+# Define the m function to run the build.
+# This function uses the TARGET_PRODUCT, TARGET_RELEASE, and TARGET_BUILD_VARIANT environment variables if they are set.
+# Otherwise, it uses default values (sdk, sdk_finalization, and userdebug respectively).
+function m() {
+    "$TOP/build/soong/soong_ui.bash" --make-mode \
+        "TARGET_PRODUCT=${TARGET_PRODUCT:-sdk}" \
+        "TARGET_RELEASE=${TARGET_RELEASE:-sdk_finalization}" \
+        "TARGET_BUILD_VARIANT=${TARGET_BUILD_VARIANT:-userdebug}" \
+        "$@"
+}
+
+function git() {
+    if [[ $RUNNING_ON_BUILD_SERVER ]]; then
+        $(which git) \
+            -c init.defaultBranch=main \
+            -c user.email=buildbot@google.com \
+            -c user.name=BuildBot \
+            "$@"
+    else
+        $(which git) "$@"
+    fi
+}
+
 # Create a git commit.
 #
 # Will create the topic $BRANCH and add all modified files in a given project
 # before committing the changes.
 #
-# $1: project path relative to $top
+# $1: project path relative to $TOP
 # stdin: commit message
 function git_commit() {
     local project="$1"
 
-    pushd "$top/$project"
-    repo start "$BRANCH" .
+    pushd "$TOP/$project"
+    if [[ "$(git branch --show-current)" != "$BRANCH" ]]; then
+        git checkout -b "$BRANCH" goog/main
+    fi
     git add .
     git commit -F -
     popd
@@ -79,29 +126,38 @@ function format_patches_into_patchdir() {
     local patch_dir="$1"
     mkdir -p $patch_dir
 
-    # repo forall has a timeout and formatting patches in prebuilts/sdk will
-    # trigger this timeout, so only use repo forall to get the list of projects
-    for path in $(repo forall -c pwd); do
-        if [[ "$(git -C "$path" branch --show-current)" == "$BRANCH" ]]; then
-            project="${path#$top/}"
+    for project in "${PROJECTS[@]}"; do
+        pushd "$TOP/$project"
+        if [[ "$(git branch --show-current)" == "$BRANCH" ]]; then
             mkdir -p "$patch_dir/$project"
-            git -C "$path" format-patch -o "$patch_dir/$project" "$BRANCH" ^goog/main
+            git format-patch -o "$patch_dir/$project" "$BRANCH" ^goog/main
         fi
+        popd
     done
 }
 
-
 # Create the topic $BRANCH and apply patches to a given project
 #
-# $1: project path relative to $top
+# $1: project path relative to $TOP
 # $2, ...: paths to patch files to apply
 function apply_patches() {
     local project="$1"
     shift
 
-    pushd "$top/$project"
-    repo start "$BRANCH" .
+    pushd "$TOP/$project"
+    if [[ "$(git branch --show-current)" != "$BRANCH" ]]; then
+        if [[ $RUNNING_ON_BUILD_SERVER ]]; then
+            git checkout -b "$BRANCH"
+        else
+            git checkout -b "$BRANCH" goog/main
+        fi
+    fi
     git am --whitespace=nowarn $*
+    if [[ ! $RUNNING_ON_BUILD_SERVER ]]; then
+        # the CLs were presumably downloaded from the build server; claim
+        # ownership of them to be able to upload them to gerrit
+        git commit --amend --reset-author -C HEAD
+    fi
     popd
 }
 
@@ -120,4 +176,54 @@ function apply_patches_from_patchdir() {
     done
 }
 
-# vi: expandtab sw=4 ts=4
+# Prepare the Android tree for git write operations (needed if running on the
+# build server)
+#
+# The build servers use read-only git worktrees. Replace these with local git
+# repositories to allow the creation of git commits.
+function setup_build_server() {
+    if [[ ! $RUNNING_ON_BUILD_SERVER ]]; then
+        error "setup_build_server should only be called when running on a build server"
+        exit 1
+    fi
+
+    for project in "${PROJECTS[@]}"; do
+        pushd "$TOP/$project"
+        rm .git # regular file when using git worktrees
+        git init
+        git add .
+        git commit --quiet --allow-empty -m "base commit"
+        git tag goog/main
+        popd
+    done
+}
+
+# Set build flags for the given release config.
+#
+# $1: the release config
+# $2, ...: KEY=VALUE pairs of build flags and the value to assign them
+function set_build_flags() {
+    local release_config="$1"
+    shift
+
+    case "$release_config" in
+        "next" | "trunk")
+            local project="vendor/google_shared/build/release"
+            ;;
+        "trunk_staging")
+            local project="build/release"
+            ;;
+        "sdk_finalization")
+            local project="vendor/google/release"
+            ;;
+        *)
+            error "unexpected release config $release_config"
+            exit 1
+    esac
+
+    build-flag --quiet --release=$release_config set --dir $project $@
+    git_commit $project \
+<<EOF
+$release_config: update SDK related build flag(s)
+EOF
+}

@@ -1,0 +1,45 @@
+From b9c6adfee1e26c02af560cf8ff457da632695579 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?M=C3=A5rten=20Kongstad?= <amhk@google.com>
+Date: Fri, 23 Jan 2026 14:14:23 +0000
+Subject: [PATCH] Add isAtLeastC
+
+Change-Id: Ic7807a7c0b9a60ccfca66887dedee429d82e4665
+---
+ build/include/android-modules-utils/sdk_level.h    | 3 +++
+ java/com/android/modules/utils/build/SdkLevel.java | 6 ++++++
+ 2 files changed, 9 insertions(+)
+
+diff --git a/build/include/android-modules-utils/sdk_level.h b/build/include/android-modules-utils/sdk_level.h
+index a4a8113f1dc..72c05dad8e0 100644
+--- a/build/include/android-modules-utils/sdk_level.h
++++ b/build/include/android-modules-utils/sdk_level.h
+@@ -66,6 +66,9 @@ inline bool IsAtLeastV() {
+ // Checks if the device is running on release version of Android B or newer.
+ inline bool IsAtLeastB() { return android_get_device_api_level() >= 36; }
+ 
++// Checks if the device is running on release version of Android C or newer.
++inline bool IsAtLeastC() { return android_get_device_api_level() >= 37; }
++
+ } // namespace sdklevel
+ } // namespace modules
+ } // namespace android
+diff --git a/java/com/android/modules/utils/build/SdkLevel.java b/java/com/android/modules/utils/build/SdkLevel.java
+index 3b1d2bbe7b7..77f2b3a63d2 100644
+--- a/java/com/android/modules/utils/build/SdkLevel.java
++++ b/java/com/android/modules/utils/build/SdkLevel.java
+@@ -77,6 +77,12 @@ public final class SdkLevel {
+         return SDK_INT >= 36;
+     }
+ 
++    /** Checks if the device is running on a release version of Android CinnamonBun or newer */
++    @ChecksSdkIntAtLeast(api = 37 /* BUILD_VERSION_CODES.CINNAMON_BUN */)
++    public static boolean isAtLeastC() {
++        return SDK_INT >= 37;
++    }
++
+     private static boolean isAtLeastPreReleaseCodename(@NonNull String codename) {
+         // Special case "REL", which means the build is not a pre-release build.
+         if ("REL".equals(CODENAME)) {
+-- 
+2.52.0.457.g6b5491de43-goog
+

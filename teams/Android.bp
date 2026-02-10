@@ -994,6 +994,13 @@ team {
 }
 
 team {
+    name: "trendy_team_wear_audio_framework",
+
+    // go/trendy/manage/engineers/5114199579459584
+    trendy_team_id: "5114199579459584",
+}
+
+team {
     name: "trendy_team_biometrics_framework",
 
     // go/trendy/manage/engineers/6205415425998848

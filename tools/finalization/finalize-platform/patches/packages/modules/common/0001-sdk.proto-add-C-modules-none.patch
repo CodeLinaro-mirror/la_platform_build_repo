@@ -1,0 +1,31 @@
+From 82f6f620979422df54ebbca169f735e574bf432c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?M=C3=A5rten=20Kongstad?= <amhk@google.com>
+Date: Fri, 23 Jan 2026 13:12:41 +0000
+Subject: [PATCH] sdk.proto: add C modules (none)
+
+Update the list of modules with the ones added in C. (Because C did not
+introduce any modules, only add a comment saying so.)
+
+Test: m com.android.sdkext
+Change-Id: Ib9925d1effcca405bec650d484a38ba0d79175c0
+---
+ proto/sdk.proto | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/proto/sdk.proto b/proto/sdk.proto
+index ea0c6f2e870..3b036e4227e 100644
+--- a/proto/sdk.proto
++++ b/proto/sdk.proto
+@@ -64,6 +64,9 @@ enum SdkModule {
+ 
+   // B Modules
+   NEURAL_NETWORKS = 17;
++
++  // C modules
++  // No new modules introduced in C
+ }
+ 
+ // A single extension version.
+-- 
+2.52.0.457.g6b5491de43-goog
+

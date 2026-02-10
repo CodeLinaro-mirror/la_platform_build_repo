@@ -17,7 +17,7 @@
 m unpack-module-sdks
 projects="$(unpack-module-sdks \
     --mainline-sdks-top "$mainline_sdks_dir" \
-    --android-top "$top" \
+    --android-top "$TOP" \
     --sdk-ext-version $SDK_EXT_VERSION)"
 
 for project in $projects; do
@@ -29,5 +29,3 @@ Finalize SDK extension $SDK_EXT_VERSION
 Import module SDK artifacts from ab/$BUILD_NUMBER.
 EOF
 done
-
-# vi: expandtab sw=4 ts=4
