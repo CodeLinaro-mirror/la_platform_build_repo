@@ -4141,7 +4141,8 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
   echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ;\
   $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_2}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
-  echo boot_stats >> "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" ;\
+  if ! grep -Fxq 'boot_stats' $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load; then echo boot_stats >> $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load; fi; \
+  if ! grep -Fxq 'qcom_lpm_monitor' $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load; then echo qcom_lpm_monitor >> $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load; fi; \
   sed -e '$(call es_mod_list,${ES_MOD_ORDER}${ES_MOD_ORDER_2})' "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" | sed 's/.ko//' | tr '\n' ' ' > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end.order" ;\
   echo msm_kgsl >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end.order" ;\
   echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ;\
