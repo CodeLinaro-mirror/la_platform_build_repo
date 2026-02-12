@@ -136,6 +136,12 @@ android_filesystem_defaults {
         "messaging",
         "apns-full-conf.xml",
         "frameworks-base-overlays",
+
+        ///////////////////////////////////////////
+        // PRODUCT_PACKAGES_SHIPPING_API_LEVEL_34
+        ///////////////////////////////////////////
+        "hwservicemanager",
+        "android.hidl.allocator@1.0-service",
     ],
     multilib: {
         lib64: {

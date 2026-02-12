@@ -42,7 +42,8 @@ TOP="${ANDROID_BUILD_TOP:-$(dirname "${BASH_SOURCE[0]}")/../../../../..}"
 # dynamically create or apply patches)
 BUNDLED_PATCHES="$(readlink -f $(dirname "${BASH_SOURCE[0]}")/patches)"
 
-# Add the host bin directory to the PATH so that tools can be found by CI
+# Add the soong and host bin directories to the PATH so that tools can be found by CI
+export PATH="$TOP/build/soong/bin:$PATH"
 export PATH="$TOP/${OUT_DIR:-out}/host/linux-x86/bin:$PATH"
 
 # This is only set if running on the build server
