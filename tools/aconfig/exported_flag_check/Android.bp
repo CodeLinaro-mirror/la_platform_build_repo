@@ -38,3 +38,8 @@ rust_test_host {
         "tests/flags.textproto",
     ],
 }
+
+filegroup {
+    name: "non_api_flags_list",
+    srcs: ["non_api_flags_list.txt"],
+}

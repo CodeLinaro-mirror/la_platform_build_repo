@@ -111,6 +111,3 @@ done
 set_build_flags sdk_finalization \
     RELEASE_PLATFORM_SDK_VERSION=$MAJOR \
     RELEASE_PLATFORM_SDK_VERSION_FULL=$MAJOR.$MINOR
-apply_patches \
-    packages/apps/Settings \
-    "$BUNDLED_PATCHES"/packages/apps/Settings/0001-Fix-compilation-error-after-37.0-finalization.patch

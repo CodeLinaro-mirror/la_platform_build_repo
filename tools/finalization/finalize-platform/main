@@ -70,7 +70,7 @@ case "$command" in
         source "$(dirname "$0")"/finalize-resources.sh
         ;;
     finalize-ndk)
-        info "not yet implemented"
+        source "$(dirname "$0")"/finalize-ndk.sh
         ;;
     finalize-platform-sdk)
         source "$(dirname "$0")"/finalize-platform-sdk.sh

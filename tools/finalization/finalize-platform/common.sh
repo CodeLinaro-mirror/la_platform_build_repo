@@ -36,6 +36,7 @@ function error() {
 
 # Calculate the top of the android source tree
 TOP="${ANDROID_BUILD_TOP:-$(dirname "${BASH_SOURCE[0]}")/../../../../..}"
+export ANDROID_BUILD_TOP="$TOP"
 
 # Directory that holds the static patches that are included in this script (in
 # contrast to the user supplied --patch-dir directory that is used to
@@ -52,6 +53,12 @@ RUNNING_ON_BUILD_SERVER=${BUILD_NUMBER:=}
 # The current build ID (set if running on a build server)
 BUILD_NUMBER=${BUILD_NUMBER:=local-build}
 
+# Ensure that TARGET_PRODUCT, TARGET_RELEASE, and TARGET_BUILD_VARIANT are set.
+# Sets them to default values if they are not set (sdk, sdk_finalization, and userdebug respectively).
+export TARGET_PRODUCT=${TARGET_PRODUCT:-sdk}
+export TARGET_RELEASE=${TARGET_RELEASE:-sdk_finalization}
+export TARGET_BUILD_VARIANT=${TARGET_BUILD_VARIANT:-userdebug}
+
 # Paths to all projects that this tool (potentially) modifies
 declare -a PROJECTS
 PROJECTS+=(build/release)
@@ -65,6 +72,8 @@ PROJECTS+=(packages/modules/SdkExtensions)
 PROJECTS+=(packages/modules/common)
 PROJECTS+=(platform_testing)
 PROJECTS+=(prebuilts/sdk)
+PROJECTS+=(prebuilts/abi-dumps/ndk)
+PROJECTS+=(prebuilts/abi-dumps/platform)
 PROJECTS+=(tools/platform-compat)
 PROJECTS+=(vendor/google/release)
 PROJECTS+=(vendor/google_shared/build/release)
@@ -78,13 +87,11 @@ for project in $(cd $BUNDLED_PATCHES && find * -type f | xargs dirname | sort -u
 done
 
 # Define the m function to run the build.
-# This function uses the TARGET_PRODUCT, TARGET_RELEASE, and TARGET_BUILD_VARIANT environment variables if they are set.
-# Otherwise, it uses default values (sdk, sdk_finalization, and userdebug respectively).
 function m() {
     "$TOP/build/soong/soong_ui.bash" --make-mode \
-        "TARGET_PRODUCT=${TARGET_PRODUCT:-sdk}" \
-        "TARGET_RELEASE=${TARGET_RELEASE:-sdk_finalization}" \
-        "TARGET_BUILD_VARIANT=${TARGET_BUILD_VARIANT:-userdebug}" \
+        "TARGET_PRODUCT=$TARGET_PRODUCT" \
+        "TARGET_RELEASE=$TARGET_RELEASE" \
+        "TARGET_BUILD_VARIANT=$TARGET_BUILD_VARIANT" \
         "$@"
 }
 
@@ -170,10 +177,13 @@ function apply_patches() {
 # $1: path to directory of patches
 function apply_patches_from_patchdir() {
     local patch_dir="$1"
-    for project in $(find $patch_dir -type f -printf "%P\n" | xargs dirname | sort -u); do
+    for absolute_project_path in $(find $patch_dir -type f | xargs dirname | sort -u); do
+        relative_project_path="${absolute_project_path#$patch_dir/}"
+        # Hack to remove stray patches/ folder. NOOP if there isn't one
+        project="${relative_project_path#patches/}"
         apply_patches \
             "$project" \
-            $(ls $patch_dir/$project/*.patch | sort)
+            $(find "$absolute_project_path" -name "*.patch" | sort)
     done
 }
 
@@ -188,6 +198,19 @@ function setup_build_server() {
         exit 1
     fi
 
+    echo "== Build server debug info start =="
+
+    # Temporary debug info
+    find --version
+
+    echo "These are the files passed in from previous builds:"
+    find $TOP/out/prebuilt_cached -type f
+
+    # Might as well dump this
+    env
+
+    echo "== Build server debug info end =="
+
     for project in "${PROJECTS[@]}"; do
         pushd "$TOP/$project"
         rm .git # regular file when using git worktrees
@@ -199,6 +222,33 @@ function setup_build_server() {
     done
 }
 
+# Function to get the project directory based on the release config.
+#
+# $1: the release config
+# @return {int} 0 on success, 1 on error.
+function get_project_for_release() {
+    local release_config="$1"
+    local project=""
+
+    case "$release_config" in
+        "next" | "trunk")
+            project="vendor/google_shared/build/release"
+            ;;
+        "trunk_staging")
+            project="build/release"
+            ;;
+        "sdk_finalization")
+            project="vendor/google/release"
+            ;;
+        *)
+            echo "Error: Unexpected release config '$release_config'" >&2
+            exit 1
+            ;;
+    esac
+    echo "$project"
+    return 0
+}
+
 # Set build flags for the given release config.
 #
 # $1: the release config
@@ -207,24 +257,10 @@ function set_build_flags() {
     local release_config="$1"
     shift
 
-    case "$release_config" in
-        "next" | "trunk")
-            local project="vendor/google_shared/build/release"
-            ;;
-        "trunk_staging")
-            local project="build/release"
-            ;;
-        "sdk_finalization")
-            local project="vendor/google/release"
-            ;;
-        *)
-            error "unexpected release config $release_config"
-            exit 1
-    esac
+    local project=$(get_project_for_release "$release_config")
 
     build-flag --quiet --release=$release_config set --dir $project $@
-    git_commit $project \
-<<EOF
+    git_commit $project <<EOF
 $release_config: update SDK related build flag(s)
 EOF
 }

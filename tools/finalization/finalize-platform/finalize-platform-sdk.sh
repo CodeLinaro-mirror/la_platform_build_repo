@@ -63,6 +63,18 @@ $TOP/prebuilts/sdk/update_prebuilts/update_prebuilts.py \
     --bug $BUG \
     1234 # doesn't matter in local mode
 
+# update_prebuilts.py updates current/ but that directory should only hold
+# artifacts from sdk_with_runtime_apis builds; undo those changes before
+# committing
+#
+# Also remove the unwanted SDK zip file that --local_mode copies
+pushd "$TOP"/prebuilts/sdk
+rm android-sdk*.zip
+git checkout current
+git clean -fd current
+popd
+
+
 git_commit \
     prebuilts/sdk \
 <<EOF
@@ -74,5 +86,5 @@ EOF
 
 # hotfix to fix broken build
 apply_patches \
-    prebuilts/sdk \
-    $BUNDLED_PATCHES/prebuilts/sdk/0001-wear-temporarily-hard-code-wear-sdk-public-jar-sourc.patch
+    packages/apps/Settings \
+    "$BUNDLED_PATCHES"/packages/apps/Settings/0001-Fix-compilation-error-after-37.0-finalization.patch

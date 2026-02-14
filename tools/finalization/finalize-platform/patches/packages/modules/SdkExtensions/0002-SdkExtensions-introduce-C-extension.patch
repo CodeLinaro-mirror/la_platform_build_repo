@@ -1,10 +1,11 @@
-From a060d84371197a51ba99f5a95a58a707449b431c Mon Sep 17 00:00:00 2001
+From 09e1adac54a843ad51b5f967120247b57d4ae0cf Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?M=C3=A5rten=20Kongstad?= <amhk@google.com>
 Date: Fri, 23 Jan 2026 14:22:35 +0000
 Subject: [PATCH 2/3] SdkExtensions: introduce C extension
 
 Note: no new modules opted in to SDK extensions as part of C.
 
+Bug: 480974361
 Test: atest CtsSdkExtensionsTestCases
 Change-Id: I39203993e81473c23bfdf4b508706a5953b06b08
 ---

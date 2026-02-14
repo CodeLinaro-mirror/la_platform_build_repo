@@ -136,12 +136,6 @@ android_filesystem_defaults {
         "messaging",
         "apns-full-conf.xml",
         "frameworks-base-overlays",
-
-        ///////////////////////////////////////////
-        // PRODUCT_PACKAGES_SHIPPING_API_LEVEL_34
-        ///////////////////////////////////////////
-        "hwservicemanager",
-        "android.hidl.allocator@1.0-service",
     ],
     multilib: {
         lib64: {
@@ -198,6 +192,7 @@ android_system_image {
         "DeskClock",
         "Gallery2",
         "Music",
+        "PersonalContext",
         "preinstalled-packages-platform-handheld-product.xml",
         "QuickSearchBox",
         "SettingsIntelligence",

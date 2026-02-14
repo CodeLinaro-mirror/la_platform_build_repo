@@ -770,18 +770,9 @@ endif
 .KATI_READONLY := \
     PRODUCT_COMPATIBLE_PROPERTY
 
-# TODO: remove all code referencing these, and remove override variables
-PRODUCT_FULL_TREBLE := true
-PRODUCT_TREBLE_LINKER_NAMESPACES := true
-PRODUCT_ENFORCE_VINTF_MANIFEST := true
-
-# TODO(b/114488870): disallow PRODUCT_FULL_TREBLE_OVERRIDE from being used.
-.KATI_READONLY := \
-    PRODUCT_FULL_TREBLE \
-    PRODUCT_TREBLE_LINKER_NAMESPACES \
-    PRODUCT_ENFORCE_VINTF_MANIFEST \
-
-# TODO(b/114488870): remove all sets of these everywhere, and disallow them to be used
+$(KATI_obsolete_var PRODUCT_TREBLE_LINKER_NAMESPACES,This is now always true.)
+# TODO(b/307369186): restore
+# $(KATI_obsolete_var PRODUCT_ENFORCE_VINTF_MANIFEST,This is now always true.)
 $(KATI_obsolete_var PRODUCT_TREBLE_LINKER_NAMESPACES_OVERRIDE,Deprecated.)
 $(KATI_obsolete_var PRODUCT_ENFORCE_VINTF_MANIFEST_OVERRIDE,Deprecated.)
 $(KATI_obsolete_var PRODUCT_FULL_TREBLE_OVERRIDE,Deprecated.)
@@ -790,9 +781,7 @@ $(KATI_obsolete_var PRODUCT_FULL_TREBLE_OVERRIDE,Deprecated.)
 # partitions is supported. But the early-mount must be supported for full
 # treble products, and so BOARD_PROPERTY_OVERRIDES_SPLIT_ENABLED should be set
 # by default for full treble products.
-ifeq ($(PRODUCT_FULL_TREBLE),true)
-  BOARD_PROPERTY_OVERRIDES_SPLIT_ENABLED ?= true
-endif
+BOARD_PROPERTY_OVERRIDES_SPLIT_ENABLED ?= true
 
 ifneq ($(call math_gt_or_eq,$(PRODUCT_SHIPPING_API_LEVEL),36),)
   ifneq ($(NEED_AIDL_NDK_PLATFORM_BACKEND),)

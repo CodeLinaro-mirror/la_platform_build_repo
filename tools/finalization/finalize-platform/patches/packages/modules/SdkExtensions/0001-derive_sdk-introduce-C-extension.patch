@@ -1,10 +1,11 @@
-From fbdf811f2d896d691c28cfd91b2db265a3d56900 Mon Sep 17 00:00:00 2001
+From 2aeeeb5536562fab7a3dac118b7391ab2cf92f5f Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?M=C3=A5rten=20Kongstad?= <amhk@google.com>
 Date: Fri, 23 Jan 2026 14:15:38 +0000
 Subject: [PATCH 1/3] derive_sdk: introduce C extension
 
 Note: no new modules opted in to SDK extensions as part of C.
 
+Bug: 480974361
 Test: atest derive_sdk_test
 Change-Id: Ia9977353e59eaede613792b3bfb7040d5f6b5e14
 ---

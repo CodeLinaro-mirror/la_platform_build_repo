@@ -1,4 +1,4 @@
-From 654020d643198b36f07586cf5bcc00bd5828d05b Mon Sep 17 00:00:00 2001
+From f8f038e7636e4f1254bfe3f24077f944c9c9adfb Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?M=C3=A5rten=20Kongstad?= <amhk@google.com>
 Date: Fri, 23 Jan 2026 12:56:02 +0000
 Subject: [PATCH 3/3] sdk-extensions-info.xml: add the C SDK extensions (C-ext)
@@ -11,14 +11,15 @@ will target C-ext but used B-ext as a placeholder until C-ext was
 available.
 
 Bug: 397646538
+Bug: 480974361
 Test: atest sdk-extensions-info-test
 Change-Id: I9fdb81ee679dc6f685f80eddfbd0fb7841fa210d
 ---
- sdk-extensions-info.xml | 169 ++++++++++++++++++++--------------------
- 1 file changed, 85 insertions(+), 84 deletions(-)
+ sdk-extensions-info.xml | 171 ++++++++++++++++++++--------------------
+ 1 file changed, 86 insertions(+), 85 deletions(-)
 
 diff --git a/sdk-extensions-info.xml b/sdk-extensions-info.xml
-index 7f9ccd4f1f5..0e157a3ec89 100644
+index 37351f9d397..a53c7dd7279 100644
 --- a/sdk-extensions-info.xml
 +++ b/sdk-extensions-info.xml
 @@ -51,6 +51,11 @@
@@ -33,7 +34,7 @@ index 7f9ccd4f1f5..0e157a3ec89 100644
    <sdk
      id="1000000"
      shortname="AD_SERVICES-ext"
-@@ -61,311 +66,307 @@
+@@ -61,75 +66,75 @@
    <symbol
      jar="framework-sdkextensions"
      pattern="*"
@@ -126,8 +127,7 @@ index 7f9ccd4f1f5..0e157a3ec89 100644
    <symbol
        jar="framework-mediaprovider"
        pattern="android.provider.MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_CAMERA"
--      sdks="T-ext,U-ext,V-ext,B-ext" />
-+      sdks="T-ext,U-ext,V-ext,B-ext,C-ext" />
+@@ -137,243 +142,239 @@
    <symbol
        jar="framework-mediaprovider"
        pattern="android.provider.MediaStore.PICK_IMAGES_HIGHLIGHT_ALBUM_SCREENSHOTS"
@@ -374,6 +374,16 @@ index 7f9ccd4f1f5..0e157a3ec89 100644
 +    sdks="U-ext,V-ext,B-ext,C-ext" />
    <symbol
      jar="framework-connectivity"
+     pattern="android.net.DnsResolver"
+-    sdks="S-ext,T-ext,U-ext,V-ext,B-ext" />
++    sdks="S-ext,T-ext,U-ext,V-ext,B-ext,C-ext" />
+   <symbol
+     jar="framework-connectivity"
+     pattern="android.net.dns"
+-    sdks="S-ext,T-ext,U-ext,V-ext,B-ext" />
++    sdks="S-ext,T-ext,U-ext,V-ext,B-ext,C-ext" />
+   <symbol
+     jar="framework-connectivity"
      pattern="android.net"
 -    sdks="U-ext,V-ext,B-ext" />
 +    sdks="U-ext,V-ext,B-ext,C-ext" />
@@ -418,7 +428,7 @@ index 7f9ccd4f1f5..0e157a3ec89 100644
  
    <!-- AD_SERVICES -->
    <!--
-@@ -389,36 +390,36 @@
+@@ -397,36 +398,36 @@
    <symbol
      jar="framework-healthfitness"
      pattern="android.health.connect"
