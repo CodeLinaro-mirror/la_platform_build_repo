@@ -31,6 +31,7 @@ PRODUCT_PACKAGES += \
     LatinIME \
     Music \
     preinstalled-packages-platform-handheld-product.xml \
+    PersonalContext \
     QuickSearchBox \
     SettingsIntelligence \
     frameworks-base-overlays

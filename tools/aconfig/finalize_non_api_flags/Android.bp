@@ -20,7 +20,10 @@ rust_binary_host {
     name: "finalize-non-api-flags",
     defaults: ["finalize-non-api-flags-defaults"],
     crate_root: "src/main.rs",
-    srcs: ["src/*.rs"],
+    srcs: [
+        "src/*.rs",
+        ":non_api_flags_list",
+    ],
     use_expansive_default_srcs: false,
 }
 

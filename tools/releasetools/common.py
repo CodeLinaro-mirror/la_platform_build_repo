@@ -513,6 +513,12 @@ class BuildInfo(object):
     return vabc_xor_enabled
 
   @property
+  def supports_ublk(self):
+    vendor_prop = self.info_dict.get("vendor.build.prop")
+    return vendor_prop and \
+        vendor_prop.GetProp("ro.virtual_ab.ublk.enabled") == "true"
+
+  @property
   def vendor_suppressed_vabc(self):
     vendor_prop = self.info_dict.get("vendor.build.prop")
     vabc_suppressed = vendor_prop and \

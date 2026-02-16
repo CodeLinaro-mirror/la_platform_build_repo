@@ -1329,6 +1329,10 @@ def main(argv):
     OPTIONS.info_dict = common.LoadInfoDict(args[0])
 
   target_info = common.BuildInfo(OPTIONS.info_dict, OPTIONS.oem_dicts)
+  if not target_info.supports_ublk:
+    logger.info("Target build does not support ublk, disabling ublk")
+    OPTIONS.disable_ublk = True
+
   if OPTIONS.wipe_user_data:
     if target_info.vendor_api_level < 33 and not OPTIONS.vabc_downgrade:
       logger.info("Detected a data wipe OTA to a build older than android T."
