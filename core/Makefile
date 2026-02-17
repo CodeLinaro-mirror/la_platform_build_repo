@@ -2186,10 +2186,6 @@ $(if $(BOARD_$(_var)IMAGE_FILE_SYSTEM_TYPE),$(hide) echo "$(1)_fs_type=$(BOARD_$
 $(if $(BOARD_$(_var)IMAGE_JOURNAL_SIZE),$(hide) echo "$(1)_journal_size=$(BOARD_$(_var)IMAGE_JOURNAL_SIZE)" >> $(2))
 $(if $(BOARD_$(_var)IMAGE_PARTITION_RESERVED_SIZE),$(hide) echo "$(1)_reserved_size=$(BOARD_$(_var)IMAGE_PARTITION_RESERVED_SIZE)" >> $(2))
 $(if $(BOARD_$(_var)IMAGE_PARTITION_SIZE),$(hide) echo "$(1)_size=$(BOARD_$(_var)IMAGE_PARTITION_SIZE)" >> $(2))
-$(if $(BOARD_$(_var)IMAGE_SQUASHFS_BLOCK_SIZE),$(hide) echo "$(1)_squashfs_block_size=$(BOARD_$(_var)IMAGE_SQUASHFS_BLOCK_SIZE)" >> $(2))
-$(if $(BOARD_$(_var)IMAGE_SQUASHFS_COMPRESSOR),$(hide) echo "$(1)_squashfs_compressor=$(BOARD_$(_var)IMAGE_SQUASHFS_COMPRESSOR)" >> $(2))
-$(if $(BOARD_$(_var)IMAGE_SQUASHFS_COMPRESSOR_OPT),$(hide) echo "$(1)_squashfs_compressor_opt=$(BOARD_$(_var)IMAGE_SQUASHFS_COMPRESSOR_OPT)" >> $(2))
-$(if $(BOARD_$(_var)IMAGE_SQUASHFS_DISABLE_4K_ALIGN),$(hide) echo "$(1)_squashfs_disable_4k_align=$(BOARD_$(_var)IMAGE_SQUASHFS_DISABLE_4K_ALIGN)" >> $(2))
 $(if $(PRODUCT_$(_var)_BASE_FS_PATH),$(hide) echo "$(1)_base_fs_file=$(PRODUCT_$(_var)_BASE_FS_PATH)" >> $(2))
 $(eval _size := $(BOARD_$(_var)IMAGE_PARTITION_SIZE))
 $(eval _reserved := $(BOARD_$(_var)IMAGE_PARTITION_RESERVED_SIZE))
@@ -2262,7 +2258,6 @@ $(if $(filter true,$(TARGET_USERIMAGES_USE_EXT2)),$(hide) echo "fs_type=ext2" >>
 
 $(if $(filter true,$(TARGET_USERIMAGES_SPARSE_EXT_DISABLED)),,$(hide) echo "extfs_sparse_flag=-s" >> $(1))
 $(if $(filter true,$(TARGET_USERIMAGES_SPARSE_EROFS_DISABLED)),,$(hide) echo "erofs_sparse_flag=-s" >> $(1))
-$(if $(filter true,$(TARGET_USERIMAGES_SPARSE_SQUASHFS_DISABLED)),,$(hide) echo "squashfs_sparse_flag=-s" >> $(1))
 $(if $(filter true,$(TARGET_USERIMAGES_SPARSE_F2FS_DISABLED)),,$(hide) echo "f2fs_sparse_flag=-S" >> $(1))
 $(if $(BOARD_EROFS_COMPRESSOR),$(hide) echo "erofs_default_compressor=$(BOARD_EROFS_COMPRESSOR)" >> $(1))
 $(if $(BOARD_EROFS_COMPRESS_HINTS),$(hide) echo "erofs_default_compress_hints=$(BOARD_EROFS_COMPRESS_HINTS)" >> $(1))
@@ -2273,6 +2268,7 @@ $(if $(BOARD_EROFS_USE_LEGACY_COMPRESSION),$(hide) echo "erofs_use_legacy_compre
 $(if $(BOARD_EROFS_ENABLE_DEDUPE),$(hide) echo "erofs_enable_dedupe=$(BOARD_EROFS_ENABLE_DEDUPE)" >> $(1))
 $(if $(BOARD_EXT4_SHARE_DUP_BLOCKS),$(hide) echo "ext4_share_dup_blocks=$(BOARD_EXT4_SHARE_DUP_BLOCKS)" >> $(1))
 $(if $(BOARD_F2FS_BLOCKSIZE),$(hide) echo "f2fs_blocksize=$(BOARD_F2FS_BLOCKSIZE)" >> $(1))
+$(if $(BOARD_F2FS_PACKED_SSA),$(hide) echo "f2fs_packed_ssa=$(BOARD_F2FS_PACKED_SSA)" >> $(1))
 $(if $(BOARD_FLASH_LOGICAL_BLOCK_SIZE), $(hide) echo "flash_logical_block_size=$(BOARD_FLASH_LOGICAL_BLOCK_SIZE)" >> $(1))
 $(if $(BOARD_FLASH_ERASE_BLOCK_SIZE), $(hide) echo "flash_erase_block_size=$(BOARD_FLASH_ERASE_BLOCK_SIZE)" >> $(1))
 $(if $(filter eng, $(TARGET_BUILD_VARIANT)),$(hide) echo "verity_disable=true" >> $(1))
@@ -4744,7 +4740,7 @@ BOARD_AVB_SYSTEM_DLKM_ADD_HASHTREE_FOOTER_ARGS += \
 
 # Appends fingerprint and security patch level as a AVB property descriptor.
 BOARD_AVB_SYSTEM_ADD_HASHTREE_FOOTER_ARGS += \
-    --prop com.android.build.system.fingerprint:$(BUILD_FINGERPRINT_FROM_FILE) \
+    --prop com.android.build.system.fingerprint:$(BUILD_SYSTEM_FINGERPRINT_FROM_FILE) \
     --prop com.android.build.system.security_patch:$(PLATFORM_SECURITY_PATCH)
 
 BOARD_AVB_PRODUCT_ADD_HASHTREE_FOOTER_ARGS += \
@@ -5804,7 +5800,6 @@ INTERNAL_OTATOOLS_MODULES := \
   mkfs.erofs \
   mkf2fsuserimg \
   mksquashfs \
-  mksquashfsimage \
   mkuserimg_mke2fs \
   ota_extractor \
   ota_from_target_files \

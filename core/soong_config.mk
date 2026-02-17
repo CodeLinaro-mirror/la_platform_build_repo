@@ -431,10 +431,6 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
     $(call add_json_str, BoardJournalSize, $(BOARD_$(image_type)IMAGE_JOURNAL_SIZE)) \
     $(call add_json_str, BoardPartitionReservedSize, $(BOARD_$(image_type)IMAGE_PARTITION_RESERVED_SIZE)) \
     $(call add_json_str, BoardPartitionSize, $(BOARD_$(image_type)IMAGE_PARTITION_SIZE)) \
-    $(call add_json_str, BoardSquashfsBlockSize, $(BOARD_$(image_type)IMAGE_SQUASHFS_BLOCK_SIZE)) \
-    $(call add_json_str, BoardSquashfsCompressor, $(BOARD_$(image_type)IMAGE_SQUASHFS_COMPRESSOR)) \
-    $(call add_json_str, BoardSquashfsCompressorOpt, $(BOARD_$(image_type)IMAGE_SQUASHFS_COMPRESSOR_OPT)) \
-    $(call add_json_str, BoardSquashfsDisable4kAlign, $(BOARD_$(image_type)IMAGE_SQUASHFS_DISABLE_4K_ALIGN)) \
     $(call add_json_str, BoardAvbKeyPath, $(BOARD_AVB_$(image_type)_KEY_PATH)) \
     $(call add_json_str, BoardAvbAlgorithm, $(BOARD_AVB_$(image_type)_ALGORITHM)) \
     $(call add_json_str, BoardAvbRollbackIndex, $(BOARD_AVB_$(image_type)_ROLLBACK_INDEX)) \
@@ -453,7 +449,6 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
 
   $(call add_json_bool, TargetUserimagesSparseExtDisabled, $(filter true,$(TARGET_USERIMAGES_SPARSE_EXT_DISABLED)))
   $(call add_json_bool, TargetUserimagesSparseErofsDisabled, $(filter true,$(TARGET_USERIMAGES_SPARSE_EROFS_DISABLED)))
-  $(call add_json_bool, TargetUserimagesSparseSquashfsDisabled, $(filter true,$(TARGET_USERIMAGES_SPARSE_SQUASHFS_DISABLED)))
   $(call add_json_bool, TargetUserimagesSparseF2fsDisabled, $(filter true,$(TARGET_USERIMAGES_SPARSE_F2FS_DISABLED)))
 
   $(call add_json_str, BoardErofsCompressor, $(BOARD_EROFS_COMPRESSOR))
@@ -604,6 +599,7 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, BoardKernelModulesZip, $(BOARD_KERNEL_MODULES_ZIP))
   $(call add_json_list, BoardKernelModulesZipExtraVendorKernelRamdiskLoads, $(BOARD_KERNEL_MODULES_ZIP_EXTRA_VENDOR_KERNEL_RAMDISK_LOADS))
   $(call add_json_list, BoardKernelModulesZipExtraVendorKernelModules, $(BOARD_KERNEL_MODULES_ZIP_EXTRA_VENDOR_KERNEL_MODULES))
+  $(call add_json_list, BoardKernelModulesZipExtraBlocked16kModules, $(BOARD_KERNEL_MODULES_ZIP_EXTRA_BLOCKED_16K_MODULES))
   $(call add_json_bool, BuildingSystemDlkmImage,               $(BUILDING_SYSTEM_DLKM_IMAGE))
   $(call add_json_list, SystemKernelModules, $(BOARD_SYSTEM_KERNEL_MODULES))
   $(call add_json_str, SystemKernelBlocklistFile, $(BOARD_SYSTEM_KERNEL_MODULES_BLOCKLIST_FILE))
@@ -696,6 +692,8 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
   $(call add_json_str, ProductFsCasefold, $(PRODUCT_FS_CASEFOLD))
   $(call add_json_str, ProductQuotaProjid, $(PRODUCT_QUOTA_PROJID))
   $(call add_json_str, ProductFsCompression, $(PRODUCT_FS_COMPRESSION))
+  $(call add_json_str, BoardF2fsBlockSize, $(BOARD_F2FS_BLOCKSIZE))
+  $(call add_json_str, BoardF2fsPackedSsa, $(BOARD_F2FS_PACKED_SSA))
 
   $(call add_json_str, ReleaseToolsExtensionDir, $(firstword $(TARGET_RELEASETOOLS_EXTENSIONS) $($(TARGET_DEVICE_DIR)/../common)))
 

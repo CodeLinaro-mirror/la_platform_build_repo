@@ -78,7 +78,6 @@ SOONG_PREBUILT_MODULE_TYPES = [
     'prebuilt_apex',
     'prebuilt_bootclasspath_fragment',
     'prebuilt_dsp',
-    'prebuilt_etc',
     'prebuilt_firmware',
     'prebuilt_kernel_modules',
     'prebuilt_rfsa',
@@ -176,8 +175,15 @@ def checksum(file_path):
 
 
 def is_soong_prebuilt_module(file_metadata):
-  return (file_metadata['soong_module_type'] and
-          file_metadata['soong_module_type'] in SOONG_PREBUILT_MODULE_TYPES)
+  module_type = file_metadata.get('soong_module_type')
+  if module_type and module_type in SOONG_PREBUILT_MODULE_TYPES:
+    return True
+
+  base_type = file_metadata.get('soong_base_module_type')
+  if base_type and base_type in SOONG_PREBUILT_MODULE_TYPES:
+    return True
+
+  return False
 
 
 def is_source_package(file_metadata):
@@ -268,13 +274,14 @@ def get_metadata_file_path(file_metadata):
   return metadata_path
 
 
-def get_package_version(metadata_file_path, is_src_package):
-  """Return a package's version in its METADATA file."""
-  if not metadata_file_path:
-    return None
-  metadata_proto = metadata_file_protos[metadata_file_path]
-
+def get_package_version(metadata_file_path, is_src_package, module_name=None):
+  """Return a package's version."""
   if is_src_package:
+    # Version is from METADATA file for source packages
+    if not metadata_file_path:
+      return None
+    metadata_proto = metadata_file_protos[metadata_file_path]
+
     if metadata_proto.third_party.version:
       return metadata_proto.third_party.version
     for identifier in metadata_proto.third_party.identifier:
@@ -283,6 +290,15 @@ def get_package_version(metadata_file_path, is_src_package):
     if metadata_proto.third_party.identifier:
       return metadata_proto.third_party.identifier[0].version
   else:  # prebuilt packages
+    # Version is from cipd_package or METADATA file for prebuilt packages
+    if module_name:
+      cipd_version = db.get_cipd_package_version(module_name)
+      if cipd_version:
+        return cipd_version
+
+    if not metadata_file_path:
+      return None
+    metadata_proto = metadata_file_protos[metadata_file_path]
     return metadata_proto.third_party.version
 
 
@@ -380,13 +396,13 @@ def get_sbom_fragments(installed_file_metadata, metadata_file_path):
 
   elif is_prebuilt_package(installed_file_metadata):
     # Prebuilt fork packages
-    version = get_package_version(metadata_file_path, False)
+    version = get_package_version(metadata_file_path, False, installed_file_metadata.get('name', None))
     name = get_prebuilt_package_name(installed_file_metadata, metadata_file_path)
     prebuilt_package_id = new_package_id(name, PKG_PREBUILT)
     prebuilt_package = sbom_data.Package(id=prebuilt_package_id,
                                          name=name,
                                          download_location=sbom_data.VALUE_NONE,
-                                         version=version if version else args.build_version,
+                                         version=args.build_version,
                                          supplier='Organization: ' + args.product_mfr)
 
     upstream_package_id = new_package_id(name, PKG_UPSTREAM)

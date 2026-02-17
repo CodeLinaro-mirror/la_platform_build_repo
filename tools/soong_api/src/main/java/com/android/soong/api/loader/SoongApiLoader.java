@@ -36,7 +36,7 @@ public class SoongApiLoader {
     /**
      * Executes the conversion logic: reads the input file and populates the SQLite database.
      *
-     * @param inputFile The input soong_metadata.zip or metadata.json file.
+     * @param inputFile The input soong_api.zip or soong_api.json file.
      * @param outputDb The output SQLite DB file.
      */
     public void load(File inputFile, File outputDb) throws IOException, SQLException {
@@ -76,9 +76,9 @@ public class SoongApiLoader {
 
     private void processZip(Connection conn, File inputZip) throws IOException, SQLException {
         try (ZipFile zf = new ZipFile(inputZip)) {
-            ZipEntry entry = zf.getEntry("metadata.json");
+            ZipEntry entry = zf.getEntry("soong_api.json");
             if (entry == null) {
-                throw new IOException("metadata.json not found in " + inputZip.getName());
+                throw new IOException("soong_api.json not found in " + inputZip.getName());
             }
 
             try (InputStream is = zf.getInputStream(entry);

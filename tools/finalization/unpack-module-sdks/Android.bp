@@ -1,0 +1,22 @@
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+rust_binary_host {
+    name: "unpack-module-sdks",
+    crate_root: "src/main.rs",
+    srcs: ["src/*.rs"],
+    rustlibs: [
+        "libanyhow",
+        "libclap",
+        "libglob",
+        "libregex",
+        "libserde",
+        "libserde_json",
+        "libzip",
+    ],
+    edition: "2021",
+    clippy_lints: "android",
+    lints: "android",
+    use_expansive_default_srcs: false,
+}

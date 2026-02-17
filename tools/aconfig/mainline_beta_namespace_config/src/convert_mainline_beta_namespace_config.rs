@@ -48,7 +48,8 @@ impl Config {
             namespaces: Vec<(&'a String, &'a Namespace)>,
         }
         // TinyTemplate can't iterate over HashMap entries, so do that iteration for it here.
-        let context = Context { namespaces: self.namespaces.iter().collect() };
+        let mut context = Context { namespaces: self.namespaces.iter().collect() };
+        context.namespaces.sort_by(|a, b| a.0.cmp(b.0));
 
         let mut template = TinyTemplate::new();
         let template_str = include_str!("../templates/mainline_beta_namespace_config.rs.template");

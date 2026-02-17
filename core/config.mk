@@ -341,10 +341,9 @@ endef
 # in blueprint files they can use integer values instead of strings.
 # It will error out if a non-integer is supplied
 # $1 is the namespace. $2 is the variable name. $3 is the variable value.
-# Ex: $(call soong_config_set_bool,acme,COOL_FEATURE,34)
+# Ex: $(call soong_config_set_int,acme,COOL_FEATURE,34)
 define soong_config_set_int
-$(call soong_config_define_internal,$1,$2) \
-$(if $(call math_is_int,$3),,$(error soong_config_set_int called with non-integer value $(3)))
+$(call soong_config_define_internal,$1,$2)
 $(eval SOONG_CONFIG_$(strip $1)_$(strip $2):=$(strip $3))
 $(eval SOONG_CONFIG_TYPE_$(strip $1)_$(strip $2):=int)
 endef
@@ -711,7 +710,6 @@ APICHECK := $(HOST_OUT_JAVA_LIBRARIES)/metalava$(COMMON_JAVA_PACKAGE_SUFFIX)
 MKEXTUSERIMG := $(HOST_OUT_EXECUTABLES)/mkuserimg_mke2fs
 MKE2FS_CONF := system/extras/ext4_utils/mke2fs.conf
 MKEROFS := $(HOST_OUT_EXECUTABLES)/mkfs.erofs
-MKSQUASHFSUSERIMG := $(HOST_OUT_EXECUTABLES)/mksquashfsimage
 MKF2FSUSERIMG := $(HOST_OUT_EXECUTABLES)/mkf2fsuserimg
 SIMG2IMG := $(HOST_OUT_EXECUTABLES)/simg2img$(HOST_EXECUTABLE_SUFFIX)
 E2FSCK := $(HOST_OUT_EXECUTABLES)/e2fsck$(HOST_EXECUTABLE_SUFFIX)
@@ -893,8 +891,6 @@ BOARD_SEPOLICY_VERS := $(PLATFORM_SEPOLICY_VERSION)
 
 # A list of SEPolicy versions, besides PLATFORM_SEPOLICY_VERSION, that the framework supports.
 PLATFORM_SEPOLICY_COMPAT_VERSIONS := \
-    29.0 \
-    30.0 \
     31.0 \
     32.0 \
     33.0 \
@@ -903,6 +899,7 @@ PLATFORM_SEPOLICY_COMPAT_VERSIONS := \
 PLATFORM_SEPOLICY_COMPAT_VERSIONS += $(foreach ver,\
     202404 \
     202504 \
+    202604 \
     ,$(if $(filter true,$(call math_gt,$(PLATFORM_SEPOLICY_VERSION),$(ver))),$(ver)))
 
 .KATI_READONLY := \
@@ -1083,7 +1080,8 @@ ifdef BOARD_KERNEL_MODULES_ZIP
     BOARD_DO_NOT_STRIP_VENDOR_RAMDISK_MODULES \
     BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES \
     BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES_BLOCKLIST_FILE \
-    # BOARD_KERNEL_MODULES_16K \ # TODO after ramdisk_16k supports zip files
+    BOARD_KERNEL_MODULES_16K \
+    BOARD_KERNEL_MODULES_LOAD_16K \
 
   # Additional kernel-module related variables that are allowed when using a kernel module zip:
   # - BOARD_DO_NOT_STRIP_VENDOR_MODULES
@@ -1396,6 +1394,7 @@ BUILD_SYSTEM_FINGERPRINT_FILE := $(PRODUCT_OUT)/build_system_fingerprint-$(TARGE
 ifneq (,$(shell mkdir -p $(PRODUCT_OUT) && echo $(BUILD_SYSTEM_FINGERPRINT) >$(BUILD_SYSTEM_FINGERPRINT_FILE).tmp && (if ! cmp -s $(BUILD_SYSTEM_FINGERPRINT_FILE).tmp $(BUILD_SYSTEM_FINGERPRINT_FILE); then mv $(BUILD_SYSTEM_FINGERPRINT_FILE).tmp $(BUILD_SYSTEM_FINGERPRINT_FILE); else rm $(BUILD_SYSTEM_FINGERPRINT_FILE).tmp; fi) && grep " " $(BUILD_SYSTEM_FINGERPRINT_FILE)))
   $(error BUILD_SYSTEM_FINGERPRINT cannot contain spaces: "$(file <$(BUILD_SYSTEM_FINGERPRINT_FILE))")
 endif
+BUILD_SYSTEM_FINGERPRINT_FROM_FILE := $$(cat $(BUILD_SYSTEM_FINGERPRINT_FILE))
 # unset it for safety.
 BUILD_SYSTEM_FINGERPRINT_FILE :=
 BUILD_SYSTEM_FINGERPRINT :=

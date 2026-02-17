@@ -1073,10 +1073,6 @@ else ifdef FULL_BUILD
         $(if $(or $(ALL_MODULES.$(m).PATH),$(call get-modules-for-2nd-arch,TARGET,$(m))),,$(m)))
       $(call maybe-print-list-and-error,$(filter-out $(_allow_list),$(_nonexistent_modules)),\
         $(INTERNAL_PRODUCT) includes non-existent modules in PRODUCT_PACKAGES)
-      # TODO(b/182105280): Consider re-enabling this check when the ART modules
-      # have been cleaned up from the allowed_list in target/product/generic.mk.
-      #$(call maybe-print-list-and-error,$(filter-out $(_nonexistent_modules),$(_allow_list)),\
-      #  $(INTERNAL_PRODUCT) includes redundant allow list entries for non-existent PRODUCT_PACKAGES)
     endif
 
     # Check to ensure that all modules in PRODUCT_HOST_PACKAGES exist
@@ -1848,7 +1844,7 @@ $(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make_metadata.csv:
 	  $(eval _static_libs := $(if $(_is_soong_module),,$(ALL_INSTALLED_FILES.$f.STATIC_LIBRARIES))) \
 	  $(eval _whole_static_libs := $(if $(_is_soong_module),,$(ALL_INSTALLED_FILES.$f.WHOLE_STATIC_LIBRARIES))) \
 	  $(eval _license_text := $(if $(_is_non_module.$(_build_output_path)),$(ALL_NON_MODULES.$(_build_output_path).NOTICES),\
-	                          $(if $(_is_partition_compat_symlink),build/soong/licenses/LICENSE))) \
+	                          $(if $(_is_partition_compat_symlink),build/soong/licenses/LICENSE,$(ALL_MODULES.$(_module_name).NOTICES)))) \
 	  echo '$(_build_output_path),$(_module_path),$(_is_soong_module),$(_is_prebuilt_make_module),$(_product_copy_files),$(_kernel_module_copy_files),$(_is_platform_generated),$(_static_libs),$(_whole_static_libs),$(_license_text)' >> $@; \
 	)
 

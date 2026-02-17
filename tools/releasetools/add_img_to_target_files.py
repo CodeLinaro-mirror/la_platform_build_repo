@@ -251,18 +251,26 @@ class OutputFile(object):
     name: The name of the output file, regardless of the final destination.
   """
 
-  def __init__(self, output_zip, input_dir, *args):
+  def __init__(self, output, input_dir, *args):
     # We write the intermediate output file under the given input_dir, even if
     # the final destination is a zip archive.
     self.name = os.path.join(input_dir, *args)
-    self._output_zip = output_zip
-    if self._output_zip:
-      self._zip_name = os.path.join(*args)
+    self._output_zip = None
+    self._output_dir = None
+    if isinstance(output, zipfile.ZipFile):
+      self._output_zip = output
+    else:
+      self._output_dir = output
+    self._zip_name = os.path.join(*args)
 
   def Write(self, compress_type=None):
     if self._output_zip:
       common.ZipWrite(self._output_zip, self.name,
                       self._zip_name, compress_type=compress_type)
+    if self._output_dir:
+      dst = os.path.join(self._output_dir, self._zip_name)
+      os.makedirs(os.path.dirname(dst), exist_ok=True)
+      shutil.copy(self.name, dst)
 
 
 def AddSystem(output_zip, recovery_img=None, boot_img=None):

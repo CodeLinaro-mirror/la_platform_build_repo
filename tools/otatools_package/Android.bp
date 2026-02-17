@@ -167,7 +167,6 @@ cc_genrule {
         ":mkf2fsuserimg",
         ":mkfs.erofs",
         ":mksquashfs",
-        ":mksquashfsimage",
         ":mkuserimg_mke2fs",
         ":ota_extractor",
         ":ota_from_target_files",

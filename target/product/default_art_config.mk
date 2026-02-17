@@ -226,6 +226,12 @@ ifeq ($(RELEASE_NPUMANAGER_MODULE),true)
 
 endif
 
+ifeq ($(RELEASE_TELECOM_MAINLINE_MODULE),true)
+    PRODUCT_APEX_SYSTEM_SERVER_JARS += \
+        com.android.telephonycore:service-telecom \
+
+endif
+
 ifeq ($(RELEASE_AVF_ENABLE_LLPVM_CHANGES),true)
   PRODUCT_APEX_SYSTEM_SERVER_JARS += com.android.virt:service-virtualization
 endif

@@ -142,6 +142,7 @@ PRODUCT_PACKAGES += \
     iptables \
     javax.obex \
     kcmdlinectrl \
+    kcmdlinemodprobe \
     keystore2 \
     ld.mc \
     libaaudio \
@@ -230,9 +231,7 @@ PRODUCT_PACKAGES += \
     mdnsd \
     mediacodec.policy \
     mediaextractor \
-    mediametrics \
     media_profiles_V1_0.dtd \
-    MediaProviderLegacy \
     mediaserver \
     mediaserver64 \
     mediaserverwrapper \
@@ -261,6 +260,7 @@ PRODUCT_PACKAGES += \
     platform.xml \
     pm \
     prefetch \
+    preinstalled-packages-app-lock-exempt.xml \
     preinstalled-packages-asl-files.xml \
     preinstalled-packages-platform.xml \
     preinstalled-packages-strict-signature.xml \
@@ -410,6 +410,11 @@ ifeq ($(RELEASE_WEBAPP_MODULE),true)
        default-permissions-webapp.xml
 endif
 
+ifneq ($(RELEASE_MEDIAMETRICS_MODULE),true)
+    PRODUCT_PACKAGES += \
+        mediametrics
+endif
+
 ifneq (,$(RELEASE_RANGING_STACK))
     PRODUCT_PACKAGES += \
         com.android.ranging
@@ -534,6 +539,9 @@ PRODUCT_SYSTEM_PROPERTIES += ro.surface_flinger.game_default_frame_rate_override
 PRODUCT_SYSTEM_PROPERTIES += persist.pcc.audit_mode.enabled=0
 PRODUCT_SYSTEM_PROPERTIES += persist.pcc.audit_mode.max_log_files=10
 PRODUCT_SYSTEM_PROPERTIES += persist.pcc.audit_mode.max_log_file_size_kb=10240
+PRODUCT_SYSTEM_PROPERTIES += persist.pcc.audit_mode.batching.enabled=1
+PRODUCT_SYSTEM_PROPERTIES += persist.pcc.audit_mode.batching.max_batch_size=100
+PRODUCT_SYSTEM_PROPERTIES += persist.pcc.audit_mode.batching.flush_time_ms=10000
 
 # When the flag RELEASE_ADBD_OPEN_VSOCK_PORT is enabled, open adbd on vsock port 8382 as default.
 ifneq ($(RELEASE_ADBD_OPEN_VSOCK_PORT),)
@@ -608,6 +616,7 @@ endif
 
 ifneq (,$(RELEASE_NATIVE_FRAMEWORK_PROTOTYPE))
     PRODUCT_PACKAGES += \
+        libandroid_native_denylist \
         zygote_next
 endif
 
@@ -622,7 +631,8 @@ endif
 
 ifneq (,$(RELEASE_AISEAL_FRAMEWORK))
     PRODUCT_PACKAGES += \
-        aisealhostservice
+        aisealhostservice \
+        AppSearchAiSealConfig
 endif
 
 $(call inherit-product, $(SRC_TARGET_DIR)/product/runtime_libart.mk)
