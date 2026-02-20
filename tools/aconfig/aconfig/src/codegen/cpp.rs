@@ -546,6 +546,7 @@ bool com_android_aconfig_test_enabled_rw();
 #include <android/log.h>
 #define LOG_TAG "aconfig_cpp_codegen"
 #define ALOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#define ALOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #include <atomic>
 #include <vector>
 
@@ -775,6 +776,7 @@ bool com_android_aconfig_test_enabled_rw() {
 #include <android/log.h>
 #define LOG_TAG "aconfig_cpp_codegen"
 #define ALOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#define ALOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #include <atomic>
 #include <vector>
 
@@ -857,7 +859,7 @@ namespace com::android::aconfig::test {
                     }
 
                     if (!fingerprint_matches_) {
-                        ALOGE("error: package fingerprint mismtach, returning flag default value.");
+                        ALOGI("error: package fingerprint mismtach for package com.android.aconfig.test, returning flag default value.");
                         return false;
                     }
 
@@ -883,7 +885,7 @@ namespace com::android::aconfig::test {
 
 
                     if (!fingerprint_matches_) {
-                      ALOGE("error: package fingerprint mismtach, returning flag default value.");
+                      ALOGI("error: package fingerprint mismtach for package com.android.aconfig.test, returning flag default value.");
                       return false;
                     }
 
@@ -909,7 +911,7 @@ namespace com::android::aconfig::test {
 
 
                     if (!fingerprint_matches_) {
-                      ALOGE("error: package fingerprint mismtach, returning flag default value.");
+                      ALOGI("error: package fingerprint mismtach for package com.android.aconfig.test, returning flag default value.");
                       return false;
                     }
 
@@ -951,7 +953,7 @@ namespace com::android::aconfig::test {
 
 
                     if (!fingerprint_matches_) {
-                      ALOGE("error: package fingerprint mismtach, returning flag default value.");
+                      ALOGI("error: package fingerprint mismtach for package com.android.aconfig.test, returning flag default value.");
                       return true;
                     }
 
@@ -1035,6 +1037,7 @@ bool com_android_aconfig_test_enabled_rw() {
 #include <android/log.h>
 #define LOG_TAG "aconfig_cpp_codegen"
 #define ALOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+#define ALOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
 #include <unordered_map>
 #include <string>

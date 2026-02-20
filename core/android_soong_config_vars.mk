@@ -43,6 +43,7 @@ $(call soong_config_set_bool,ANDROID,TARGET_SUPPORTS_32_BIT_APPS,$(if $(filter t
 $(call soong_config_set_bool,ANDROID,TARGET_SUPPORTS_64_BIT_APPS,$(if $(filter true,$(TARGET_SUPPORTS_64_BIT_APPS)),true,false))
 $(call add_soong_config_var,ANDROID,BOARD_GENFS_LABELS_VERSION)
 $(call soong_config_set_bool,ANDROID,PRODUCT_FSVERITY_GENERATE_METADATA,$(if $(filter true,$(PRODUCT_FSVERITY_GENERATE_METADATA)),true,false))
+$(call soong_config_set_bool,ANDROID,TARGET_RESTRICTS_ASHMEM_USAGE,$(TARGET_RESTRICTS_ASHMEM_USAGE))
 
 $(call add_soong_config_var,ANDROID,ADDITIONAL_M4DEFS,$(if $(BOARD_SEPOLICY_M4DEFS),$(addprefix -D,$(BOARD_SEPOLICY_M4DEFS))))
 $(call add_soong_config_var,ANDROID,TARGET_ADD_ROOT_EXTRA_VENDOR_SYMLINKS)
@@ -127,6 +128,10 @@ $(call soong_config_set,ANDROID,release_enable_compose_in_launcher,$(RELEASE_ENA
 
 ifdef PRODUCT_AVF_ENABLED
 $(call add_soong_config_var_value,ANDROID,avf_enabled,$(PRODUCT_AVF_ENABLED))
+endif
+
+ifdef BOARD_PVMFWIMAGE_PARTITION_SIZE
+$(call soong_config_set_int,ANDROID,pvmfw_partition_size,$(BOARD_PVMFWIMAGE_PARTITION_SIZE))
 endif
 
 $(call soong_config_set,ANDROID,platform_security_patch_timestamp_string,$(PLATFORM_SECURITY_PATCH_TIMESTAMP))

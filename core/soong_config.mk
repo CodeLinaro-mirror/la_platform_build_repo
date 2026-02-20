@@ -184,9 +184,6 @@ $(foreach flag,$(_ALL_RELEASE_FLAGS),\
   $(call add_json_str,$(flag),$(_ALL_RELEASE_FLAGS.$(flag).TYPE)))
 $(call end_json_map)
 
-$(call add_json_bool, Treble_linker_namespaces,          $(filter true,$(PRODUCT_TREBLE_LINKER_NAMESPACES)))
-$(call add_json_bool, Enforce_vintf_manifest,            $(filter true,$(PRODUCT_ENFORCE_VINTF_MANIFEST)))
-
 $(call add_json_bool, Uml,                               $(filter true,$(TARGET_USER_MODE_LINUX)))
 $(call add_json_str,  VendorPath,                        $(TARGET_COPY_OUT_VENDOR))
 $(call add_json_str,  VendorDlkmPath,                    $(TARGET_COPY_OUT_VENDOR_DLKM))
@@ -409,10 +406,6 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
     $(call add_json_str, BoardJournalSize, $(BOARD_$(image_type)IMAGE_JOURNAL_SIZE)) \
     $(call add_json_str, BoardPartitionReservedSize, $(BOARD_$(image_type)IMAGE_PARTITION_RESERVED_SIZE)) \
     $(call add_json_str, BoardPartitionSize, $(BOARD_$(image_type)IMAGE_PARTITION_SIZE)) \
-    $(call add_json_str, BoardSquashfsBlockSize, $(BOARD_$(image_type)IMAGE_SQUASHFS_BLOCK_SIZE)) \
-    $(call add_json_str, BoardSquashfsCompressor, $(BOARD_$(image_type)IMAGE_SQUASHFS_COMPRESSOR)) \
-    $(call add_json_str, BoardSquashfsCompressorOpt, $(BOARD_$(image_type)IMAGE_SQUASHFS_COMPRESSOR_OPT)) \
-    $(call add_json_str, BoardSquashfsDisable4kAlign, $(BOARD_$(image_type)IMAGE_SQUASHFS_DISABLE_4K_ALIGN)) \
     $(call add_json_str, BoardAvbKeyPath, $(BOARD_AVB_$(image_type)_KEY_PATH)) \
     $(call add_json_str, BoardAvbAlgorithm, $(BOARD_AVB_$(image_type)_ALGORITHM)) \
     $(call add_json_str, BoardAvbRollbackIndex, $(BOARD_AVB_$(image_type)_ROLLBACK_INDEX)) \
@@ -431,7 +424,6 @@ $(call add_json_map, PartitionVarsForSoongMigrationOnlyDoNotUse)
 
   $(call add_json_bool, TargetUserimagesSparseExtDisabled, $(filter true,$(TARGET_USERIMAGES_SPARSE_EXT_DISABLED)))
   $(call add_json_bool, TargetUserimagesSparseErofsDisabled, $(filter true,$(TARGET_USERIMAGES_SPARSE_EROFS_DISABLED)))
-  $(call add_json_bool, TargetUserimagesSparseSquashfsDisabled, $(filter true,$(TARGET_USERIMAGES_SPARSE_SQUASHFS_DISABLED)))
   $(call add_json_bool, TargetUserimagesSparseF2fsDisabled, $(filter true,$(TARGET_USERIMAGES_SPARSE_F2FS_DISABLED)))
 
   $(call add_json_str, BoardErofsCompressor, $(BOARD_EROFS_COMPRESSOR))
@@ -746,6 +738,8 @@ $(call add_json_bool, EnforceSELinuxTrebleLabeling, $(filter true,$(PRODUCT_ENFO
 $(call add_json_str, SELinuxTrebleLabelingTrackingListFile, $(PRODUCT_SELINUX_TREBLE_LABELING_TRACKING_LIST_FILE))
 
 $(call add_json_bool, BuildOTAPackage, $(call invert_bool,$(filter true,$(TARGET_SKIP_OTA_PACKAGE))))
+
+$(call add_json_bool, RestrictsAshmemUsage, $(filter true,$(TARGET_RESTRICTS_ASHMEM_USAGE)))
 
 $(call json_end)
 

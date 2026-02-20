@@ -56,7 +56,7 @@ rust_binary_host {
     defaults: ["aconfig_storage_file.defaults"],
     srcs: ["src/main.rs"],
     rustlibs: [
-        "libaconfig_storage_file",
+        "libaconfig_storage_file_with_test_utils",
         "libserde_json",
     ],
 }
@@ -69,6 +69,25 @@ rust_test_host {
     rustlibs: [
         "libtempfile",
     ],
+    data: [
+        ":test_storage_files",
+    ],
+}
+
+// For having unit test coverage when the v4 parse flag is enabled.
+// This can be removed / flipped after we start to rollout that flag.
+rust_test_host {
+    name: "aconfig_storage_file.test.v4_enabled",
+    test_suites: ["general-tests"],
+    defaults: ["aconfig_storage_file.defaults"],
+    srcs: ["src/lib.rs"],
+    rustlibs: [
+        "libtempfile",
+    ],
+    data: [
+        ":test_storage_files",
+    ],
+    cfgs: ["enable_parse_v4"],
 }
 
 rust_protobuf {

@@ -338,10 +338,9 @@ endef
 # in blueprint files they can use integer values instead of strings.
 # It will error out if a non-integer is supplied
 # $1 is the namespace. $2 is the variable name. $3 is the variable value.
-# Ex: $(call soong_config_set_bool,acme,COOL_FEATURE,34)
+# Ex: $(call soong_config_set_int,acme,COOL_FEATURE,34)
 define soong_config_set_int
-$(call soong_config_define_internal,$1,$2) \
-$(if $(call math_is_int,$3),,$(error soong_config_set_int called with non-integer value $(3)))
+$(call soong_config_define_internal,$1,$2)
 $(eval SOONG_CONFIG_$(strip $1)_$(strip $2):=$(strip $3))
 $(eval SOONG_CONFIG_TYPE_$(strip $1)_$(strip $2):=int)
 endef
@@ -459,6 +458,24 @@ else
   TARGET_MAX_PAGE_SIZE_SUPPORTED := 16384
 endif
 .KATI_READONLY := TARGET_MAX_PAGE_SIZE_SUPPORTED
+
+TARGET_RESTRICTS_ASHMEM_USAGE := false
+
+# If the vendor API level is 202604, then the device restricts what
+# applications can use ashmem.
+#
+# Check if the build is for CF on either WearOS or TV, as they are pinned to
+# older kernel versions that do not have memfd_class support, and therefore
+# must continue to use ashmem unconditionally. This can be simplified to just
+# the VSR_VENDOR_API_LEVEL check once all CF instances move to kernel version
+# 6.12 or newer.
+ifeq ($(call math_gt_or_eq,$(VSR_VENDOR_API_LEVEL),202604),true)
+ifneq (true,$(CLOCKWORK_EMULATOR_PRODUCT))
+ifeq (,$(findstring x86_tv,$(PRODUCT_NAME)))
+  TARGET_RESTRICTS_ASHMEM_USAGE := true
+endif
+endif
+endif
 
 # Boolean variable determining if AOSP relies on bionic's PAGE_SIZE macro.
 ifdef PRODUCT_NO_BIONIC_PAGE_SIZE_MACRO
@@ -708,7 +725,6 @@ APICHECK := $(HOST_OUT_JAVA_LIBRARIES)/metalava$(COMMON_JAVA_PACKAGE_SUFFIX)
 MKEXTUSERIMG := $(HOST_OUT_EXECUTABLES)/mkuserimg_mke2fs
 MKE2FS_CONF := system/extras/ext4_utils/mke2fs.conf
 MKEROFS := $(HOST_OUT_EXECUTABLES)/mkfs.erofs
-MKSQUASHFSUSERIMG := $(HOST_OUT_EXECUTABLES)/mksquashfsimage
 MKF2FSUSERIMG := $(HOST_OUT_EXECUTABLES)/mkf2fsuserimg
 SIMG2IMG := $(HOST_OUT_EXECUTABLES)/simg2img$(HOST_EXECUTABLE_SUFFIX)
 E2FSCK := $(HOST_OUT_EXECUTABLES)/e2fsck$(HOST_EXECUTABLE_SUFFIX)
@@ -769,18 +785,9 @@ endif
 .KATI_READONLY := \
     PRODUCT_COMPATIBLE_PROPERTY
 
-# TODO: remove all code referencing these, and remove override variables
-PRODUCT_FULL_TREBLE := true
-PRODUCT_TREBLE_LINKER_NAMESPACES := true
-PRODUCT_ENFORCE_VINTF_MANIFEST := true
-
-# TODO(b/114488870): disallow PRODUCT_FULL_TREBLE_OVERRIDE from being used.
-.KATI_READONLY := \
-    PRODUCT_FULL_TREBLE \
-    PRODUCT_TREBLE_LINKER_NAMESPACES \
-    PRODUCT_ENFORCE_VINTF_MANIFEST \
-
-# TODO(b/114488870): remove all sets of these everywhere, and disallow them to be used
+$(KATI_obsolete_var PRODUCT_TREBLE_LINKER_NAMESPACES,This is now always true.)
+# TODO(b/307369186): restore
+# $(KATI_obsolete_var PRODUCT_ENFORCE_VINTF_MANIFEST,This is now always true.)
 $(KATI_obsolete_var PRODUCT_TREBLE_LINKER_NAMESPACES_OVERRIDE,Deprecated.)
 $(KATI_obsolete_var PRODUCT_ENFORCE_VINTF_MANIFEST_OVERRIDE,Deprecated.)
 $(KATI_obsolete_var PRODUCT_FULL_TREBLE_OVERRIDE,Deprecated.)
@@ -789,9 +796,7 @@ $(KATI_obsolete_var PRODUCT_FULL_TREBLE_OVERRIDE,Deprecated.)
 # partitions is supported. But the early-mount must be supported for full
 # treble products, and so BOARD_PROPERTY_OVERRIDES_SPLIT_ENABLED should be set
 # by default for full treble products.
-ifeq ($(PRODUCT_FULL_TREBLE),true)
-  BOARD_PROPERTY_OVERRIDES_SPLIT_ENABLED ?= true
-endif
+BOARD_PROPERTY_OVERRIDES_SPLIT_ENABLED ?= true
 
 ifneq ($(call math_gt_or_eq,$(PRODUCT_SHIPPING_API_LEVEL),36),)
   ifneq ($(NEED_AIDL_NDK_PLATFORM_BACKEND),)
@@ -890,8 +895,6 @@ BOARD_SEPOLICY_VERS := $(PLATFORM_SEPOLICY_VERSION)
 
 # A list of SEPolicy versions, besides PLATFORM_SEPOLICY_VERSION, that the framework supports.
 PLATFORM_SEPOLICY_COMPAT_VERSIONS := \
-    29.0 \
-    30.0 \
     31.0 \
     32.0 \
     33.0 \
@@ -1395,6 +1398,7 @@ BUILD_SYSTEM_FINGERPRINT_FILE := $(PRODUCT_OUT)/build_system_fingerprint-$(TARGE
 ifneq (,$(shell mkdir -p $(PRODUCT_OUT) && echo $(BUILD_SYSTEM_FINGERPRINT) >$(BUILD_SYSTEM_FINGERPRINT_FILE).tmp && (if ! cmp -s $(BUILD_SYSTEM_FINGERPRINT_FILE).tmp $(BUILD_SYSTEM_FINGERPRINT_FILE); then mv $(BUILD_SYSTEM_FINGERPRINT_FILE).tmp $(BUILD_SYSTEM_FINGERPRINT_FILE); else rm $(BUILD_SYSTEM_FINGERPRINT_FILE).tmp; fi) && grep " " $(BUILD_SYSTEM_FINGERPRINT_FILE)))
   $(error BUILD_SYSTEM_FINGERPRINT cannot contain spaces: "$(file <$(BUILD_SYSTEM_FINGERPRINT_FILE))")
 endif
+BUILD_SYSTEM_FINGERPRINT_FROM_FILE := $$(cat $(BUILD_SYSTEM_FINGERPRINT_FILE))
 # unset it for safety.
 BUILD_SYSTEM_FINGERPRINT_FILE :=
 BUILD_SYSTEM_FINGERPRINT :=

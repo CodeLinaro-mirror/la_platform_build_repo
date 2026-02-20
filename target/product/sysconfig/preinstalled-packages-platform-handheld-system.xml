@@ -55,12 +55,13 @@
         <install-in user-type="android.os.usertype.profile.MANAGED" />
     </install-in-user-type>
 
-    <!-- Contactspicker App, install in full users, and profiles -->
+    <!-- Contactspicker App (ContactsPicker), install in full users, and profiles, except clone profile,
+    as the parent profile's contact picker will be used in clone profile. -->
     <install-in-user-type package="com.android.contactspicker">
         <install-in user-type="FULL" />
-        <install-in user-type="android.os.usertype.profile.CLONE" />
         <install-in user-type="android.os.usertype.profile.MANAGED" />
         <install-in user-type="android.os.usertype.profile.PRIVATE" />
+        <do-not-install-in user-type="android.os.usertype.profile.CLONE" />
     </install-in-user-type>
 
     <!-- EyeDropper App that implements a public API in the form of an intent action. -->
@@ -155,5 +156,12 @@
         <install-in user-type="SYSTEM" />
         <install-in user-type="FULL" />
         <install-in user-type="android.os.usertype.profile.MANAGED" />
+    </install-in-user-type>
+
+    <!-- Download Provider UI(DownloadProviderUi) -->
+    <install-in-user-type package="com.android.providers.downloads.ui">
+        <install-in user-type="FULL" />
+        <install-in user-type="android.os.usertype.profile.MANAGED" />
+        <install-in user-type="android.os.usertype.profile.PRIVATE" />
     </install-in-user-type>
 </config>

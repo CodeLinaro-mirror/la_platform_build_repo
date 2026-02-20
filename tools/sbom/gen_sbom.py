@@ -175,8 +175,15 @@ def checksum(file_path):
 
 
 def is_soong_prebuilt_module(file_metadata):
-  return (file_metadata['soong_module_type'] and
-          file_metadata['soong_module_type'] in SOONG_PREBUILT_MODULE_TYPES)
+  module_type = file_metadata.get('soong_module_type')
+  if module_type and module_type in SOONG_PREBUILT_MODULE_TYPES:
+    return True
+
+  base_type = file_metadata.get('soong_base_module_type')
+  if base_type and base_type in SOONG_PREBUILT_MODULE_TYPES:
+    return True
+
+  return False
 
 
 def is_source_package(file_metadata):

@@ -134,6 +134,7 @@ ifneq (,$(_final_product_config_pass))
     ifneq (,$(_disallow_lunch_use))
         $(error Release config ${TARGET_RELEASE} is disallowed for build.  Please use one of: $(ALL_RELEASE_CONFIGS_FOR_PRODUCT))
     endif
+    $(KATI_shell_no_rerun rm -f $(OUT_DIR)/release-config.${TARGET_PRODUCT}.out)
 else
     # This is the first pass of product config.
     $(eval include $(_flags_varmk))

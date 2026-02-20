@@ -105,7 +105,6 @@ PRODUCT_SYSTEM_SERVER_APPS += \
 ifeq ($(RELEASE_TELECOM_MAINLINE_MODULE),true)
     PRODUCT_PACKAGES += \
         TelecomShim \
-        com.android.telephonycore.service-telecom.xml \
 
     PRODUCT_SYSTEM_SERVER_APPS += \
         TelecomShim \

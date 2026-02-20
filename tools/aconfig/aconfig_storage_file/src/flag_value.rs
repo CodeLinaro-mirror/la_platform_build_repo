@@ -425,12 +425,9 @@ mod tests {
 
         let err = header.get_offset_for_int_flag(99);
 
-        assert_eq!(
-            format!("{:?}", err),
-            format!(
-                "Err(InvalidStorageFileOffset(Flag value offset goes beyond the end of the file.))"
-            )
-        );
+        assert!(format!("{:?}", err).starts_with(
+            "Err(InvalidStorageFileOffset(Flag value offset goes beyond the end of the file."
+        ));
     }
 
     #[test]

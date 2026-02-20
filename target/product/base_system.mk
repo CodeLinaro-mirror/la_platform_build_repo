@@ -34,6 +34,7 @@ PRODUCT_PACKAGES += \
     android.test.runner \
     apexd \
     apexd.mainline_patch_level_2 \
+    app-lock-exempt.xml \
     appops \
     app_process \
     appwidget \
@@ -234,7 +235,6 @@ PRODUCT_PACKAGES += \
     mediacodec.policy \
     mediaextractor \
     media_profiles_V1_0.dtd \
-    MediaProviderLegacy \
     mediaserver \
     mke2fs \
     mkfs.erofs \
@@ -410,10 +410,7 @@ ifeq ($(RELEASE_WEBAPP_MODULE),true)
        default-permissions-webapp.xml
 endif
 
-ifeq ($(RELEASE_MEDIAMETRICS_MODULE),true)
-    PRODUCT_PACKAGES += \
-        libmediametrics_packageinfo
-else
+ifneq ($(RELEASE_MEDIAMETRICS_MODULE),true)
     PRODUCT_PACKAGES += \
         mediametrics
 endif
@@ -619,6 +616,7 @@ endif
 
 ifneq (,$(RELEASE_NATIVE_FRAMEWORK_PROTOTYPE))
     PRODUCT_PACKAGES += \
+        libandroid_native_denylist \
         zygote_next
 endif
 

@@ -513,6 +513,12 @@ class BuildInfo(object):
     return vabc_xor_enabled
 
   @property
+  def supports_ublk(self):
+    vendor_prop = self.info_dict.get("vendor.build.prop")
+    return vendor_prop and \
+        vendor_prop.GetProp("ro.virtual_ab.ublk.enabled") == "true"
+
+  @property
   def vendor_suppressed_vabc(self):
     vendor_prop = self.info_dict.get("vendor.build.prop")
     vabc_suppressed = vendor_prop and \
@@ -2533,7 +2539,7 @@ def GetMinSdkVersionInt(apk_name, codename_to_api_level_map):
 
 def SignFile(input_name, output_name, key, password, min_api_level=None,
              codename_to_api_level_map=None, whole_file=False,
-             extra_signapk_args=None):
+             extra_signapk_args=None, log_on_success=False):
   """Sign the input_name zip/jar/apk, producing output_name.  Use the
   given key and password (the latter may be None if the key does not
   have a password.
@@ -2551,6 +2557,9 @@ def SignFile(input_name, output_name, key, password, min_api_level=None,
 
   Caller may optionally specify extra args to be passed to SignApk, which
   defaults to OPTIONS.extra_signapk_args if omitted.
+
+  log_on_success can be provided to log output of signing file on success,
+  default behavior is to skip logging when signing is successful.
   """
   if codename_to_api_level_map is None:
     codename_to_api_level_map = {}
@@ -2587,6 +2596,8 @@ def SignFile(input_name, output_name, key, password, min_api_level=None,
     raise ExternalError(
         "Failed to run {}: return code {}:\n{}".format(cmd,
                                                        proc.returncode, stdoutdata))
+  if log_on_success:
+    logger.info("Output from  SignFile: %s", stdoutdata)
 
 
 def CheckSize(data, target, info_dict):

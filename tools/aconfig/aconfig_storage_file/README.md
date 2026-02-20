@@ -65,6 +65,7 @@ Version 4 adds int support to the storage files. This means the value files need
 to contain a list of ints, and the package map needs to have both the int and
 the boolean offset for its flags.
 
+*   **Package Map:** Added an integer `int_start_index` to each node.
 *   **Flag Value:** Added support for integer flags. The header was extended to
     include `num_int_flags` and `int_value_offset`. The file now contains a list
     of integer values after the list of boolean values.

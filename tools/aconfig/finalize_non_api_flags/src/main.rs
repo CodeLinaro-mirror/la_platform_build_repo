@@ -20,11 +20,14 @@
 //! check so the flags are resilient to deletion. This means that once this
 //! binary is run, the flags have passed a "point of no return" where they
 //! cannot be rolled back.
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::Parser;
-use std::{fs::File, path::PathBuf};
+use std::{fs::File, io::Read, path::PathBuf};
+
+use aconfig_protos::{parsed_flags, ProtoParsedFlags};
 
 mod exception_flags;
+mod load_from_cache;
 
 pub(crate) type FlagId = String;
 
@@ -41,6 +44,7 @@ This tool:
 
   - Reads the exception list from the source tree [--exception-list]
   - Reads the state of the current flags from release configs [--flag-sources]
+  - Reads the state of the current flags from the aconfig cache [--aconfig-cache]
   - Filters the exception list to only include flags that are present in the
     release configs, recording the earliest relese config that has each flag
   - Prints the map of <flags, release config> to stdout
@@ -50,20 +54,49 @@ This tool:
 #[clap(about=ABOUT)]
 struct Cli {
     #[arg(long)]
-    exception_list: PathBuf,
+    exception_list: Option<PathBuf>,
 
     #[arg(long)]
-    flag_sources: PathBuf,
+    cache: PathBuf,
+
+    #[arg(long)]
+    release_config: Option<String>,
+}
+
+pub(crate) fn load_protos_from_file<R: Read>(mut reader: R) -> Result<ProtoParsedFlags> {
+    let mut buf = Vec::new();
+    reader.read_to_end(&mut buf)?;
+    parsed_flags::try_from_binary_proto(&buf)
 }
 
 fn main() -> Result<()> {
     let args = Cli::parse();
 
-    let file = File::open(args.exception_list)?;
-    let _all_exception_flags = exception_flags::read_exception_flags(file)?;
+    // TODO(b/445461092): Replace hard-coded value with read of environment
+    // variable TARGET_RELEASE and, if it's "next", real lookup of "next" alias.
+    let mut release_config = args.release_config.unwrap_or("cp2a".to_string());
+    if release_config == "next" {
+        release_config = "cp2a".to_string();
+    }
 
-    // TODO(b/467323313): Load all aconfig flags from the cache, filter to the
-    // flags on the exception list, filter to flags in a non-trunk release
-    // config, and generate the finalized flags map.
+    // TODO(b/445461092): Investigate if this should be passed in from Soong
+    // as an arg (all the time).
+    let exception_list_path = args.exception_list.unwrap_or(PathBuf::from(
+        "build/make/tools/aconfig/exported_flag_check/non_api_flags_list.txt",
+    ));
+
+    let file = File::open(exception_list_path).with_context(|| "open {exception_list_path}")?;
+    let all_exception_flags = exception_flags::read_exception_flags(file)?;
+
+    let cache_file = File::open(args.cache).with_context(|| "open {args.cache}")?;
+    let parsed_flags = load_protos_from_file(cache_file)?;
+    let finalized_flags = load_from_cache::extract_flags_from_cache(parsed_flags, &release_config);
+
+    let finalized_exception_flags: Vec<&FlagId> =
+        finalized_flags.intersection(&all_exception_flags).collect();
+
+    for flag in finalized_exception_flags {
+        println!("{}", flag);
+    }
     Ok(())
 }
