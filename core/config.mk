@@ -462,6 +462,24 @@ else
 endif
 .KATI_READONLY := TARGET_MAX_PAGE_SIZE_SUPPORTED
 
+TARGET_RESTRICTS_ASHMEM_USAGE := false
+
+# If the vendor API level is 202604, then the device restricts what
+# applications can use ashmem.
+#
+# Check if the build is for CF on either WearOS or TV, as they are pinned to
+# older kernel versions that do not have memfd_class support, and therefore
+# must continue to use ashmem unconditionally. This can be simplified to just
+# the VSR_VENDOR_API_LEVEL check once all CF instances move to kernel version
+# 6.12 or newer.
+ifeq ($(call math_gt_or_eq,$(VSR_VENDOR_API_LEVEL),202604),true)
+ifneq (true,$(CLOCKWORK_EMULATOR_PRODUCT))
+ifeq (,$(findstring x86_tv,$(PRODUCT_NAME)))
+  TARGET_RESTRICTS_ASHMEM_USAGE := true
+endif
+endif
+endif
+
 # Boolean variable determining if AOSP relies on bionic's PAGE_SIZE macro.
 ifdef PRODUCT_NO_BIONIC_PAGE_SIZE_MACRO
   TARGET_NO_BIONIC_PAGE_SIZE_MACRO := $(PRODUCT_NO_BIONIC_PAGE_SIZE_MACRO)

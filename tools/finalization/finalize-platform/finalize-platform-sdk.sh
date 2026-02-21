@@ -43,38 +43,17 @@ m sdk sdk_repo dist
 
 # populate prebuilts/sdk
 #
-# Will update these files under prebuilts/sdk:
-#
-#   - $MAJOR/**/*
-#   - current/**/*
-#   - latest
-#   - Android.bp
+# Will update these files under prebuilts/sdk/$MAJOR, and prebuilts/sdk/{Android.bp,latest}
 #
 # -f $MAJOR instead of $major.$minor to force update_prebuilts.py to
 # update the 37 directory instead of creating a new 37.0 directory
 # (TODO: debug why renaming the existing directory to 37.0 first
 # doesn't work)
-#
-# TODO: extract the logic of update_framework in update_prebuilts.py (and
-# rewrite to be more readable), but for now, call the legacy script
-$TOP/prebuilts/sdk/update_prebuilts/update_prebuilts.py \
-    -f $MAJOR \
-    --local_mode \
-    --bug $BUG \
-    1234 # doesn't matter in local mode
-
-# update_prebuilts.py updates current/ but that directory should only hold
-# artifacts from sdk_with_runtime_apis builds; undo those changes before
-# committing
-#
-# Also remove the unwanted SDK zip file that --local_mode copies
-pushd "$TOP"/prebuilts/sdk
-rm android-sdk*.zip
-git checkout current
-git clean -fd current
-popd
-
-
+m unpack-platform-sdk
+unpack-platform-sdk \
+    --dist-dir "$TOP"/out/dist \
+    --android-top "$TOP" \
+    --version "$MAJOR"
 git_commit \
     prebuilts/sdk \
 <<EOF
