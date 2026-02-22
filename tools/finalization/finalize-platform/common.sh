@@ -203,8 +203,15 @@ function setup_build_server() {
     # Temporary debug info
     find --version
 
-    echo "These are the files passed in from previous builds:"
-    find $TOP/out/prebuilt_cached -type f
+    local prebuilt_cached="$TOP/out/prebuilt_cached"
+    if [[ -d "${prebuilt_cached}" ]]; then
+      pushd ${prebuilt_cached}
+      echo "These are the files passed in from previous builds:"
+      find $(pwd) -type f
+      popd
+    else
+      echo "No prebuilt_cached directory found at: ${prebuilt_cached}"
+    fi
 
     # Might as well dump this
     env

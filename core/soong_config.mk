@@ -762,6 +762,8 @@ $(call add_json_str, SELinuxTrebleLabelingTrackingListFile, $(PRODUCT_SELINUX_TR
 
 $(call add_json_bool, BuildOTAPackage, $(call invert_bool,$(filter true,$(TARGET_SKIP_OTA_PACKAGE))))
 
+$(call add_json_bool, RestrictsAshmemUsage, $(filter true,$(TARGET_RESTRICTS_ASHMEM_USAGE)))
+
 $(call json_end)
 
 $(file >$(SOONG_VARIABLES).tmp,$(json_contents))
