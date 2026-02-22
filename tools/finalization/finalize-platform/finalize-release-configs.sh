@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if [[ "$(build-flag --quiet --release=next get RELEASE_PLATFORM_SDK_VERSION_FULL)" == "$MAJOR.$MINOR" ]]; then
+    info "finalize-release-configs: already done, exit early"
+    return
+fi
+
 # Update SdkExtensions database
 m gen_sdk
 gen_sdk --database \
@@ -25,6 +30,9 @@ git_commit \
 <<EOF
 Add new SDK extension version $SDK_EXT_VERSION
 
+Bug: $BUG
+Test: N/A
+Flag: NONE platform SDK finalization
 EOF
 
 # Set SDK ZIP properties
@@ -60,6 +68,7 @@ Set SDK zip properties for Android $MAJOR.$MINOR
 
 Bug: $BUG
 Test: presubmit
+Flag: NONE platform SDK finalization
 EOF
 
 # Update hardcoded codename constants, API level mappings, etc
@@ -88,6 +97,9 @@ git_commit \
 <<EOF
 next: do not set PROSPECTIVE_SDK_VERSION_FULL
 
+Bug: $BUG
+Test: N/A
+Flag: NONE platform SDK finalization
 EOF
 
 set_build_flags next \
@@ -106,8 +118,3 @@ for release_config in trunk trunk_staging; do
         RELEASE_PLATFORM_BASE_SDK_EXTENSION_VERSION=$SDK_EXT_VERSION \
         RELEASE_PLATFORM_VERSION_LAST_STABLE=$MARKETING_VERSION
 done
-
-# Apply hotfixes to anything that broke after setting the above build flags
-set_build_flags sdk_finalization \
-    RELEASE_PLATFORM_SDK_VERSION=$MAJOR \
-    RELEASE_PLATFORM_SDK_VERSION_FULL=$MAJOR.$MINOR

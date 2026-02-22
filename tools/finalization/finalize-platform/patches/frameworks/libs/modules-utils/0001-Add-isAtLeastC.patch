@@ -3,6 +3,11 @@ From: =?UTF-8?q?M=C3=A5rten=20Kongstad?= <amhk@google.com>
 Date: Fri, 23 Jan 2026 14:14:23 +0000
 Subject: [PATCH] Add isAtLeastC
 
+Add isAtLeastC as part of the Android 37.0 finalization.
+
+Bug: 480974361
+Test: N/A
+Flag: NONE platform SDK finalization
 Change-Id: Ic7807a7c0b9a60ccfca66887dedee429d82e4665
 ---
  build/include/android-modules-utils/sdk_level.h    | 3 +++

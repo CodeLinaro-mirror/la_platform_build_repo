@@ -211,13 +211,13 @@ ifeq ($(filter memtag_heap, $(my_sanitize)),)
   ifneq ($(filter arm64,$(TARGET_$(LOCAL_2ND_ARCH_VAR_PREFIX)ARCH)),)
     combined_sync_include_paths := $(MEMTAG_HEAP_SYNC_INCLUDE_PATHS) \
                                    $(PRODUCT_MEMTAG_HEAP_SYNC_INCLUDE_PATHS)
-    combined_async_include_paths := $(MEMTAG_HEAP_ASYNC_INCLUDE_PATHS) \
-                                    $(PRODUCT_MEMTAG_HEAP_ASYNC_INCLUDE_PATHS)
     combined_exclude_paths := $(MEMTAG_HEAP_EXCLUDE_PATHS) \
-                              $(PRODUCT_MEMTAG_HEAP_EXCLUDE_PATHS)
+                              $(PRODUCT_MEMTAG_HEAP_EXCLUDE_PATHS) \
+                              $(MEMTAG_HEAP_ASYNC_EXCLUDE_PATHS) \
+                              $(PRODUCT_MEMTAG_HEAP_ASYNC_EXCLUDE_PATHS) \
+                              $(PRODUCT_MEMTAG_HEAP_ASYNC_DEFAULT_EXCLUDE_PATHS)
     ifneq ($(PRODUCT_MEMTAG_HEAP_SKIP_DEFAULT_PATHS),true)
       combined_sync_include_paths += $(PRODUCT_MEMTAG_HEAP_SYNC_DEFAULT_INCLUDE_PATHS)
-      combined_async_include_paths += $(PRODUCT_MEMTAG_HEAP_ASYNC_DEFAULT_INCLUDE_PATHS)
     endif
 
     ifeq ($(strip $(foreach dir,$(subst $(comma),$(space),$(combined_exclude_paths)),\
@@ -226,8 +226,7 @@ ifeq ($(filter memtag_heap, $(my_sanitize)),)
              $(filter $(dir)%,$(LOCAL_PATH)))),)
         my_sanitize := memtag_heap $(my_sanitize)
         my_sanitize_diag := memtag_heap $(my_sanitize_diag)
-      else ifneq ($(strip $(foreach dir,$(subst $(comma),$(space),$(combined_async_include_paths)),\
-             $(filter $(dir)%,$(LOCAL_PATH)))),)
+      else
         my_sanitize := memtag_heap $(my_sanitize)
       endif
     endif

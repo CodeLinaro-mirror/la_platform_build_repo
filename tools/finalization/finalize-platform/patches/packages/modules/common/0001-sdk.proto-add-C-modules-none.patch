@@ -6,7 +6,9 @@ Subject: [PATCH] sdk.proto: add C modules (none)
 Update the list of modules with the ones added in C. (Because C did not
 introduce any modules, only add a comment saying so.)
 
+Bug: 480974361
 Test: m com.android.sdkext
+Flag: NONE platform SDK finalization
 Change-Id: Ib9925d1effcca405bec650d484a38ba0d79175c0
 ---
  proto/sdk.proto | 3 +++

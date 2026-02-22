@@ -7059,6 +7059,9 @@ $(BUILT_TARGET_FILES_PACKAGE): $(BUILT_TARGET_FILES_DIR)
 .PHONY: target-files-package
 target-files-package: $(BUILT_TARGET_FILES_PACKAGE)
 
+.PHONY: target-files-package-soong-diff-test
+target-files-package-soong-diff-test: target-files-package
+
 .PHONY: target-files-dir
 target-files-dir: $(BUILT_TARGET_FILES_DIR)
 
@@ -7475,6 +7478,7 @@ $(INTERNAL_SUPERIMAGE_DIST_TARGET): $(LPMAKE) $(BUILT_TARGET_FILES_DIR) $(BUILD_
 # Skip packing it in dist package because it is in update package.
 ifneq (true,$(BOARD_SUPER_IMAGE_IN_UPDATE_PACKAGE))
 $(call dist-for-goals,dist_files,$(INTERNAL_SUPERIMAGE_DIST_TARGET))
+$(call dist-for-goals,target-files-package-soong-diff-test,$(INTERNAL_SUPERIMAGE_DIST_TARGET))
 endif
 
 .PHONY: superimage_dist

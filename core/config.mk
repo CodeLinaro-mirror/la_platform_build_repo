@@ -789,8 +789,7 @@ endif
     PRODUCT_COMPATIBLE_PROPERTY
 
 $(KATI_obsolete_var PRODUCT_TREBLE_LINKER_NAMESPACES,This is now always true.)
-# TODO(b/307369186): restore
-# $(KATI_obsolete_var PRODUCT_ENFORCE_VINTF_MANIFEST,This is now always true.)
+$(KATI_obsolete_var PRODUCT_ENFORCE_VINTF_MANIFEST,This is now always true.)
 $(KATI_obsolete_var PRODUCT_TREBLE_LINKER_NAMESPACES_OVERRIDE,Deprecated.)
 $(KATI_obsolete_var PRODUCT_ENFORCE_VINTF_MANIFEST_OVERRIDE,Deprecated.)
 $(KATI_obsolete_var PRODUCT_FULL_TREBLE_OVERRIDE,Deprecated.)

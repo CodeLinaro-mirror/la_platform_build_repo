@@ -31,9 +31,10 @@ pub fn create_test_package_table(version: u32) -> PackageTable {
         container: String::from("mockup"),
         file_type: StorageFileType::PackageMap as u8,
         file_size: match version {
-            1 => 209,
-            2 => 233,
-            3..=4 => 236,
+            1 => 209, // 31(header)+7*4(buckets)+3*50(nodes)
+            2 => 233, // 31(header)+7*4(buckets)+3*58(nodes, +8 for fingerprint)
+            3 => 236, // 31(header)+7*4(buckets)+3*59(nodes, +1 for redaction)
+            4 => 248, // 31(header)+7*4(buckets)+3*63(nodes, +4 for int offset)
             _ => panic!("Unsupported version."),
         },
         num_packages: 3,
@@ -43,7 +44,8 @@ pub fn create_test_package_table(version: u32) -> PackageTable {
     let buckets: Vec<Option<u32>> = match version {
         1 => vec![Some(59), None, None, Some(109), None, None, None],
         2 => vec![Some(59), None, None, Some(117), None, None, None],
-        3..=4 => vec![Some(59), None, None, Some(118), None, None, None],
+        3 => vec![Some(59), None, None, Some(118), None, None, None],
+        4 => vec![Some(59), None, None, Some(122), None, None, None],
         _ => panic!("Unsupported version."),
     };
     let first_node = PackageTableNode {
@@ -59,6 +61,14 @@ pub fn create_test_package_table(version: u32) -> PackageTable {
             _ => panic!("unsupported version."),
         },
         boolean_start_index: 3,
+        int_start_index: match version {
+            1..=3 => 0,
+            // TODO(b/439864800): This is a random value now. Add test to verify
+            // the index logic and use the value matching flag map and value
+            // files.
+            4 => 6,
+            _ => panic!("unsupported version."),
+        },
         next_offset: None,
     };
     let second_node = PackageTableNode {
@@ -75,10 +85,19 @@ pub fn create_test_package_table(version: u32) -> PackageTable {
             _ => panic!("unsupported version."),
         },
         boolean_start_index: 0,
+        int_start_index: match version {
+            1..=3 => 0,
+            // TODO(b/439864800): This is a random value now. Add test to verify
+            // the index logic and use the value matching flag map and value
+            // files.
+            4 => 18,
+            _ => panic!("unsupported version."),
+        },
         next_offset: match version {
             1 => Some(159),
             2 => Some(175),
-            3..=4 => Some(177),
+            3 => Some(177),
+            4 => Some(185),
             _ => panic!("Unsupported version."),
         },
     };
@@ -96,6 +115,14 @@ pub fn create_test_package_table(version: u32) -> PackageTable {
             _ => panic!("unsupported version."),
         },
         boolean_start_index: 6,
+        int_start_index: match version {
+            1..=3 => 0,
+            // TODO(b/439864800): This is a random value now. Add test to verify
+            // the index logic and use the value matching flag map and value
+            // files.
+            4 => 29,
+            _ => panic!("unsupported version."),
+        },
         next_offset: None,
     };
     let nodes = vec![first_node, second_node, third_node];
@@ -256,7 +283,7 @@ mod tests {
 
     // Verify that the test data is in sync with the util functions defined in
     // this module. Test data can be regenerated with the following command:
-    //   aconfig-storaget generate-test-data
+    //   aconfig-storage generate-test-data
     #[test]
     fn test_test_data_consistency() {
         for version in 1..=MAX_SUPPORTED_FILE_VERSION {
