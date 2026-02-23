@@ -14,6 +14,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# finalize-platform is a tool used to finalize the platform APIs ahead of
+# release of a new Android version. The finalization process is broken down
+# into several finalize-* steps where some steps depend on earlier steps:
+#
+#     mainline_module_sdks    finalize-resources    finalize-ndk
+#              |                      |                |
+#              v                      |                |
+#     finalize-module-sdks            |                |
+#                       |             |                |
+#                       v             v                |
+#                    finalize-platform-sdk             |
+#                               |                      |
+#                               v                      v
+#                               finalize-release-configs
+#                                          |
+#                                          v
+#                                      (all done)
 set -ex
 source "$(dirname "$0")"/common.sh
 source "$(dirname "$0")"/config.sh
@@ -36,6 +53,8 @@ shift
 
 patch_dir=""
 mainline_sdks_dir=""
+build_server_target=""
+build_server_id=""
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --patch-dir)
@@ -54,6 +73,22 @@ while [[ $# -gt 0 ]]; do
             mainline_sdks_dir="$(readlink -f "$2")"
             shift 2
             ;;
+        --build-server-target)
+            if [[ -z "$2" ]]; then
+                error "--build-server-target: missing <value>"
+                exit 1
+            fi
+            build_server_target="$2"
+            shift 2
+            ;;
+        --build-server-id)
+            if [[ -z "$2" ]]; then
+                error "--build-server-id: missing <value>"
+                exit 1
+            fi
+            build_server_id="$2"
+            shift 2
+            ;;
         *)
             error "unexpected argument $1"
             exit 1
@@ -62,8 +97,8 @@ while [[ $# -gt 0 ]]; do
 done
 
 case "$command" in
+    # individual finalize steps
     finalize-module-sdks)
-        require_arg "--mainline-sdks-dir" "mainline_sdks_dir"
         source "$(dirname "$0")"/finalize-module-sdks.sh
         ;;
     finalize-resources)
@@ -77,6 +112,36 @@ case "$command" in
         ;;
     finalize-release-configs)
         source "$(dirname "$0")"/finalize-release-configs.sh
+        ;;
+
+    # finalization steps, including any previous steps
+    finalize-module-sdks-with-deps)
+        source "$(dirname "$0")"/finalize-module-sdks.sh
+        ;;
+    finalize-resources-with-deps)
+        source "$(dirname "$0")"/finalize-resources.sh
+        ;;
+    finalize-ndk-with-deps)
+        source "$(dirname "$0")"/finalize-ndk.sh
+        ;;
+    finalize-platform-sdk-with-deps)
+        source "$(dirname "$0")"/finalize-module-sdks.sh
+        source "$(dirname "$0")"/finalize-resources.sh
+        source "$(dirname "$0")"/finalize-platform-sdk.sh
+        ;;
+    finalize-release-configs-with-deps)
+        source "$(dirname "$0")"/finalize-module-sdks.sh
+        source "$(dirname "$0")"/finalize-resources.sh
+        source "$(dirname "$0")"/finalize-platform-sdk.sh
+        source "$(dirname "$0")"/finalize-ndk.sh
+        source "$(dirname "$0")"/finalize-release-configs.sh
+        ;;
+
+    # special commands
+    download-patches)
+        require_arg "--patch-dir" "patch_dir"
+        require_arg "--target" "build_server_target"
+        download_patches_to_patchdir "$patch_dir" "$build_server_target" "$build_server_id"
         ;;
     apply-patches)
         require_arg "--patch-dir" "patch_dir"

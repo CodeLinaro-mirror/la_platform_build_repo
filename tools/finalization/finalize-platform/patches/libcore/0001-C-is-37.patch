@@ -7,6 +7,7 @@ It's not a fifty-four-year-old programming language; it's not an
 element common to all known life; it's the next Android release!
 
 Bug: 480974361
+Test: N/A
 Flag: NONE platform SDK finalization
 Change-Id: I5937e316ee6e104435a0ece89175517657d7b166
 ---

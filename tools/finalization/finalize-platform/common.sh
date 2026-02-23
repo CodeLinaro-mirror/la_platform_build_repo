@@ -38,6 +38,9 @@ function error() {
 TOP="${ANDROID_BUILD_TOP:-$(dirname "${BASH_SOURCE[0]}")/../../../../..}"
 export ANDROID_BUILD_TOP="$TOP"
 
+# The build server sets DIST_DIR, use a sane default for local builds
+export DIST_DIR=${DIST_DIR:-$TOP/out/dist}
+
 # Directory that holds the static patches that are included in this script (in
 # contrast to the user supplied --patch-dir directory that is used to
 # dynamically create or apply patches)
@@ -64,6 +67,7 @@ declare -a PROJECTS
 PROJECTS+=(build/release)
 PROJECTS+=(build/soong)
 PROJECTS+=(cts)
+PROJECTS+=(development)
 PROJECTS+=(frameworks/base)
 PROJECTS+=(frameworks/libs/modules-utils)
 PROJECTS+=(libcore)
@@ -123,6 +127,36 @@ function git_commit() {
     fi
     git add .
     git commit -F -
+    popd
+}
+
+# Fetch patches from a completed job on the build server
+#
+# $1: path to directory in which to store the patch files
+# $2: build target on the build server, e.g. finalize-ndk
+# $3: (optional) build server job ID; if not provided defaults to the latest
+#     known good build
+function download_patches_to_patchdir() {
+    local patch_dir="$1"
+    local build_server_target="$2"
+    local build_server_id="$3"
+
+    if [[ -z "$build_server_id" ]]; then
+        build_server_id="$(/google/bin/releases/android/ab/ab.par \
+            green_cl \
+            --branch git_main-sdk_finalization-release \
+            --target $build_server_target \
+            --custom_raw_format='{o[buildId]}')"
+    fi
+
+    mkdir -p $patch_dir
+    pushd "$patch_dir"
+    /google/bin/releases/android/fetch_artifact/fetch_artifact.par \
+        --parallelism 8 \
+        --preserve_directory_structure \
+        --bid $build_server_id \
+        --target $build_server_target \
+        'patches/**/*'
     popd
 }
 
@@ -269,5 +303,9 @@ function set_build_flags() {
     build-flag --quiet --release=$release_config set --dir $project $@
     git_commit $project <<EOF
 $release_config: update SDK related build flag(s)
+
+Bug: $BUG
+Test: N/A
+Flag: NONE platform SDK finalization
 EOF
 }

@@ -273,13 +273,43 @@ _product_list_vars += PRODUCT_HWASAN_INCLUDE_PATHS
 _product_list_vars += PRODUCT_HWASAN_EXCLUDE_PATHS
 
 # Whether any paths should have Memtag_heap enabled for components
-_product_list_vars += PRODUCT_MEMTAG_HEAP_ASYNC_INCLUDE_PATHS
-_product_list_vars += PRODUCT_MEMTAG_HEAP_ASYNC_DEFAULT_INCLUDE_PATHS
+ifneq ($(strip $(PRODUCT_MEMTAG_HEAP_ASYNC_DEFAULT_INCLUDE_PATHS)),)
+  $(info ############################################################################)
+  $(info # ERROR: Deprecated MTE Variable)
+  $(info #)
+  $(info # All processes are now built with MTE ELF notes by default.)
+  $(info #)
+  $(info # 'PRODUCT_MEMTAG_HEAP_ASYNC_DEFAULT_INCLUDE_PATHS' is no longer supported.)
+  $(info #)
+  $(info # ACTION REQUIRED:)
+  $(info # Change your paths to 'PRODUCT_MEMTAG_HEAP_ASYNC_DEFAULT_EXCLUDE_PATHS')
+  $(info # for any processes that should NOT have MTE enabled.)
+  $(info ############################################################################)
+  $(error Build stopped due to deprecated MTE configuration variable)
+endif
+
+ifneq ($(strip $(PRODUCT_MEMTAG_HEAP_ASYNC_INCLUDE_PATHS)),)
+  $(info ############################################################################)
+  $(info # ERROR: Deprecated MTE Variable)
+  $(info #)
+  $(info # All processes are now built with MTE ELF notes by default.)
+  $(info #)
+  $(info # 'PRODUCT_MEMTAG_HEAP_ASYNC_INCLUDE_PATHS' is no longer supported.)
+  $(info #)
+  $(info # ACTION REQUIRED:)
+  $(info # Change your paths to 'PRODUCT_MEMTAG_HEAP_ASYNC_EXCLUDE_PATHS')
+  $(info # for any processes that should NOT have MTE enabled.)
+  $(info ############################################################################)
+  $(error Build stopped due to deprecated MTE configuration variable)
+endif
+
+_product_list_vars += PRODUCT_MEMTAG_HEAP_ASYNC_EXCLUDE_PATHS
+_product_list_vars += PRODUCT_MEMTAG_HEAP_ASYNC_DEFAULT_EXCLUDE_PATHS
 _product_list_vars += PRODUCT_MEMTAG_HEAP_SYNC_INCLUDE_PATHS
 _product_list_vars += PRODUCT_MEMTAG_HEAP_SYNC_DEFAULT_INCLUDE_PATHS
 _product_list_vars += PRODUCT_MEMTAG_HEAP_EXCLUDE_PATHS
 
-# Whether this product wants to start with an empty list of default memtag_heap include paths
+# Whether this product wants to start with an empty list of default memtag_heap exclude paths
 _product_single_value_vars += PRODUCT_MEMTAG_HEAP_SKIP_DEFAULT_PATHS
 
 # Whether the Scudo hardened allocator is disabled platform-wide

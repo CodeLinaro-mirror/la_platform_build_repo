@@ -8,6 +8,9 @@ Fix the following error:
   ERROR: [...]/packages/apps/Settings/src/com/android/settings/bluetooth/DeviceListPreferenceFragment.kt:345:16 \
          Only safe (?.) or non-null asserted (!!.) calls are allowed on a nullable receiver of type 'BluetoothLeScanner?'.
 
+Bug: 480974361
+Test: N/A
+Flag: NONE platform SDK finalization
 Change-Id: I0e7c2552b71ad032c097ee4112bc2d862d2dda1f
 ---
  .../android/settings/bluetooth/DeviceListPreferenceFragment.kt  | 2 +-

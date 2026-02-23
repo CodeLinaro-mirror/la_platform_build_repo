@@ -94,7 +94,7 @@ mod tests {
         let value_offset = flag_value_list.header.int_value_offset;
         let mut content = flag_value_list.into_bytes();
 
-        let flag_value: i32 = 99;
+        let flag_value: i64 = 99;
         for i in 0..flag_value_list.header.num_int_flags {
             let offset = (value_offset + (i * 8)) as usize;
             update_int64_flag_value(&mut content, i, flag_value).unwrap();

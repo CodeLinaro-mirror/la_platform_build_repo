@@ -34,6 +34,7 @@ PRODUCT_PACKAGES += \
     android.test.runner \
     apexd \
     apexd.mainline_patch_level_2 \
+    app-lock-exempt.xml \
     appops \
     app_process \
     appwidget \
@@ -260,7 +261,6 @@ PRODUCT_PACKAGES += \
     platform.xml \
     pm \
     prefetch \
-    preinstalled-packages-app-lock-exempt.xml \
     preinstalled-packages-asl-files.xml \
     preinstalled-packages-platform.xml \
     preinstalled-packages-strict-signature.xml \

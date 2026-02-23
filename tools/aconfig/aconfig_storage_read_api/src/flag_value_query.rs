@@ -78,7 +78,7 @@ mod tests {
     #[cfg(enable_parse_v4)]
     fn test_int32_flag_value_query() {
         let flag_value_list = create_test_flag_value_list(4).into_bytes();
-        let baseline: Vec<i32> = vec![0, 1, 2, 3, 4, 5, 6, 7];
+        let baseline: Vec<i64> = vec![0, 1, 2, 3, 4, 5, 6, 7];
         for (offset, expected_value) in baseline.into_iter().enumerate() {
             let flag_value = find_int64_flag_value(&flag_value_list[..], offset as u32).unwrap();
             assert_eq!(flag_value, expected_value);
@@ -100,7 +100,7 @@ mod tests {
     // this test point locks down query beyond the end of int64 section
     fn test_int64_out_of_range() {
         let flag_value_list = create_test_flag_value_list(4).into_bytes();
-        let error = find_int32_flag_value(&flag_value_list[..], 8).unwrap_err();
+        let error = find_int64_flag_value(&flag_value_list[..], 8).unwrap_err();
         assert!(format!("{:?}", error).starts_with(
             "InvalidStorageFileOffset(Flag value offset goes beyond the end of the file."
         ));

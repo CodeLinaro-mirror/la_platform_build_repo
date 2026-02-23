@@ -1,4 +1,4 @@
-From 09e1adac54a843ad51b5f967120247b57d4ae0cf Mon Sep 17 00:00:00 2001
+From 1a476e9c0e892ec26380f0d9d5894093b7e623c1 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?M=C3=A5rten=20Kongstad?= <amhk@google.com>
 Date: Fri, 23 Jan 2026 14:22:35 +0000
 Subject: [PATCH 2/3] SdkExtensions: introduce C extension
@@ -7,6 +7,7 @@ Note: no new modules opted in to SDK extensions as part of C.
 
 Bug: 480974361
 Test: atest CtsSdkExtensionsTestCases
+Flag: NONE platform SDK finalization
 Change-Id: I39203993e81473c23bfdf4b508706a5953b06b08
 ---
  java/android/os/ext/SdkExtensions.java              |  9 +++++++++
@@ -106,5 +107,5 @@ index 9847f5327ff..85ae7a5d497 100644
      public void testExtensionAdServices() throws Exception {
          int adServicesVersion = SdkExtensions.getExtensionVersion(AD_SERVICES);
 -- 
-2.53.0.rc2.204.g2597b5adb4-goog
+2.53.0.273.g2a3d683680-goog
 
