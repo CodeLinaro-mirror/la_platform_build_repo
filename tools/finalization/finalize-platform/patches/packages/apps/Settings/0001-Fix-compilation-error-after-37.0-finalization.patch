@@ -1,6 +1,6 @@
-From de379f1ad42a0ef6505f92123a1b6cfa6018bb9c Mon Sep 17 00:00:00 2001
+From d6b1c20af88955ec03713bd8cf7041740286db45 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?M=C3=A5rten=20Kongstad?= <amhk@google.com>
-Date: Fri, 30 Jan 2026 08:45:53 +0000
+Date: Thu, 19 Feb 2026 20:04:59 +0000
 Subject: [PATCH] Fix compilation error after 37.0 finalization
 
 Fix the following error:
@@ -11,7 +11,7 @@ Fix the following error:
 Bug: 480974361
 Test: N/A
 Flag: NONE platform SDK finalization
-Change-Id: I0e7c2552b71ad032c097ee4112bc2d862d2dda1f
+Change-Id: I57e970528f58ebee7d0155836ed9662edbdbb22b
 ---
  .../android/settings/bluetooth/DeviceListPreferenceFragment.kt  | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
@@ -30,5 +30,5 @@ index 2153348df82..f6661729d4d 100644
  
      private fun stopLeScanning() {
 -- 
-2.53.0.rc1.225.gd81095ad13-goog
+2.53.0.345.g96ddfc5eaa-goog
 

@@ -137,6 +137,10 @@ case "$command" in
         source "$(dirname "$0")"/finalize-release-configs.sh
         ;;
 
+    re-finalize-platform-sdk-with-deps)
+        source "$(dirname "$0")"/re-finalize-platform-sdk-with-deps.sh
+        ;;
+
     # special commands
     download-patches)
         require_arg "--patch-dir" "patch_dir"

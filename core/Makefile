@@ -7946,8 +7946,10 @@ $(PACK_IMAGE_TARGET): $(PACK_IMAGE_DEPS)
 
 PACKED_IMAGE_ARCHIVE_TARGET := $(PACK_IMAGE_TARGET).gz
 
+# We force stdout redirection (-c) rather than using the keep flag (-fk).
+# To prevent appending extraneous data/garbage to the file.
 $(PACKED_IMAGE_ARCHIVE_TARGET): $(PACK_IMAGE_TARGET) | $(GZIP)
-	$(GZIP) -fk $(PACK_IMAGE_TARGET)
+	$(GZIP) -c $(PACK_IMAGE_TARGET) > $@
 
 $(call dist-for-goals,dist_files,$(PACKED_IMAGE_ARCHIVE_TARGET))
 

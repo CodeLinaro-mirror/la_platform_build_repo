@@ -352,24 +352,32 @@ pub fn list_flags(
     let flag_table = FlagTable::from_bytes(&read_file_to_bytes(flag_map)?)?;
     let flag_value_list = FlagValueList::from_bytes(&read_file_to_bytes(flag_val)?)?;
 
-    let mut package_info = vec![("", 0); package_table.header.num_packages as usize];
+    let mut package_info = vec![("", 0, 0); package_table.header.num_packages as usize];
     for node in package_table.nodes.iter() {
-        package_info[node.package_id as usize] = (&node.package_name, node.boolean_start_index);
+        package_info[node.package_id as usize] =
+            (&node.package_name, node.boolean_start_index as usize, node.int_start_index as usize);
     }
 
     let mut flags = Vec::new();
     for node in flag_table.nodes.iter() {
-        let (package_name, boolean_start_index) = package_info[node.package_id as usize];
-        let flag_index = boolean_start_index + node.flag_index as u32;
-        let flag_value = flag_value_list.booleans[flag_index as usize];
+        let (package_name, boolean_start_index, int_start_index) =
+            package_info[node.package_id as usize];
+        let node_flag_index = node.flag_index as usize;
+        let flag_value = match FlagValueType::try_from(node.flag_type)? {
+            FlagValueType::Boolean => {
+                flag_value_list.booleans[boolean_start_index + node_flag_index].to_string()
+            }
+            FlagValueType::Int64 => {
+                flag_value_list.ints[int_start_index + node_flag_index].to_string()
+            }
+        };
+
         flags.push(FlagValueSummary {
             package_name: String::from(package_name),
             flag_name: node.flag_name.clone(),
-            flag_value: flag_value.to_string(),
+            flag_value: flag_value,
             value_type: node.flag_type,
         });
-
-        // TODO(b/439864800): Add support to list int flags.
     }
 
     flags.sort_by(|v1, v2| match v1.package_name.cmp(&v2.package_name) {
@@ -403,17 +411,31 @@ pub fn list_flags_with_info(
     let flag_value_list = FlagValueList::from_bytes(&read_file_to_bytes(flag_val)?)?;
     let flag_info = FlagInfoList::from_bytes(&read_file_to_bytes(flag_info)?)?;
 
-    let mut package_info = vec![("", 0); package_table.header.num_packages as usize];
+    let mut package_info = vec![("", 0, 0); package_table.header.num_packages as usize];
     for node in package_table.nodes.iter() {
-        package_info[node.package_id as usize] = (&node.package_name, node.boolean_start_index);
+        package_info[node.package_id as usize] =
+            (&node.package_name, node.boolean_start_index as usize, node.int_start_index as usize);
     }
 
     let mut flags = Vec::new();
     for node in flag_table.nodes.iter() {
-        let (package_name, boolean_start_index) = package_info[node.package_id as usize];
-        let flag_index = boolean_start_index + node.flag_index as u32;
-        let flag_value = flag_value_list.booleans[flag_index as usize];
-        let flag_attribute = flag_info.nodes[flag_index as usize].attributes;
+        let (package_name, boolean_start_index, int_start_index) =
+            package_info[node.package_id as usize];
+        let node_flag_index = node.flag_index as usize;
+        let (flag_value, flag_attribute) = match FlagValueType::try_from(node.flag_type)? {
+            FlagValueType::Boolean => {
+                let index = boolean_start_index + node_flag_index;
+                let val = flag_value_list.booleans[index].to_string();
+                let attr = flag_info.boolean_nodes[index].attributes;
+                (val, attr)
+            }
+            FlagValueType::Int64 => {
+                let index = int_start_index + node_flag_index;
+                let val = flag_value_list.ints[index].to_string();
+                let attr = flag_info.int_nodes[index].attributes;
+                (val, attr)
+            }
+        };
         flags.push(FlagValueAndInfoSummary {
             package_name: String::from(package_name),
             flag_name: node.flag_name.clone(),
@@ -423,8 +445,6 @@ pub fn list_flags_with_info(
             has_server_override: flag_attribute & (FlagInfoBit::HasServerOverride as u8) != 0,
             has_local_override: flag_attribute & (FlagInfoBit::HasLocalOverride as u8) != 0,
         });
-
-        // TODO(b/439864800): Add support to list int flags.
     }
 
     flags.sort_by(|v1, v2| match v1.package_name.cmp(&v2.package_name) {
@@ -566,6 +586,9 @@ mod tests {
         create_test_flag_info_list, create_test_flag_table, create_test_flag_value_list,
         create_test_package_table, write_bytes_to_temp_file,
     };
+
+    // TODO(b/439864800): Extend test_list_flag() and test_list_flag_with_info() to
+    // verify v4 storage.
 
     #[test]
     // this test point locks down the flag list api

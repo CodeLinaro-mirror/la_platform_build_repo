@@ -115,7 +115,7 @@ impl FlagValueHeader {
             4 if cfg!(enable_parse_v4) => Self::from_bytes_v4(bytes, version_from_bytes, &mut head),
             _ => {
                 return Err(AconfigStorageError::HigherStorageFileVersion(anyhow!(
-                    "Cannot read storage file with a higher version of {} with lib max version {}",
+                    "Cannot read storage file with a higher version of {} with lib version {}",
                     version_from_bytes,
                     MAX_SUPPORTED_FILE_VERSION
                 )))
@@ -193,7 +193,7 @@ impl FlagValueHeader {
             }
             _ => {
                 return Err(AconfigStorageError::HigherStorageFileVersion(anyhow!(
-                    "Cannot read storage file with a higher version of {} with lib max version {}",
+                    "Cannot read storage file with a higher version of {} with lib version {}",
                     self.version,
                     MAX_SUPPORTED_FILE_VERSION
                 )))
