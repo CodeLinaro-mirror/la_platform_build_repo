@@ -1,6 +1,6 @@
-From f69a244138a39c8f72788899a3fe58f16c658478 Mon Sep 17 00:00:00 2001
+From 3077120db7c34c86f3bf124caf3890c653eba6c6 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?M=C3=A5rten=20Kongstad?= <amhk@google.com>
-Date: Fri, 23 Jan 2026 12:56:02 +0000
+Date: Thu, 19 Feb 2026 20:05:00 +0000
 Subject: [PATCH 3/3] sdk-extensions-info.xml: add the C SDK extensions (C-ext)
 
 Introduce the <sdk> tag for the C SDK extensions, update existing
@@ -19,7 +19,7 @@ Bug: 397646538
 Bug: 480974361
 Test: atest sdk-extensions-info-test
 Flag: NONE platform SDK finalization
-Change-Id: I9fdb81ee679dc6f685f80eddfbd0fb7841fa210d
+Change-Id: I6b7f5fdf42f3f4cc725463db36623bf6bda89d12
 ---
  sdk-extensions-info.xml | 177 ++++++++++++++++++++--------------------
  1 file changed, 89 insertions(+), 88 deletions(-)
@@ -482,5 +482,5 @@ index 37351f9d397..bea2f3029c1 100644
  
  </sdk-extensions-info>
 -- 
-2.53.0.273.g2a3d683680-goog
+2.53.0.345.g96ddfc5eaa-goog
 

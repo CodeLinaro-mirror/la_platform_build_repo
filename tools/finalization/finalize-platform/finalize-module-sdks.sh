@@ -44,3 +44,17 @@ Test: N/A
 Flag: NONE platform SDK finalization
 EOF
 done
+
+# hotfix to fix broken build
+apply_patches \
+    cts \
+    "$BUNDLED_PATCHES"/cts/0001-Fix-compilation-error-after-37.0-finalization.patch
+apply_patches \
+    packages/modules/Permission \
+    "$BUNDLED_PATCHES"/packages/modules/Permission/0001-Fix-compilation-error-after-37.0-finalization.patch
+apply_patches \
+    packages/apps/Settings \
+    "$BUNDLED_PATCHES"/packages/apps/Settings/0001-Fix-compilation-error-after-37.0-finalization.patch
+apply_patches \
+    frameworks/opt/net/wifi \
+    "$BUNDLED_PATCHES/frameworks/opt/net/wifi/0001-Fix-errorprone-build-after-SDK-ext-22.patch"

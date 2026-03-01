@@ -859,7 +859,8 @@ namespace com::android::aconfig::test {
                     }
 
                     if (!fingerprint_matches_) {
-                        ALOGI("error: package fingerprint mismtach for package com.android.aconfig.test, returning flag default value.");
+                        // TODO (b/480204891)
+                        // ALOGI("error: package fingerprint mismatch for package com.android.aconfig.test, returning flag default value.");
                         return false;
                     }
 
@@ -885,7 +886,8 @@ namespace com::android::aconfig::test {
 
 
                     if (!fingerprint_matches_) {
-                      ALOGI("error: package fingerprint mismtach for package com.android.aconfig.test, returning flag default value.");
+                      // TODO (b/480204891)
+                      // ALOGI("error: package fingerprint mismatch for package com.android.aconfig.test, returning flag default value.");
                       return false;
                     }
 
@@ -911,7 +913,8 @@ namespace com::android::aconfig::test {
 
 
                     if (!fingerprint_matches_) {
-                      ALOGI("error: package fingerprint mismtach for package com.android.aconfig.test, returning flag default value.");
+                      // TODO (b/480204891)
+                      // ALOGI("error: package fingerprint mismatch for package com.android.aconfig.test, returning flag default value.");
                       return false;
                     }
 
@@ -953,7 +956,8 @@ namespace com::android::aconfig::test {
 
 
                     if (!fingerprint_matches_) {
-                      ALOGI("error: package fingerprint mismtach for package com.android.aconfig.test, returning flag default value.");
+                      // TODO (b/480204891)
+                      // ALOGI("error: package fingerprint mismatch for package com.android.aconfig.test, returning flag default value.");
                       return true;
                     }
 

@@ -231,13 +231,36 @@ pub fn create_test_flag_info_list(version: u32) -> FlagInfoList {
         version,
         container: String::from("mockup"),
         file_type: StorageFileType::FlagInfo as u8,
-        file_size: 35,
-        num_flags: 8,
-        boolean_flag_offset: 27,
+        file_size: match version {
+            1..=3 => 35,
+            4 => 51,
+            _ => panic!("Unsupported version."),
+        },
+        num_boolean_flags: 8,
+        boolean_flag_offset: match version {
+            1..=3 => 27,
+            4 => 35,
+            _ => panic!("Unsupported version."),
+        },
+        num_int_flags: match version {
+            1..=3 => 0,
+            4 => 8,
+            _ => panic!("Unsupported version."),
+        },
+        int_flag_offset: match version {
+            1..=3 => 0,
+            4 => 43, // boolean_flag_offset + num_boolean_flags
+            _ => panic!("Unsupported version."),
+        },
     };
     let is_flag_rw = [true, false, true, true, false, false, false, true];
-    let nodes = is_flag_rw.iter().map(|&rw| FlagInfoNode::create(rw)).collect();
-    FlagInfoList { header, nodes }
+    let boolean_info = is_flag_rw.iter().map(|&rw| FlagInfoNode::create(rw)).collect();
+    let int_info = match version {
+        1..=3 => vec![],
+        4 => is_flag_rw.iter().map(|&rw| FlagInfoNode::create(rw)).collect(),
+        _ => panic!("Unsupported version."),
+    };
+    FlagInfoList { header, boolean_nodes: boolean_info, int_nodes: int_info }
 }
 
 pub fn write_bytes_to_temp_file(bytes: &[u8]) -> Result<NamedTempFile, AconfigStorageError> {

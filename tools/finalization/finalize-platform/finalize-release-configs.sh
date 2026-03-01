@@ -90,18 +90,6 @@ apply_patches \
     "$BUNDLED_PATCHES"/tools/platform-compat/0001-C-is-37.patch
 
 # Set codename to REL and other build flags
-# (build-flag doesn't allow unsetting flag values, so remove it explicitly. FIXME: hard-codes cp2a as next)
-rm $TOP/vendor/google_shared/build/release/flag_values/cp2a/RELEASE_PLATFORM_PROSPECTIVE_SDK_VERSION_FULL.textproto
-git_commit \
-    vendor/google_shared/build/release \
-<<EOF
-next: do not set PROSPECTIVE_SDK_VERSION_FULL
-
-Bug: $BUG
-Test: N/A
-Flag: NONE platform SDK finalization
-EOF
-
 set_build_flags next \
     RELEASE_PLATFORM_SDK_VERSION_FULL=$MAJOR.$MINOR \
     RELEASE_PLATFORM_SDK_VERSION=$MAJOR \
