@@ -47,7 +47,31 @@ Flag: NONE platform SDK finalization
 EOF
 fi
 
-# TODO: mainline sdk
+# mainline sdk
+if [[ -z "$mainline_sdks_dir" ]]; then
+    TARGET_RELEASE=sdk_finalization TARGET_BUILD_VARIANT=userdebug UNBUNDLED_BUILD_SDKS_FROM_SOURCE=true vendor/google/build/mainline_modules_sdks.sh --build-release next
+    mainline_sdks_dir="$DIST_DIR"
+fi
+
+m unpack-module-sdks
+projects="$(unpack-module-sdks \
+    --mainline-sdks-top "$mainline_sdks_dir" \
+    --android-top "$TOP" \
+    --sdk-ext-version $SDK_EXT_VERSION)"
+
+for project in $projects; do
+    git_commit \
+        $project \
+<<EOF
+Re-finalize SDK extension $SDK_EXT_VERSION
+
+Import module SDK artifacts from ab/$BUILD_NUMBER.
+
+Bug: $BUG
+Test: N/A
+Flag: NONE platform SDK finalization
+EOF
+done
 
 # platform sdk
 set_prospective_sdk_version_full "$MAJOR.$MINOR"
