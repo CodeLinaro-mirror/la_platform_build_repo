@@ -144,7 +144,7 @@ case "$command" in
     # special commands
     download-patches)
         require_arg "--patch-dir" "patch_dir"
-        require_arg "--target" "build_server_target"
+        require_arg "--build-server-target" "build_server_target"
         download_patches_to_patchdir "$patch_dir" "$build_server_target" "$build_server_id"
         ;;
     apply-patches)
