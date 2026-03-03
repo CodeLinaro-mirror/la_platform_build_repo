@@ -19,8 +19,7 @@ import signal
 import sys
 import tempfile
 
-from edit_monitor import daemon_manager
-from edit_monitor import edit_monitor
+from edit_monitor import daemon_manager, edit_monitor
 
 
 def create_arg_parser():
@@ -73,6 +72,14 @@ def create_arg_parser():
       ),
   )
 
+  parser.add_argument(
+      '--ignore_file_pattern',
+      action='append',
+      dest='ignore_file_patterns',
+      type=str,
+      help='Patterns to ignore. Can be specified multiple times.',
+  )
+
   return parser
 
 
@@ -107,7 +114,12 @@ def main(argv: list[str]):
   dm = daemon_manager.DaemonManager(
       binary_path=argv[0],
       daemon_target=edit_monitor.start,
-      daemon_args=(args.path, args.dry_run, args.target_repo),
+      daemon_args=(
+          args.path,
+          args.dry_run,
+          args.target_repo,
+          args.ignore_file_patterns,
+      ),
       target_repo=args.target_repo,
   )
 
