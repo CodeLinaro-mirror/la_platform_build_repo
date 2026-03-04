@@ -186,13 +186,13 @@ android_system_image {
     deps: [
         // handheld_system_ext
         "AccessibilityMenu",
+        "AvatarPicker",
         "WallpaperCropper",
 
         // telephony_system_ext
         "EmergencyInfo",
 
         // handheld_product
-        "AvatarPicker",
         "Calendar",
         "Contacts",
         "DeskClock",

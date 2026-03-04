@@ -62,7 +62,7 @@ while [[ $# -gt 0 ]]; do
                 error "--patch-dir: missing <value>"
                 exit 1
             fi
-            patch_dir="$(readlink -f "$2")"
+            patch_dir="$(readlink -m "$2")"
             shift 2
             ;;
         --mainline-sdks-dir)

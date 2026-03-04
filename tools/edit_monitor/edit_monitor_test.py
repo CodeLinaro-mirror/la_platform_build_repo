@@ -403,6 +403,43 @@ class EditMonitorTest(unittest.TestCase):
     logged_events = self._get_logged_events()
     self.assertEqual(len(logged_events), 0)
 
+  def test_do_not_log_edit_event_for_ignored_file_patterns(self):
+    # Create the .git file under the monitoring dir.
+    self.root_monitoring_path.joinpath('.git').touch()
+    test_dir = self.root_monitoring_path.joinpath('test')
+    test_dir.mkdir()
+    fake_cclient = FakeClearcutClient(
+        log_output_file=self.log_event_dir.joinpath('logs.output')
+    )
+    p = self._start_test_edit_monitor_process(
+        fake_cclient, ignore_patterns=['*.log', 'test*']
+    )
+
+    # Create ignored files.
+    test_dir.joinpath('foo.log').touch()
+    test_dir.joinpath('test.txt').touch()
+    # Create a non-ignored file.
+    test_dir.joinpath('tes.txt').touch()
+
+    # Give some time for the edit monitor to receive the edit event.
+    time.sleep(1)
+    # Stop the edit monitor and flush all events.
+    os.kill(p.pid, signal.SIGINT)
+    p.join()
+
+    logged_events = self._get_logged_events()
+    self.assertEqual(len(logged_events), 1)
+    expected_create_event = edit_event_pb2.EditEvent.SingleEditEvent(
+        file_path=str(test_dir.joinpath('tes.txt').resolve()),
+        edit_type=edit_event_pb2.EditEvent.CREATE,
+    )
+    self.assertEqual(
+        expected_create_event,
+        edit_event_pb2.EditEvent.FromString(
+            logged_events[0].source_extension
+        ).single_edit_event,
+    )
+
   def test_log_edit_event_fail(self):
     # Create the .git file under the monitoring dir.
     self.root_monitoring_path.joinpath('.git').touch()
@@ -426,7 +463,7 @@ class EditMonitorTest(unittest.TestCase):
     self.assertEqual(len(logged_events), 0)
 
   def _start_test_edit_monitor_process(
-      self, cclient, target_repo='android'
+      self, cclient, target_repo='android', ignore_patterns=None
   ) -> multiprocessing.Process:
     receiver, sender = multiprocessing.Pipe()
     # Start edit monitor in a subprocess.
@@ -436,6 +473,7 @@ class EditMonitorTest(unittest.TestCase):
             str(self.root_monitoring_path.resolve()),
             False,
             target_repo,
+            ignore_patterns,
             0.5,
             5,
             cclient,

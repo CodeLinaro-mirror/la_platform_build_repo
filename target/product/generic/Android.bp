@@ -411,6 +411,11 @@ android_filesystem_defaults {
             "appfunctions.extension.xml",
         ],
         default: [],
+    }) + select(release_flag("RELEASE_DISABLE_WIFICOND"), {
+        true: [],
+        default: [
+            "wificond",
+        ],
     }),
 }
 
@@ -714,7 +719,6 @@ system_image_defaults {
         "vr", // handheld_system
         "watchdogd", // base_system
         "wifi.rc", // base_system
-        "wificond", // base_system
         "wm", // base_system
     ] + select(release_flag("RELEASE_NATIVE_OMAPI"), {
         true: [
@@ -806,6 +810,12 @@ system_image_defaults {
         default: [
             "mediametrics", // base_system (RELEASE_MEDIAMETRICS_MODULE)
         ],
+    }) + select(release_flag("RELEASE_DEPRECATE_RUNTIME_APEX"), {
+        true: [
+            "linkerconfig", // base_system
+        ],
+        default: [
+        ],
     }),
     multilib: {
         common: {
@@ -886,7 +896,6 @@ system_image_defaults {
                 "com.android.mediadrm.signer", // media_system
                 "com.android.nfc_extras", // ok
                 "com.android.nfcservices", // base_system (RELEASE_PACKAGE_NFC_STACK != NfcNci)
-                "com.android.runtime", // ok
                 "dex_bootjars",
                 "ext", // from runtime_libart
                 "framework-graphics", // base_system
@@ -910,6 +919,7 @@ system_image_defaults {
                 "system_compatibility_matrix.xml", //base_system
                 "telephony-common", // libs from TeleService
                 "voip-common", // base_system
+                "wificond_compat_symlink_module", // base_system
             ] + select(release_flag("RELEASE_NATIVE_OMAPI"), {
                 true: [],
                 default: [
@@ -998,6 +1008,12 @@ system_image_defaults {
                 ],
                 default: [
                     "TelephonyProvider", // handheld_system
+                ],
+            }) + select(release_flag("RELEASE_DEPRECATE_RUNTIME_APEX"), {
+                true: [
+                ],
+                default: [
+                    "com.android.runtime", // base_system
                 ],
             }),
         },
@@ -1139,6 +1155,12 @@ system_image_defaults {
                     "libandroid_native_denylist", // base_system (RELEASE_NATIVE_FRAMEWORK_PROTOTYPE)
                 ],
                 default: [],
+            }) + select(release_flag("RELEASE_DEPRECATE_RUNTIME_APEX"), {
+                true: [
+                    "crash_dump", // base_system
+                ],
+                default: [
+                ],
             }),
         },
     },

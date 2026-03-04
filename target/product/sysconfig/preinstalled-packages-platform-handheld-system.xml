@@ -106,6 +106,17 @@
         <install-in user-type="android.os.usertype.profile.CLONE" />
     </install-in-user-type>
 
+    <!-- Manages CBRS and other opportunistic networks (OpportunisticNetworkService) -->
+    <install-in-user-type package="com.android.ons">
+        <!-- Needed for system services -->
+        <install-in user-type="SYSTEM" />
+        <!-- Needed for all interactive users -->
+        <install-in user-type="FULL" />
+        <!-- Needed for profiles that manage their own network connections -->
+        <install-in user-type="android.os.usertype.profile.MANAGED" />
+        <install-in user-type="android.os.usertype.profile.PRIVATE" />
+    </install-in-user-type>
+
     <!-- Shared storage backup agent used by adb backup (SharedStorageBackup) -->
     <install-in-user-type package="com.android.sharedstoragebackup">
         <install-in user-type="FULL" />

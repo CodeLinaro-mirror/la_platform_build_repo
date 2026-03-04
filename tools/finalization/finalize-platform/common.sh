@@ -213,18 +213,24 @@ function apply_patches() {
 # $1: path to directory of patches
 function apply_patches_from_patchdir() {
     local patch_dir="$1"
-    if [[ $(find $patch_dir -type f | wc -l) -gt 0 ]]; then
-        for absolute_project_path in $(find $patch_dir -type f | xargs dirname | sort -u); do
-            relative_project_path="${absolute_project_path#$patch_dir/}"
-            # Hack to remove stray patches/ folder. NOOP if there isn't one
-            project="${relative_project_path#patches/}"
-            apply_patches \
-                "$project" \
-                $(find "$absolute_project_path" -name "*.patch" | sort)
-        done
-    else
-        info "nothing to do: no patches found in $patch_dir"
+    if [[ ! -d "$patch_dir" ]]; then
+        info "nothing to do: patch directory does not exist: $patch_dir"
+        return
     fi
+
+    if [[ $(find "$patch_dir" -type f | wc -l) -eq 0 ]]; then
+        info "nothing to do: no patches found in $patch_dir"
+        return
+    fi
+
+    for absolute_project_path in $(find "$patch_dir" -type f | xargs dirname | sort -u); do
+        relative_project_path="${absolute_project_path#$patch_dir/}"
+        # Hack to remove stray patches/ folder. NOOP if there isn't one
+        project="${relative_project_path#patches/}"
+        apply_patches \
+            "$project" \
+            $(find "$absolute_project_path" -name "*.patch" | sort)
+    done
 }
 
 # Prepare the Android tree for git write operations (needed if running on the

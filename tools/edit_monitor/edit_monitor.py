@@ -46,8 +46,11 @@ class ClearcutEventHandler(PatternMatchingEventHandler):
       is_dry_run: bool = False,
       cclient: clearcut_client.Clearcut | None = None,
       target_repo: str = "android",
+      ignore_patterns: list[str] | None = None,
   ):
-    super().__init__(patterns=["*"], ignore_directories=True)
+    super().__init__(
+        patterns=["*"], ignore_patterns=ignore_patterns, ignore_directories=True
+    )
     self.root_monitoring_path = path
     self.flush_interval_sec = flush_interval_sec
     self.single_events_size_threshold = single_events_size_threshold
@@ -194,6 +197,7 @@ def start(
     path: str,
     is_dry_run: bool = False,
     target_repo: str = 'android',
+    ignore_patterns: list[str] | None = None,
     flush_interval_sec: int = DEFAULT_FLUSH_INTERVAL_SECONDS,
     single_events_size_threshold: int = DEFAULT_SINGLE_EVENTS_SIZE_THRESHOLD,
     cclient: clearcut_client.Clearcut | None = None,
@@ -216,6 +220,7 @@ def start(
       is_dry_run,
       cclient,
       target_repo,
+      ignore_patterns=ignore_patterns,
   )
   observer = Observer()
 
