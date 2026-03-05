@@ -404,7 +404,13 @@ ifeq ($(RELEASE_WEBAPP_MODULE),true)
        default-permissions-webapp.xml
 endif
 
-ifneq ($(RELEASE_MEDIAMETRICS_MODULE),true)
+# include in framework regardless of flag, so that we have overlap
+# while moving from framework to module in the event of a module mismatch.
+# the relevant mediametrics.*rc files properly handle presence of both.
+ifeq ($(RELEASE_MEDIAMETRICS_MODULE),true)
+    PRODUCT_PACKAGES += \
+        mediametrics
+else
     PRODUCT_PACKAGES += \
         mediametrics
 endif

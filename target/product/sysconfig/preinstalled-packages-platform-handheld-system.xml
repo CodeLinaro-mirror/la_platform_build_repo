@@ -180,4 +180,12 @@
     <install-in-user-type package="com.android.traceur">
         <install-in user-type="FULL" />
     </install-in-user-type>
+
+    <!-- Trade-in Mode (DeviceDiagnostics), installed in FULL and SYSTEM to ensure that it is
+         available in any potential scenario where an operator may need to assess hardware
+         health. -->
+    <install-in-user-type package="com.android.devicediagnostics">
+        <install-in user-type="SYSTEM" />
+        <install-in user-type="FULL" />
+    </install-in-user-type>
 </config>
