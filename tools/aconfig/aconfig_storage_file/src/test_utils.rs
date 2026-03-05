@@ -55,8 +55,7 @@ pub fn create_test_package_table(version: u32) -> PackageTable {
             _ => panic!("Unsupported version."),
         },
         redact_exported_reads: match version {
-            1..=2 => false,
-            3..=4 => true,
+            1..=4 => false,
             _ => panic!("unsupported version."),
         },
         boolean_start_index: 3,
@@ -246,5 +245,40 @@ fn get_source_file_name(file_type: StorageFileType, version: u32) -> String {
         StorageFileType::FlagMap => format!("data/v{version}/flag_v{version}.map"),
         StorageFileType::FlagVal => format!("data/v{version}/flag_v{version}.val"),
         StorageFileType::FlagInfo => format!("data/v{version}/flag_v{version}.info"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::MAX_SUPPORTED_FILE_VERSION;
+
+    use super::*;
+
+    // Verify that the test data is in sync with the util functions defined in
+    // this module. Test data can be regenerated with the following command:
+    //   aconfig-storaget generate-test-data
+    #[test]
+    fn test_test_data_consistency() {
+        for version in 1..=MAX_SUPPORTED_FILE_VERSION {
+            let path = get_test_data_path(StorageFileType::PackageMap, version);
+            let file_bytes = std::fs::read(path).unwrap();
+            let generated_bytes = create_test_package_table(version).into_bytes();
+            assert_eq!(file_bytes, generated_bytes, "package.map mismath for v{}", version);
+
+            let path = get_test_data_path(StorageFileType::FlagMap, version);
+            let file_bytes = std::fs::read(path).unwrap();
+            let generated_bytes = create_test_flag_table(version).into_bytes();
+            assert_eq!(file_bytes, generated_bytes, "flag.map file mismatch for v{}", version);
+
+            let path = get_test_data_path(StorageFileType::FlagVal, version);
+            let file_bytes = std::fs::read(path).unwrap();
+            let generated_bytes = create_test_flag_value_list(version).into_bytes();
+            assert_eq!(file_bytes, generated_bytes, "flag.val file mismatch for v{}", version);
+
+            let path = get_test_data_path(StorageFileType::FlagInfo, version);
+            let file_bytes = std::fs::read(path).unwrap();
+            let generated_bytes = create_test_flag_info_list(version).into_bytes();
+            assert_eq!(file_bytes, generated_bytes, "flag.info file mismatch for v{}", version);
+        }
     }
 }

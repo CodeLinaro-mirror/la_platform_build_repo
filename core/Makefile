@@ -5549,10 +5549,8 @@ endif # ENABLE_UFFD_GC == "default"
 
 # -- Check VINTF compatibility of build.
 # Skip partial builds; only check full builds. Only check if:
-# - PRODUCT_ENFORCE_VINTF_MANIFEST is true
 # - system / vendor VINTF metadata exists
 # - Building product / system_ext / odm images if board has product / system_ext / odm images
-ifeq ($(PRODUCT_ENFORCE_VINTF_MANIFEST),true)
 ifeq ($(check_vintf_has_system),true)
 ifeq ($(check_vintf_has_vendor),true)
 ifeq ($(filter true,$(BUILDING_ODM_IMAGE)),$(filter true,$(BOARD_USES_ODMIMAGE)))
@@ -5624,7 +5622,6 @@ endif # BUILDING_PRODUCT_IMAGE equals BOARD_USES_PRODUCTIMAGE
 endif # BUILDING_ODM_IMAGE equals BOARD_USES_ODMIMAGE
 endif # check_vintf_has_vendor
 endif # check_vintf_has_system
-endif # PRODUCT_ENFORCE_VINTF_MANIFEST
 
 # Add all logs of VINTF checks to dist builds
 droid_targets: $(check_vintf_all_deps)
@@ -6140,9 +6137,7 @@ endif # BOARD_AVB_ENABLE
 endif # BOARD_USES_PVMFWIMAGE
 	$(call dump-dynamic-partitions-info,$@)
 	@# VINTF checks
-ifeq ($(PRODUCT_ENFORCE_VINTF_MANIFEST),true)
 	$(hide) echo "vintf_enforce=true" >> $@
-endif
 ifdef ODM_MANIFEST_SKUS
 	$(hide) echo "vintf_odm_manifest_skus=$(ODM_MANIFEST_SKUS)" >> $@
 endif

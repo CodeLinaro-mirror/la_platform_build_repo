@@ -20,9 +20,9 @@
 //! check so the flags are resilient to deletion. This means that once this
 //! binary is run, the flags have passed a "point of no return" where they
 //! cannot be rolled back.
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::Parser;
-use std::{env, fs::File, io::Read, path::PathBuf};
+use std::{fs::File, io::Read, path::PathBuf};
 
 use aconfig_protos::{parsed_flags, ProtoParsedFlags};
 
@@ -54,10 +54,7 @@ This tool:
 #[clap(about=ABOUT)]
 struct Cli {
     #[arg(long)]
-    exception_list: PathBuf,
-
-    #[arg(long)]
-    flag_sources: PathBuf,
+    exception_list: Option<PathBuf>,
 
     #[arg(long)]
     cache: PathBuf,
@@ -75,19 +72,31 @@ pub(crate) fn load_protos_from_file<R: Read>(mut reader: R) -> Result<ProtoParse
 fn main() -> Result<()> {
     let args = Cli::parse();
 
-    let mut release_config = args.release_config.unwrap_or(env::var("TARGET_RELEASE")?);
-
-    // TODO(b/445461092) Replace hard-coded value with real lookup of "next"
-    // alias.
+    // TODO(b/445461092): Replace hard-coded value with read of environment
+    // variable TARGET_RELEASE and, if it's "next", real lookup of "next" alias.
+    let mut release_config = args.release_config.unwrap_or("cp2a".to_string());
     if release_config == "next" {
         release_config = "cp2a".to_string();
     }
 
-    let file = File::open(args.exception_list)?;
-    let _all_exception_flags = exception_flags::read_exception_flags(file)?;
+    // TODO(b/445461092): Investigate if this should be passed in from Soong
+    // as an arg (all the time).
+    let exception_list_path = args.exception_list.unwrap_or(PathBuf::from(
+        "build/make/tools/aconfig/exported_flag_check/non_api_flags_list.txt",
+    ));
 
-    let cache_file = File::open(args.cache)?;
+    let file = File::open(exception_list_path).with_context(|| "open {exception_list_path}")?;
+    let all_exception_flags = exception_flags::read_exception_flags(file)?;
+
+    let cache_file = File::open(args.cache).with_context(|| "open {args.cache}")?;
     let parsed_flags = load_protos_from_file(cache_file)?;
-    let _parsed_flags = load_from_cache::extract_flags_from_cache(parsed_flags, &release_config);
+    let finalized_flags = load_from_cache::extract_flags_from_cache(parsed_flags, &release_config);
+
+    let finalized_exception_flags: Vec<&FlagId> =
+        finalized_flags.intersection(&all_exception_flags).collect();
+
+    for flag in finalized_exception_flags {
+        println!("{}", flag);
+    }
     Ok(())
 }

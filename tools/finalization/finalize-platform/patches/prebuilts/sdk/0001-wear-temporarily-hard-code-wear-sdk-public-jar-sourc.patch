@@ -1,0 +1,44 @@
+From 7ef6a7be029d6567eb80ce5b4df4368d22ceb5f9 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?M=C3=A5rten=20Kongstad?= <amhk@google.com>
+Date: Wed, 28 Jan 2026 08:18:11 +0000
+Subject: [PATCH] wear: temporarily hard-code wear-sdk-public-jar sources to
+ 36.1
+
+As part of the 37.0 platform SDK finalization the platform API level is
+updated to 37. This causes the following build error:
+
+  error: prebuilts/sdk/opt/wear/Android.bp:58:1: module "wear-sdk-public-jar": module source path "prebuilts/sdk/opt/wear/37.0/public/wear-sdk.jar" does not exist
+
+Presumably this will be fixed when the Wear SDK finalization happens.
+
+To unblock the platform SDK finalization, temporarily hard-code the
+wear-sdk-public-jar srcs attribute to point to the 36.1 version. Long
+term we need a better solution that allows the platform to finalize
+before Wear does.
+
+Change-Id: I098d17ea5fe517ed42bd1ec4717cca68deaf10f8
+---
+ opt/wear/Android.bp | 9 +--------
+ 1 file changed, 1 insertion(+), 8 deletions(-)
+
+diff --git a/opt/wear/Android.bp b/opt/wear/Android.bp
+index 0f4dbd6fc36..0017625a851 100644
+--- a/opt/wear/Android.bp
++++ b/opt/wear/Android.bp
+@@ -57,12 +57,5 @@ genrule {
+ // For packaging part of sdk-repo-platforms*.zip.
+ filegroup {
+     name: "wear-sdk-public-jar",
+-    srcs: select(soong_config_variable("sdk", "PLATFORM_SDK_VERSION"), {
+-        any @ platform_sdk_version: [
+-            platform_sdk_version + "/public/wear-sdk.jar",
+-        ],
+-        default: [
+-            "/public/wear-sdk.jar",
+-        ],
+-    }),
++    srcs: [ "36.1/public/wear-sdk.jar" ],
+ }
+-- 
+2.53.0.rc1.217.geba53bf80e-goog
+

@@ -16,6 +16,10 @@
 
 //! `aconfig-storage` is a debugging tool to parse storage files
 
+use aconfig_storage_file::test_utils::{
+    create_test_flag_info_list, create_test_flag_table, create_test_flag_value_list,
+    create_test_package_table,
+};
 use aconfig_storage_file::{
     list_flags, list_flags_with_info, read_file_to_bytes, AconfigStorageError, FlagInfoList,
     FlagTable, FlagValueList, PackageTable, StorageFileType, MAX_SUPPORTED_FILE_VERSION,
@@ -41,6 +45,9 @@ use std::io::Write;
  * $ aconfig-storage print --file=path/to/flag.map --type=flag_map --format=json > flag_map.json
  * $ vim flag_map.json // Manually make updates
  * $ aconfig-storage write-bytes --input-file=flag_map.json --output-file=path/to/flag.map --type=flag_map
+ *
+ * Generate test data:
+ * $ aconfig-storage generate-test-data --out-dir=path/to/out --version=4
  */
 fn cli() -> Command {
     Command::new("aconfig-storage")
@@ -100,6 +107,16 @@ fn cli() -> Command {
                         .required(true)
                         .value_parser(|s: &str| StorageFileType::try_from(s)),
                 )
+                .arg(
+                    Arg::new("version")
+                        .long("version")
+                        .required(true)
+                        .value_parser(|s: &str| s.parse::<u32>()),
+                ),
+        )
+        .subcommand(
+            Command::new("generate-test-data")
+                .arg(Arg::new("out-dir").long("out-dir").required(true).action(ArgAction::Set))
                 .arg(
                     Arg::new("version")
                         .long("version")
@@ -259,6 +276,46 @@ fn main() -> Result<(), AconfigStorageError> {
                 panic!("can't make file");
             }
             let _ = file.unwrap().write_all(&output_bytes);
+        }
+        Some(("generate-test-data", sub_matches)) => {
+            let version = sub_matches.get_one::<u32>("version").unwrap();
+            if *version > MAX_SUPPORTED_FILE_VERSION {
+                panic!("version {version} is not supported");
+            }
+
+            let out_dir = sub_matches.get_one::<String>("out-dir").unwrap();
+
+            let pkg_bytes = create_test_package_table(*version).into_bytes();
+            let pkg_path = format!("{}/package_v{}.map", out_dir, version);
+            let pkg_file = File::create(&pkg_path);
+            if pkg_file.is_err() {
+                panic!("can't make file {}", pkg_path);
+            }
+            let _ = pkg_file.unwrap().write_all(&pkg_bytes);
+
+            let flag_bytes = create_test_flag_table(*version).into_bytes();
+            let flag_path = format!("{}/flag_v{}.map", out_dir, version);
+            let flag_file = File::create(&flag_path);
+            if flag_file.is_err() {
+                panic!("can't make file {}", flag_path);
+            }
+            let _ = flag_file.unwrap().write_all(&flag_bytes);
+
+            let val_bytes = create_test_flag_value_list(*version).into_bytes();
+            let val_path = format!("{}/flag_v{}.val", out_dir, version);
+            let val_file = File::create(&val_path);
+            if val_file.is_err() {
+                panic!("can't make file {}", val_path);
+            }
+            let _ = val_file.unwrap().write_all(&val_bytes);
+
+            let info_bytes = create_test_flag_info_list(*version).into_bytes();
+            let info_path = format!("{}/flag_v{}.info", out_dir, version);
+            let info_file = File::create(&info_path);
+            if info_file.is_err() {
+                panic!("can't make file {}", info_path);
+            }
+            let _ = info_file.unwrap().write_all(&info_bytes);
         }
         _ => unreachable!(),
     }

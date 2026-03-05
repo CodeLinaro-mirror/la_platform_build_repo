@@ -80,4 +80,11 @@
         <install-in user-type="FULL" />
     </install-in-user-type>
 
+    <!-- Personal Context (PersonalContext) that provides AI features based on personal
+        information.
+    -->
+    <install-in-user-type package="com.android.personalcontext">
+        <install-in user-type="FULL" />
+    </install-in-user-type>
+
 </config>

@@ -15,13 +15,14 @@
  */
 
 use aconfig_protos::{ParsedFlagExt, ProtoFlagState, ProtoParsedFlags};
+use std::collections::HashSet;
 
 pub(crate) type FlagId = String;
 
 pub(crate) fn extract_flags_from_cache(
     parsed_flags: ProtoParsedFlags,
     release_config: &str,
-) -> Vec<FlagId> {
+) -> HashSet<FlagId> {
     let source_substring = format!("/{}/", release_config);
     parsed_flags
         .parsed_flag
@@ -133,7 +134,7 @@ mod tests {
         assert_eq!(extracted, expected);
 
         let extracted_cp4a = extract_flags_from_cache(parsed_flags, "cp4a");
-        let expected_cp4a = vec!["com.android.enabled_mixed_sources_vendor"];
+        let expected_cp4a = HashSet::from(["com.android.enabled_mixed_sources_vendor".to_string()]);
         assert_eq!(extracted_cp4a, expected_cp4a);
     }
 

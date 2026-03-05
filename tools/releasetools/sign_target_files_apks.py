@@ -1896,6 +1896,8 @@ def main(argv):
       OPTIONS.threads = int(a)
       if OPTIONS.threads <= 0:
         raise ValueError("--threads must be a positive integer")
+    elif o == "--apk_logging_on_success":
+      OPTIONS.apk_logging_on_success = True
     else:
       return False
     return True
@@ -1959,7 +1961,7 @@ def main(argv):
           "override_apk_keys=",
           "override_apex_keys=",
           "threads=",
-          "apk_logging_on_success=",
+          "apk_logging_on_success",
       ],
       extra_option_handler=[option_handler, payload_signer.signer_options])
 

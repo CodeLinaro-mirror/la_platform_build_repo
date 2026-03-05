@@ -1,0 +1,62 @@
+#!/bin/bash
+#
+# Copyright (C) 2026 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# TODO: Use sdk_finalization ?
+TARGET_RELEASE=trunk_staging
+
+# TODO: remove this when it is no longer needed (when wear has fixed their setup or landed 37)
+apply_patches \
+    prebuilts/sdk \
+    "$BUNDLED_PATCHES"/prebuilts/sdk/0001-wear-temporarily-hard-code-wear-sdk-public-jar-sourc.patch
+
+set_build_flags $TARGET_RELEASE \
+    RELEASE_PLATFORM_SDK_VERSION=$MAJOR \
+    RELEASE_PLATFORM_SDK_VERSION_FULL=$MAJOR.$MINOR
+
+$TOP/development/tools/ndk/update_ndk_abi.sh
+git_commit prebuilts/abi-dumps/ndk <<EOF
+Record the NDK APIs for $MAJOR
+
+Generated with development/tools/ndk/update_ndk_abi.sh with
+RELEASE_PLATFORM_SDK_VERSION set to $MAJOR for $TARGET_RELEASE
+
+Test: N/A
+Bug: $BUG
+EOF
+
+m create_reference_dumps
+create_reference_dumps \
+    --release $TARGET_RELEASE \
+    --build-variant $TARGET_BUILD_VARIANT \
+    --lib-variant APEX
+git_commit prebuilts/abi-dumps/platform <<EOF
+Create reference dumps for $MAJOR
+
+Files created via
+create_reference_dumps \\
+    --release $TARGET_RELEASE \\
+    --build-variant $TARGET_BUILD_VARIANT \\
+    --lib-variant APEX
+
+Test: N/A
+Bug: $BUG
+EOF
+
+project=$(get_project_for_release $TARGET_RELEASE)
+pushd $TOP/$project
+git checkout goog/main
+git branch -D $BRANCH
+popd
