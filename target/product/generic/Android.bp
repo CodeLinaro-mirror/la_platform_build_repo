@@ -405,12 +405,12 @@ android_filesystem_defaults {
         // base_system
         ///////////////////////////////////////////
         "charger",
-    ] + select(release_flag("RELEASE_APPFUNCTION_SIDECAR"), {
-        true: [
+    ] + select(release_flag("RELEASE_REMOVE_APPFUNCTION_SIDECAR"), {
+        true: [],
+        default: [
             "com.android.extensions.appfunctions",
             "appfunctions.extension.xml",
         ],
-        default: [],
     }) + select(release_flag("RELEASE_DISABLE_WIFICOND"), {
         true: [],
         default: [
@@ -806,6 +806,10 @@ system_image_defaults {
         default: [],
     }) + select(release_flag("RELEASE_MEDIAMETRICS_MODULE"), {
         true: [
+            // keep the framework copy, despite the build flag, for a while post-sdk37
+            // so that we're robust in the face of a mismatch.
+            // we can remove this once we've fully rolled out the module-based version.
+            "mediametrics", // base_system (RELEASE_MEDIAMETRICS_MODULE)
         ],
         default: [
             "mediametrics", // base_system (RELEASE_MEDIAMETRICS_MODULE)

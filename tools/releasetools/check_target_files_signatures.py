@@ -231,7 +231,7 @@ class APK(object):
     # ...
     certs_info = {}
     certificate_regex = re.compile(
-        r"((?:V[0-9]+\.[0-9]+ )?Signer:? (?:#[0-9]+|\(.*\))) (certificate"
+        r"((?:V[0-9]+\.[0-9]+ )?Signer:?(?: #[0-9]+| \(.*\)|.*)) (certificate"
         r" .*):(.*)"
     )
     for line in output.splitlines():

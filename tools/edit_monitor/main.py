@@ -121,6 +121,7 @@ def main(argv: list[str]):
           args.ignore_file_patterns,
       ),
       target_repo=args.target_repo,
+      is_dry_run=args.dry_run,
   )
 
   try:
