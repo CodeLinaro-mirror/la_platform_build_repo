@@ -13,8 +13,18 @@
 # limitations under the License.
 #
 
-# This is a recommended set of common components to disable MTE for.
+# This is a recommended set of common components to enable MTE for.
 
-# FIXME: b/459491877 - Display (HWC3)
-PRODUCT_MEMTAG_HEAP_ASYNC_DEFAULT_EXCLUDE_PATHS := \
-    external/drm_hwcomposer
+PRODUCT_MEMTAG_HEAP_ASYNC_DEFAULT_INCLUDE_PATHS := \
+    external/android-clat \
+    external/iproute2 \
+    external/iptables \
+    external/mtpd \
+    external/ppp \
+    hardware/st/nfc \
+    hardware/st/secure_element \
+    hardware/st/secure_element2 \
+    packages/modules/StatsD \
+    system/bpf \
+    system/netd/netutil_wrappers \
+    system/netd/server
