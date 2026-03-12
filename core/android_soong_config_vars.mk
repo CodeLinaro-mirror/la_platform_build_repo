@@ -137,10 +137,9 @@ endif
 $(call soong_config_set,ANDROID,platform_security_patch_timestamp_string,$(PLATFORM_SECURITY_PATCH_TIMESTAMP))
 $(call soong_config_set_int,ANDROID,platform_security_patch_timestamp,$(PLATFORM_SECURITY_PATCH_TIMESTAMP))
 
-# Enable AVF remote attestation according to the flag value if PRODUCT_AVF_REMOTE_ATTESTATION_DISABLED is not
-# set to true explicitly.
+# Enable AVF remote attestation if PRODUCT_AVF_REMOTE_ATTESTATION_DISABLED is not set to true explicitly.
 ifneq (true,$(PRODUCT_AVF_REMOTE_ATTESTATION_DISABLED))
-  $(call add_soong_config_var_value,ANDROID,avf_remote_attestation_enabled,$(RELEASE_AVF_ENABLE_REMOTE_ATTESTATION))
+  $(call add_soong_config_var_value,ANDROID,avf_remote_attestation_enabled,true)
 endif
 
 ifdef PRODUCT_AVF_MICRODROID_GUEST_GKI_VERSION
@@ -160,7 +159,6 @@ $(call add_soong_config_var_value,ANDROID,release_avf_enable_multi_tenant_microd
 $(call add_soong_config_var_value,ANDROID,release_avf_enable_network,$(RELEASE_AVF_ENABLE_NETWORK))
 # TODO(b/341292601): This flag is needed until the V release. We with clean it up after V together
 # with most of the release_avf_ flags here.
-$(call add_soong_config_var_value,ANDROID,release_avf_enable_remote_attestation,$(RELEASE_AVF_ENABLE_REMOTE_ATTESTATION))
 $(call add_soong_config_var_value,ANDROID,release_avf_enable_vendor_modules,$(RELEASE_AVF_ENABLE_VENDOR_MODULES))
 $(call add_soong_config_var_value,ANDROID,release_avf_enable_virt_cpufreq,$(RELEASE_AVF_ENABLE_VIRT_CPUFREQ))
 $(call add_soong_config_var_value,ANDROID,release_avf_microdroid_kernel_version,$(RELEASE_AVF_MICRODROID_KERNEL_VERSION))
