@@ -35,6 +35,10 @@
         "com_android_extservices": {
             "container": "com.android.extservices",
             "allow_exported": true
+        },
+        "com_android_bt": {
+            "container": "com.android.bt",
+            "allow_exported": true
         }
     }
 }

@@ -799,11 +799,6 @@ system_image_defaults {
             "AppSearchAiSealConfig", // base_system (RELEASE_AISEAL_FRAMEWORK)
         ],
         default: [],
-    }) + select(release_flag("RELEASE_WEBAPP_MODULE"), {
-        true: [
-            "default-permissions-webapp.xml", // base_system (RELEASE_WEBAPP_MODULE)
-        ],
-        default: [],
     }) + select(release_flag("RELEASE_MEDIAMETRICS_MODULE"), {
         true: [
             // keep the framework copy, despite the build flag, for a while post-sdk37
