@@ -323,13 +323,6 @@ $(call soong_config_define_internal,$1,$2) \
 $(eval SOONG_CONFIG_$(strip $1)_$(strip $2):=$(strip $3))
 endef
 
-# soong_config_set_if_exist defines the variable in the given Soong config
-# namespace and sets its value ONLY if the value is not empty.
-# $1 is the namespace. $2 is the variable name. $3 is the variable value.
-define soong_config_set_if_exist
-$(if $(strip $3),$(call soong_config_set,$1,$2,$3))
-endef
-
 # soong_config_set_bool is the same as soong_config_set, but it will
 # also type the variable as a bool, so that when using select() expressions
 # in blueprint files they can use boolean values instead of strings.

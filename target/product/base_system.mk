@@ -400,7 +400,8 @@ endif
 
 ifeq ($(RELEASE_WEBAPP_MODULE),true)
     PRODUCT_PACKAGES += \
-       com.android.webapp
+       com.android.webapp \
+       default-permissions-webapp.xml
 endif
 
 # include in framework regardless of flag, so that we have overlap
