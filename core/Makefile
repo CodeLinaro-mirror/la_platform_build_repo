@@ -3534,10 +3534,23 @@ camera
 
 endef
 
-# MM Video modules
+#Early Video APP modules
 define ES_MOD_ORDER_VI
+qcom-scm
+debug-regulator
+proxy-consumer
+gh_arm_drv
+gh_msgq
+gh_dbl
+llcc-qcom
+mdt_loader
+secure_buffer
+gh_rm_drv
+clk-qcom
+mem_buf_dev
+gdsc-regulator
+msm-mmrm
 videocc-kalama
-llcc-qcom qcom-scm mdt_loader msm-mmrm  mem_buf_dev
 msm_video
 
 endef
@@ -3705,6 +3718,7 @@ ES_SYSTEM_DEPS := \
  $(PRODUCT_OUT)/system/lib64/libunwindstack.so \
  $(PRODUCT_OUT)/system/lib64/libunwindstack_stdout_log.so\
  $(PRODUCT_OUT)/system/lib64/vendor.qti.hardware.display.config-V2-ndk.so \
+ $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/early_video_app \
 
 # list of mods to search via sed
 es_get_mods = $(subst $(space),,$(foreach mod,$(1),$(if $(filter NEWLINE, $(mod)),,$(mod)\|)))
@@ -3721,6 +3735,7 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/ ;\
 	        $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/msm_kgsl.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/msm_kgsl.ko;\
         $(foreach fn, $(ES_MOD_ORDER_R_AU), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
+        $(foreach fn, $(ES_MOD_ORDER_VI), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
 		$(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/camera.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/camera.ko;\
         $(foreach fn, $(ES_MOD_ORDER_AIS), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
 	echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ;\
@@ -3742,10 +3757,12 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
   mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH); \
   $(foreach fn, $(ES_MOD_ORDER_R_AU), cp $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH);)\
   $(foreach fn, $(ES_MOD_ORDER_AIS), cp $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH);)\
+  $(foreach fn, $(ES_MOD_ORDER_VI), cp $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH);)\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_QCX})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_qcx.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_DI_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di_gen4.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_gen4.order ;\
   cp -r $(TARGET_RAMDISK_OUT)/vendor_early_services/bin/early_services_init $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
+  cp -r $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/early_video_app $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin ;\
   mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/first_stage_ramdisk/vendor_early_services/vendor/firmware_mnt; \
   mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/egl; \
   cp -r $(PRODUCT_OUT)/vendor_dlkm/lib/modules/pinctrl-spmi-gpio.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/ ;\
