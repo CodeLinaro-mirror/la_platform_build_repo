@@ -3806,57 +3806,32 @@ endef
 
 # Default modules - second set
 define ES_MOD_ORDER_2
-reboot-mode qcom_cpu_vendor_hooks llcc-qcom mem_buf_dev mem-hooks qcom_logbuf_vh  mdt_loader qcom_va_minidump qcom_wdt_core qcom_llcc_pmu
-qcom-pon qcom_dma_heaps qcom-pdc msm_gpi mem_buf_msgq qrtr msm_qmp sched-walt qcom-pmu-lib
-clk-dummy qcom-dload-mode  mem_buf  msm_performance
 
 endef
 
 # Default modules - first set; Last set auto-generated modules_end.order
 define ES_MOD_ORDER_GEN4
-icc-debug qnoc-qos nvmem_qcom-spmi-sdam qcom_hwspinlock qcom-scm qcom-cpufreq-hw reboot-mode rtc-pm8xxx spmi-pmic-arb msm_dma_iommu_mapping debug-regulator proxy-consumer qcom_cpu_vendor_hooks smem cmd-db qcom_ipc_logging qti-regmap-debugfs regmap-spmi qcom-reboot-reason pcs_xpcs
-qcom_rpmh qrtr minidump llcc-qcom socinfo secure_buffer qcom_aoss qcom-pon qcom-spmi-pmic gdsc-regulator pinctrl-msm qcom-pdc crypto-qti-tz soc_sleep_stats
-icc-bcm-voter msm_qmp clk-rpmh clk-qcom   mem_buf pinctrl-lemans qcom_iommu_util mem_buf_dev qcom_wdt_core qcom-dload-mode crypto-qti-common phy-qcom-ufs boot_stats
-ufshcd-crypto-qti rpmh-regulator icc-rpmh qcom_dma_heaps phy-qcom-ufs dispcc1-lemans dispcc0-lemans camcc-lemans gcc-lemans    qcom_soc_wdt arm_smmu clk-dummy phy-qcom-ufs-qmp-v4-waipio
-ufs_qcom qnoc-lemans
 
 endef
 
 # MM Display modules
 define ES_MOD_ORDER_DI
-msm_geni_serial 
-llcc-qcom
-spi-msm-geni i2c-msm-geni
-msm_ext_display
-qcom_glink
-qcom_glink_smem
-qcom_smd
-rproc_qcom_common
-qseecom_proxy
-qmi_helpers
-pdr_interface
-pmic_glink
-ucsi_glink
-wcd_usbss_i2c
-fsa4480-i2c
-redriver
-dwc3-msm
-qcom_va_minidump
-msm-mmrm
-panel_event_notifier
-altmode-glink
-hdcp_qseecom_dlkm
-sync_fence
-msm_hw_fence
-mem_buf_dev
-qcom_iommu_util
-qcom_rpmh
-pinctrl-msm
-msm_dma_iommu_mapping
-qcom-scm
-qcom_ipc_logging
-spmi-pmic-arb
+nvmem_qfprom
+pinctrl-spmi-gpio
+qti-fixed-regulator
+smp2p
 msm_drm
+
+endef
+
+# Load this modules after display ready
+# All modules should already in vendor_ramdisk/lib/modules 
+# but not loaded by modules.load and modules_di.order
+# Load seq: modules.load --- modules_di.order ---- modules_end.order --- MM Modules
+define ES_MOD_ORDER_END
+synx-driver
+governor_msm_adreno_tz
+governor_msm_adreno_ro
 
 endef
 
@@ -4041,6 +4016,21 @@ endef
 define ES_MOD_ORDER_AU
 endef
 
+# Early lxc modules
+define ES_MOD_ORDER_LXC
+msm_sysstats
+msm_performance
+ipclite
+msm_hw_fence
+qcom_va_minidump
+coresight
+rproc_qcom_common
+qcom_smd
+qcom_glink_smem
+qcom_glink
+msm_kgsl
+endef
+
 ES_SYSTEM_DEPS := \
  $(PRODUCT_OUT)/system/etc/selinux/plat_file_contexts \
  $(PRODUCT_OUT)/system/lib64/libbase.so \
@@ -4131,33 +4121,33 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH) $(ES_SYSTEM_DEPS)
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/ ;\
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lxc-data/; \
-	        $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/msm_kgsl.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/msm_kgsl.ko;\
   cp -r $(PRODUCT_OUT)/system_dlkm/lib/modules/rfkill.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/rfkill.ko;\
         $(foreach fn, $(ES_MOD_ORDER_R_AU), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
         $(foreach fn, $(ES_MOD_ORDER_EARLY_VIDEO_APP), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
 		$(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/camera.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/camera.ko;\
         $(foreach fn, $(ES_MOD_ORDER_AIS), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
+		$(foreach fn, $(ES_MOD_ORDER_LXC), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
 	echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ;\
   $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
   echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ;\
   $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_2}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_2.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
   if ! grep -Fxq 'boot_stats' $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load; then echo boot_stats >> $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load; fi; \
   if ! grep -Fxq 'qcom_lpm_monitor' $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load; then echo qcom_lpm_monitor >> $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load; fi; \
-  sed -e '$(call es_mod_list,${ES_MOD_ORDER}${ES_MOD_ORDER_2})' "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" | sed 's/.ko//' | tr '\n' ' ' > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end.order" ;\
-  echo msm_kgsl >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end.order" ;\
   echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ;\
   $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_DI}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
-  sed -e '$(call es_mod_list,${ES_MOD_ORDER_GEN4})' "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load" | sed 's/.ko//' > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end_gen4.order" ;\
+  $(foreach fl,$(subst ${newline}, NEWLINE ,${ES_MOD_ORDER_END}), $(if $(filter NEWLINE,$(fl)), printf '\n' >>"$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end.order", if [ -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fl).ko" ]; then printf '%s ' "$(fl)" >> "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_end.order" ; else printf 'Module %s.ko not found!\n' "$(fl)" ; fi) ;) \
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_EARLY_VIDEO_APP})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_early_video_app.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_AIS})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_ais.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_RV})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_rv.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_RV_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_rv_gen4.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_au.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_R_AU})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_r_au.order ;\
+  echo -e '$(call es_update_nl,${ES_MOD_ORDER_LXC})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_lxc.order ;\
   mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH); \
   $(foreach fn, $(ES_MOD_ORDER_R_AU), cp $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH);)\
   $(foreach fn, $(ES_MOD_ORDER_AIS), cp $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH);)\
   $(foreach fn, $(ES_MOD_ORDER_EARLY_VIDEO_APP), cp $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH);)\
+  $(foreach fn, $(ES_MOD_ORDER_LXC), cp $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_MOD_PATH);)\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_QCX})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_qcx.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_DI_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_di_gen4.order ;\
   echo -e '$(call es_update_nl,${ES_MOD_ORDER_GEN4})' > $(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules_gen4.order ;\
