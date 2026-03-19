@@ -55,6 +55,7 @@ PRODUCT_PACKAGES += \
     ManagedProvisioning \
     MtpService \
     PacProcessor \
+    preinstalled-packages-platform-handheld-system.xml \
     screenrecord \
     SharedStorageBackup \
     Telecom \
@@ -103,7 +104,6 @@ PRODUCT_PACKAGES += \
     DocumentsUI \
     EasterEgg \
     MusicFX \
-    preinstalled-packages-platform-handheld-system.xml \
     PrintRecommendationService \
     ProxyHandler \
     SimAppDialog \
