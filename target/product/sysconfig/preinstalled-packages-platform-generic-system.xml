@@ -38,5 +38,11 @@
         <install-in user-type="android.os.usertype.profile.PRIVATE" />
         <install-in user-type="android.os.usertype.profile.CLONE" />
     </install-in-user-type>
+
+    <!-- NFC (Tag) -->
+    <install-in-user-type package="com.android.apps.tag">
+        <install-in user-type="FULL" />
+        <install-in user-type="PROFILE" />
+    </install-in-user-type>
 </config>
 

@@ -114,6 +114,13 @@
         <install-in user-type="android.os.usertype.profile.CLONE" />
     </install-in-user-type>
 
+    <!-- Telephony Provider (TelephonyProvider) -->
+    <install-in-user-type package="com.android.providers.telephony">
+        <install-in user-type="SYSTEM" />
+        <install-in user-type="FULL" />
+        <install-in user-type="PROFILE" />
+    </install-in-user-type>
+
     <!-- Manages CBRS and other opportunistic networks (OpportunisticNetworkService) -->
     <install-in-user-type package="com.android.ons">
         <!-- Needed for system services -->

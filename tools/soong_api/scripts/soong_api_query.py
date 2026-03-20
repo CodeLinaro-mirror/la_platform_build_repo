@@ -15,163 +15,141 @@
 # limitations under the License.
 
 import argparse
-import json
-import os
-import shutil
-import ssl
-import subprocess
 import sys
-import tarfile
-import tempfile
-import urllib.request
-from pathlib import Path
+import time
+import grpc
+from google.protobuf.json_format import MessageToJson
 
-# Utilize the SoongApiClient library for lifecycle management
+# Import the client library and generated stubs
 from soong_api_client import SoongApiClient
-
-EVANS_GITHUB_API = "https://api.github.com/repos/ktr0731/evans/releases/latest"
+import soong_api_pb2_grpc
 
 class SoongApiQuery:
     def __init__(self):
-        # Environment detection is handled internally by SoongApiClient
         pass
 
-    def _get_evans_path(self):
-        """Finds evans in PATH, ~/bin, or downloads it."""
-        if shutil.which("evans"):
-            return "evans"
-        home_bin = Path.home() / "bin"
-        local_evans = home_bin / "evans"
-        if local_evans.exists() and os.access(local_evans, os.X_OK):
-            return str(local_evans)
-
-        print("Dependency 'evans' (gRPC client) not found.")
-        choice = input("Do you want to download the latest 'evans' to ~/bin? [y/N] ").lower()
-        if choice != 'y':
-            print("Aborted. 'evans' is required for this tool.")
-            sys.exit(1)
-        self._download_evans(home_bin)
-        return str(local_evans)
-
-    def _download_evans(self, install_dir):
-        print("Fetching latest release info from GitHub...")
-        ssl_ctx = ssl.create_default_context()
-        ssl_ctx.check_hostname = False
-        ssl_ctx.verify_mode = ssl.CERT_NONE
-        try:
-            with urllib.request.urlopen(EVANS_GITHUB_API, context=ssl_ctx) as resp:
-                data = json.load(resp)
-
-            import platform
-            machine = platform.machine()
-            arch_keyword = "amd64" if machine in ["x86_64", "amd64"] else "arm64"
-
-            download_url = next((asset['browser_download_url'] for asset in data['assets']
-                               if "linux" in asset['name'].lower() and arch_keyword in asset['name'].lower()
-                               and "tar.gz" in asset['name'].lower()), None)
-
-            if not download_url:
-                print(f"Error: Could not find a suitable binary for Linux {machine}")
-                sys.exit(1)
-
-            install_dir.mkdir(parents=True, exist_ok=True)
-            print(f"Downloading {download_url}...")
-            with tempfile.TemporaryDirectory() as temp_dir:
-                tar_path = Path(temp_dir) / "evans.tar.gz"
-                with urllib.request.urlopen(download_url, context=ssl_ctx) as response, open(tar_path, 'wb') as out_file:
-                    shutil.copyfileobj(response, out_file)
-                with tarfile.open(tar_path, "r:gz") as tar:
-                    member = next(m for m in tar.getmembers() if m.name.endswith("evans"))
-                    member.name = os.path.basename(member.name)
-                    tar.extract(member, path=install_dir)
-
-            target = install_dir / "evans"
-            target.chmod(target.stat().st_mode | 0o111)
-            print(f"Installed to {target}")
-        except Exception as e:
-            print(f"Error downloading evans: {e}")
-            sys.exit(1)
-
     def run(self):
-        parser = argparse.ArgumentParser(description="Soong API Query Tool")
-        # This will automatically support both --interactive and --no-interactive
+        parser = argparse.ArgumentParser(
+            description="Soong API Query Tool: A native AOSP tool to query build metadata.",
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            epilog="""
+Usage Examples:
+  1. Start a persistent server:
+     $ soong_api_query -i
+
+  2. Query a running server (in another terminal):
+     $ soong_api_query GetModule --name libc --port <PORT_NUMBER>
+
+  3. One-shot query (starts and stops a private server automatically):
+     $ soong_api_query GetModule --name libc
+            """
+        )
+
         parser.add_argument(
             "-i", "--interactive",
-            action=argparse.BooleanOptionalAction,
-            help="Start interactive Evans session (automatically enabled if no method is provided)"
+            action="store_true",
+            help="Keep the gRPC server running for external clients."
         )
-        # This will automatically support both --rebuild and --no-rebuild
+        parser.add_argument(
+            "--port",
+            type=int,
+            help="Connect to an existing server on this port instead of starting a new one."
+        )
         parser.add_argument(
             "--rebuild",
             action=argparse.BooleanOptionalAction,
             default=True,
-            help="Rebuild soong_api.db to ensure data freshness"
+            help="Rebuild soong_api.db if needed."
         )
-        parser.add_argument("method", nargs="?", help="Method to call (e.g., GetModule)")
+        parser.add_argument(
+            "method",
+            nargs="?",
+            help="The gRPC method to call (e.g., GetModule)"
+        )
 
-        # Parse known args to separate method from dynamic flags
         args, unknown = parser.parse_known_args()
-        evans_bin = self._get_evans_path()
 
         try:
-            # Use SoongApiClient to manage the server lifecycle
+            # Scenario A: Connect to an existing port (Client-only mode)
+            if args.port:
+                if not args.method:
+                    print("Error: A method name is required when using --port.")
+                    sys.exit(1)
+                self._execute_remote_query(args.port, args.method, unknown)
+                return
+
+            # Scenario B: Lifecycle management mode (Starts a server)
             with SoongApiClient(rebuild=args.rebuild) as client:
-                # Decide mode: use interactive if explicitly requested,
-                # or if no method is provided and interactive wasn't explicitly disabled.
-                is_interactive = args.interactive
-                if is_interactive is None:
-                    is_interactive = not args.method
+                if args.interactive or not args.method:
+                    self._show_server_info(client.port)
+                    try:
+                        while True:
+                            time.sleep(1)
+                    except KeyboardInterrupt:
+                        print("\nStopping Soong API Server...")
+                    return
 
-                if is_interactive:
-                    # Interactive Mode
-                    print("Launching Evans interactive shell...")
-                    subprocess.run([
-                        evans_bin,
-                        "--host", "localhost",
-                        "--port", str(client.port),
-                        "--reflection",
-                        "repl"
-                    ])
-                else:
-                    # One-shot Query Mode
-                    # Parse unknown args (e.g. --name MyModule) into JSON dictionary
-                    data = {}
-                    i = 0
-                    while i < len(unknown):
-                        key = unknown[i]
-                        if key.startswith("--"):
-                            clean_key = key[2:]
-                            if i + 1 < len(unknown) and not unknown[i+1].startswith("--"):
-                                data[clean_key] = unknown[i+1]
-                                i += 2
-                            else:
-                                data[clean_key] = True
-                                i += 1
-                        else:
-                            i += 1
-
-                    json_data = json.dumps(data)
-
-                    # Replicated the successful manual command logic:
-                    # echo 'JSON' | evans --host ... --reflection cli call <method>
-                    cmd = [
-                        evans_bin,
-                        "--host", "localhost",
-                        "--port", str(client.port),
-                        "--reflection",
-                        "cli",
-                        "call",
-                        args.method
-                    ]
-
-                    # Feed the JSON data via standard input (input=json_data)
-                    subprocess.run(cmd, input=json_data, text=True)
+                self._execute_query(client, args.method, unknown)
 
         except KeyboardInterrupt:
             print("\nInterrupted.")
         except Exception as e:
             print(f"Fatal Error: {e}")
             sys.exit(1)
+
+    def _show_server_info(self, port):
+        """Prints clear instructions on how to query the active server."""
+        print(f"\n🚀 Soong API Server is active on localhost:{port}")
+        print("=" * 70)
+        print("The server is ready. To run queries, open ANOTHER terminal and run:")
+        print(f"\n  soong_api_query GetModule --name <MODULE_NAME> --port {port}")
+        print(f"  soong_api_query GetAllModules --port {port}")
+        print("\nOr use external tools:")
+        print(f"  - Postman: Create gRPC request to 'localhost:{port}'")
+        print("=" * 70)
+        print("Press Ctrl+C to shut down the server.")
+
+    def _execute_remote_query(self, port, method_name, raw_params):
+        """Connects to an existing port and executes a query."""
+        channel = grpc.insecure_channel(f'localhost:{port}')
+        stub = soong_api_pb2_grpc.SoongApiServiceStub(channel)
+
+        # We need a dummy client object that has the stub but didn't start a server
+        class RemoteClient:
+            def __init__(self, stub):
+                self.stub = stub
+            def GetAllModules(self):
+                import soong_api_pb2
+                return self.stub.GetAllModules(soong_api_pb2.GetAllModulesRequest())
+            def GetModule(self, name=None, **kwargs):
+                import soong_api_pb2
+                return self.stub.GetModule(soong_api_pb2.GetModuleRequest(name=name))
+            def GetModuleByInstallPath(self, install_path=None, **kwargs):
+                import soong_api_pb2
+                return self.stub.GetModuleByInstallPath(soong_api_pb2.GetModuleByInstallPathRequest(install_path=install_path))
+
+        remote_client = RemoteClient(stub)
+        self._execute_query(remote_client, method_name, raw_params)
+
+    def _execute_query(self, client, method_name, raw_params):
+        """Common logic to execute a method and print JSON."""
+        params = {}
+        for i in range(0, len(raw_params), 2):
+            key = raw_params[i].lstrip('-')
+            if i + 1 < len(raw_params):
+                params[key] = raw_params[i+1]
+
+        if not hasattr(client, method_name):
+            print(f"Error: Unknown method '{method_name}'.")
+            sys.exit(1)
+
+        try:
+            method = getattr(client, method_name)
+            responses = method(**params)
+            for msg in responses:
+                print(MessageToJson(msg, preserving_proto_field_name=True))
+        except Exception as e:
+            print(f"Error during gRPC call: {e}")
 
 if __name__ == "__main__":
     tool = SoongApiQuery()
