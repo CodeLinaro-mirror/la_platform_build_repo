@@ -25,6 +25,7 @@ python_binary_host {
     ],
     libs: [
         "soong_api_client_python_lib",
+        "libprotobuf-python",
     ],
     embedded_launcher: true,
 }

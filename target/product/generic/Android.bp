@@ -989,6 +989,7 @@ system_image_defaults {
                 default: [
                     "Telecom", // handheld_system
                     "TelecomUi", // handheld_system
+                    "TelecomServiceResources", // handheld_system
                     "framework-telecom", // base_system
                 ],
             }) + select(release_flag("RELEASE_NPUMANAGER_MODULE"), {

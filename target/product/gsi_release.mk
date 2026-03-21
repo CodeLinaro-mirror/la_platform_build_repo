@@ -64,6 +64,11 @@ PRODUCT_PACKAGES += \
     android.hidl.allocator@1.0-service \
     android.hidl.memory@1.0-impl \
 
+# PRODUCT_SHIPPING_API_LEVEL 33 or older.
+# These can be removed as we drop support for the older API levels.
+PRODUCT_PACKAGES += \
+    wificond \
+
 # Overlay the GSI specific setting for framework and SystemUI
 ifneq ($(PRODUCT_IS_AUTOMOTIVE),true)
     PRODUCT_PACKAGES += \

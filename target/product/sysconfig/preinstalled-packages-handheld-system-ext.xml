@@ -35,4 +35,11 @@
     <install-in-user-type package="com.android.systemui.accessibility.accessibilitymenu">
         <install-in user-type="FULL" />
     </install-in-user-type>
+
+    <!-- CarrierConfig (CarrierConfig app) -->
+    <install-in-user-type package="com.android.carrierconfig">
+        <install-in user-type="SYSTEM" />
+        <install-in user-type="FULL" />
+        <install-in user-type="PROFILE" />
+    </install-in-user-type>
 </config>
