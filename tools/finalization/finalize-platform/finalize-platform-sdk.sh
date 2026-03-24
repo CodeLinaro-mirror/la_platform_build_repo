@@ -14,6 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if [[ "$(readlink $TOP/prebuilts/sdk/latest)" == "$MAJOR.$MINOR" ]]; then
+    info "finalize-platform-sdk: already done, exit early"
+    return
+fi
+
 # introduce new SDK extension
 apply_patches \
     packages/modules/SdkExtensions \
@@ -38,43 +43,19 @@ for release_config in next trunk trunk_staging; do
 done
 
 # build the SDK
-set_build_flags next RELEASE_PLATFORM_PROSPECTIVE_SDK_VERSION_FULL=37.0
+set_prospective_sdk_version_full "$MAJOR.$MINOR"
 m sdk sdk_repo dist
+clear_prospective_sdk_version_full
 
 # populate prebuilts/sdk
 #
-# Will update these files under prebuilts/sdk:
-#
-#   - $MAJOR/**/*
-#   - current/**/*
-#   - latest
-#   - Android.bp
-#
-# -f $MAJOR instead of $major.$minor to force update_prebuilts.py to
-# update the 37 directory instead of creating a new 37.0 directory
-# (TODO: debug why renaming the existing directory to 37.0 first
-# doesn't work)
-#
-# TODO: extract the logic of update_framework in update_prebuilts.py (and
-# rewrite to be more readable), but for now, call the legacy script
-$TOP/prebuilts/sdk/update_prebuilts/update_prebuilts.py \
-    -f $MAJOR \
-    --local_mode \
-    --bug $BUG \
-    1234 # doesn't matter in local mode
-
-# update_prebuilts.py updates current/ but that directory should only hold
-# artifacts from sdk_with_runtime_apis builds; undo those changes before
-# committing
-#
-# Also remove the unwanted SDK zip file that --local_mode copies
-pushd "$TOP"/prebuilts/sdk
-rm android-sdk*.zip
-git checkout current
-git clean -fd current
-popd
-
-
+# Will update these files under prebuilts/sdk/$MAJOR.$MINOR, and
+# prebuilts/sdk/{Android.bp,latest}
+m unpack-platform-sdk
+unpack-platform-sdk \
+    --dist-dir "$DIST_DIR" \
+    --android-top "$TOP" \
+    --version "$MAJOR.$MINOR"
 git_commit \
     prebuilts/sdk \
 <<EOF
@@ -82,9 +63,7 @@ Finalize platform SDK for Android $MAJOR.$MINOR
 
 Files imported from ab/$BUILD_NUMBER.
 
+Bug: $BUG
+Test: N/A
+Flag: NONE platform SDK finalization
 EOF
-
-# hotfix to fix broken build
-apply_patches \
-    packages/apps/Settings \
-    "$BUNDLED_PATCHES"/packages/apps/Settings/0001-Fix-compilation-error-after-37.0-finalization.patch

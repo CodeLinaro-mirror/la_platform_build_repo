@@ -34,6 +34,7 @@ PRODUCT_PACKAGES += \
     android.test.runner \
     apexd \
     apexd.mainline_patch_level_2 \
+    app-lock-exempt.xml \
     appops \
     app_process \
     appwidget \
@@ -157,11 +158,8 @@ PRODUCT_PACKAGES += \
     libbinder \
     libbinder_ndk \
     libbinder_rpc_unstable \
-    libc.bootstrap \
     libcamera2ndk \
     libcutils \
-    libdl.bootstrap \
-    libdl_android.bootstrap \
     libdrmframework \
     libdrmframework_jni \
     libEGL \
@@ -183,7 +181,6 @@ PRODUCT_PACKAGES += \
     libjnigraphics \
     libjpeg \
     liblog \
-    libm.bootstrap \
     libmedia \
     libmedia_jni \
     libmediandk \
@@ -219,7 +216,6 @@ PRODUCT_PACKAGES += \
     libvintf_jni \
     libvulkan \
     libwilhelm \
-    linker \
     llndk_libs \
     lmkd \
     LocalTransport \
@@ -260,7 +256,6 @@ PRODUCT_PACKAGES += \
     platform.xml \
     pm \
     prefetch \
-    preinstalled-packages-app-lock-exempt.xml \
     preinstalled-packages-asl-files.xml \
     preinstalled-packages-platform.xml \
     preinstalled-packages-strict-signature.xml \
@@ -309,7 +304,6 @@ PRODUCT_PACKAGES += \
     voip-common \
     vold \
     watchdogd \
-    wificond \
     wifi.rc \
     wm \
 # LINT.ThenChange(/target/product/generic/Android.bp)
@@ -410,7 +404,13 @@ ifeq ($(RELEASE_WEBAPP_MODULE),true)
        default-permissions-webapp.xml
 endif
 
-ifneq ($(RELEASE_MEDIAMETRICS_MODULE),true)
+# include in framework regardless of flag, so that we have overlap
+# while moving from framework to module in the event of a module mismatch.
+# the relevant mediametrics.*rc files properly handle presence of both.
+ifeq ($(RELEASE_MEDIAMETRICS_MODULE),true)
+    PRODUCT_PACKAGES += \
+        mediametrics
+else
     PRODUCT_PACKAGES += \
         mediametrics
 endif
@@ -437,12 +437,39 @@ PRODUCT_PACKAGES += \
 # are no longer supported for dessert upgrades).
 PRODUCT_PACKAGES += \
     hwservicemanager_compat_symlink_module \
+
+# wificond is now installed on system_ext, but some callers may still expect
+# it to be installed on system. This symlink can be removed once we are sure
+# that there are no devices using wificond.
+PRODUCT_PACKAGES += \
+    wificond_compat_symlink_module \
+
 # Prevent timeouts to check availability of hwservicmanager during boot
 PRODUCT_SYSTEM_PROPERTIES += hwservicemanager.always_sets_disabled=true
 
 PRODUCT_PACKAGES_ARM64 := libclang_rt.hwasan \
- libclang_rt.hwasan.bootstrap \
  libc_hwasan \
+
+# Bionic
+ifeq ($(RELEASE_DEPRECATE_RUNTIME_APEX),true)
+PRODUCT_PACKAGES += \
+    libc \
+    libdl \
+    libm \
+    libdl_android \
+    linker \
+    linkerconfig \
+    crash_dump
+else
+PRODUCT_PACKAGES += \
+    libc.bootstrap \
+    libdl.bootstrap \
+    libm.bootstrap \
+    libdl_android.bootstrap \
+    linker
+PRODUCT_PACKAGES_ARM64 += \
+    libclang_rt.hwasan.bootstrap
+endif # RELEASE_DEPRECATE_RUNTIME_APEX
 
 # Jacoco agent JARS to be built and installed, if any.
 ifeq ($(EMMA_INSTRUMENT),true)

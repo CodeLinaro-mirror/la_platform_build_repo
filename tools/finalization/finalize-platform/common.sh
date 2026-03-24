@@ -38,6 +38,9 @@ function error() {
 TOP="${ANDROID_BUILD_TOP:-$(dirname "${BASH_SOURCE[0]}")/../../../../..}"
 export ANDROID_BUILD_TOP="$TOP"
 
+# The build server sets DIST_DIR, use a sane default for local builds
+export DIST_DIR=${DIST_DIR:-$TOP/out/dist}
+
 # Directory that holds the static patches that are included in this script (in
 # contrast to the user supplied --patch-dir directory that is used to
 # dynamically create or apply patches)
@@ -64,16 +67,19 @@ declare -a PROJECTS
 PROJECTS+=(build/release)
 PROJECTS+=(build/soong)
 PROJECTS+=(cts)
+PROJECTS+=(development)
 PROJECTS+=(frameworks/base)
 PROJECTS+=(frameworks/libs/modules-utils)
+PROJECTS+=(frameworks/opt/net/wifi)
 PROJECTS+=(libcore)
 PROJECTS+=(packages/apps/Settings)
+PROJECTS+=(packages/modules/Permission)
 PROJECTS+=(packages/modules/SdkExtensions)
 PROJECTS+=(packages/modules/common)
 PROJECTS+=(platform_testing)
-PROJECTS+=(prebuilts/sdk)
 PROJECTS+=(prebuilts/abi-dumps/ndk)
 PROJECTS+=(prebuilts/abi-dumps/platform)
+PROJECTS+=(prebuilts/sdk)
 PROJECTS+=(tools/platform-compat)
 PROJECTS+=(vendor/google/release)
 PROJECTS+=(vendor/google_shared/build/release)
@@ -126,6 +132,36 @@ function git_commit() {
     popd
 }
 
+# Fetch patches from a completed job on the build server
+#
+# $1: path to directory in which to store the patch files
+# $2: build target on the build server, e.g. finalize-ndk
+# $3: (optional) build server job ID; if not provided defaults to the latest
+#     known good build
+function download_patches_to_patchdir() {
+    local patch_dir="$1"
+    local build_server_target="$2"
+    local build_server_id="$3"
+
+    if [[ -z "$build_server_id" ]]; then
+        build_server_id="$(/google/bin/releases/android/ab/ab.par \
+            green_cl \
+            --branch git_main-sdk_finalization-release \
+            --target $build_server_target \
+            --custom_raw_format='{o[buildId]}')"
+    fi
+
+    mkdir -p $patch_dir
+    pushd "$patch_dir"
+    /google/bin/releases/android/fetch_artifact/fetch_artifact.par \
+        --parallelism 8 \
+        --preserve_directory_structure \
+        --bid $build_server_id \
+        --target $build_server_target \
+        'patches/**/*'
+    popd
+}
+
 # Traverse the Android tree and create patch files for all commits on the topic
 # $BRANCH.
 #
@@ -164,7 +200,7 @@ function apply_patches() {
     if [[ ! $RUNNING_ON_BUILD_SERVER ]]; then
         # the CLs were presumably downloaded from the build server; claim
         # ownership of them to be able to upload them to gerrit
-        git commit --amend --reset-author -C HEAD
+        git rebase --exec 'git commit --amend --reset-author -C HEAD' goog/main
     fi
     popd
 }
@@ -177,7 +213,17 @@ function apply_patches() {
 # $1: path to directory of patches
 function apply_patches_from_patchdir() {
     local patch_dir="$1"
-    for absolute_project_path in $(find $patch_dir -type f | xargs dirname | sort -u); do
+    if [[ ! -d "$patch_dir" ]]; then
+        info "nothing to do: patch directory does not exist: $patch_dir"
+        return
+    fi
+
+    if [[ $(find "$patch_dir" -type f | wc -l) -eq 0 ]]; then
+        info "nothing to do: no patches found in $patch_dir"
+        return
+    fi
+
+    for absolute_project_path in $(find "$patch_dir" -type f | xargs dirname | sort -u); do
         relative_project_path="${absolute_project_path#$patch_dir/}"
         # Hack to remove stray patches/ folder. NOOP if there isn't one
         project="${relative_project_path#patches/}"
@@ -203,8 +249,15 @@ function setup_build_server() {
     # Temporary debug info
     find --version
 
-    echo "These are the files passed in from previous builds:"
-    find $TOP/out/prebuilt_cached -type f
+    local prebuilt_cached="$TOP/out/prebuilt_cached"
+    if [[ -d "${prebuilt_cached}" ]]; then
+      pushd ${prebuilt_cached}
+      echo "These are the files passed in from previous builds:"
+      find $(pwd) -type f
+      popd
+    else
+      echo "No prebuilt_cached directory found at: ${prebuilt_cached}"
+    fi
 
     # Might as well dump this
     env
@@ -262,5 +315,29 @@ function set_build_flags() {
     build-flag --quiet --release=$release_config set --dir $project $@
     git_commit $project <<EOF
 $release_config: update SDK related build flag(s)
+
+Bug: $BUG
+Test: N/A
+Flag: NONE platform SDK finalization
 EOF
+}
+
+# Temporarily set RELEASE_PLATFORM_PROSPECTIVE_SDK_VERSION_FULL. Caller is
+# expected to call clear_prospective_sdk_version_full before exiting.
+function set_prospective_sdk_version_full() {
+    local value="$1"
+
+    cat > $TOP/vendor/google_shared/build/release/flag_values/cp2a/RELEASE_PLATFORM_PROSPECTIVE_SDK_VERSION_FULL.textproto <<EOF
+name: "RELEASE_PLATFORM_PROSPECTIVE_SDK_VERSION_FULL"
+value: {
+  string_value: "$value"
+}
+EOF
+    trap "rm -f $TOP/vendor/google_shared/build/release/flag_values/cp2a/RELEASE_PLATFORM_PROSPECTIVE_SDK_VERSION_FULL.textproto" EXIT
+}
+
+# Unset RELEASE_PLATFORM_PROSPECTIVE_SDK_VERSION_FULL
+function clear_prospective_sdk_version_full() {
+    # (build-flag doesn't allow unsetting flag values, so remove it explicitly. FIXME: hard-codes cp2a as next)
+    rm -f $TOP/vendor/google_shared/build/release/flag_values/cp2a/RELEASE_PLATFORM_PROSPECTIVE_SDK_VERSION_FULL.textproto
 }

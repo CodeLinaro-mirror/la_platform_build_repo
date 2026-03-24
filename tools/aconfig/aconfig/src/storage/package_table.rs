@@ -50,6 +50,9 @@ impl PackageTableNodeWrapper {
             fingerprint: package.fingerprint,
             redact_exported_reads: package.redact_exported_reads,
             boolean_start_index: package.boolean_start_index,
+            // TODO(b/439864800): Introduce int_start_index in FlagPackage
+            // and use it here.
+            int_start_index: 0,
             next_offset: None,
         };
         let bucket_index = PackageTableNode::find_bucket_index(package.package_name, num_buckets);

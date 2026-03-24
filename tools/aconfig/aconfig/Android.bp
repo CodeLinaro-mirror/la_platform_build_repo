@@ -89,7 +89,7 @@ rust_test_host {
 filegroup {
     name: "mainline_beta_namespace_config.json",
     // TODO: Read release_flag instead.
-    srcs: ["config/mainline_beta_namespaces_apr_25.json"],
+    srcs: ["config/mainline_beta_namespaces.json"],
 }
 
 // integration tests: general
@@ -147,6 +147,8 @@ java_aconfig_library {
 java_aconfig_library {
     name: "aconfig_test_java_library",
     aconfig_declarations: "aconfig.test.flags",
+    // The tests explicitly reference the internal FeatureFlags-related types.
+    preserve_legacy_impl_interface: true,
 }
 
 java_aconfig_library {
@@ -185,6 +187,8 @@ java_aconfig_library {
     aconfig_declarations: "aconfig.test.flags",
     host_supported: true,
     mode: "test",
+    // The tests explicitly reference the internal FeatureFlags-related types.
+    preserve_legacy_impl_interface: true,
 }
 
 java_test_host {

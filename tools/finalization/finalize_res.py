@@ -234,14 +234,10 @@ with open(sys.argv[1], "r+") as stagingFile:
         stagingFile.truncate()
 
 
-print("\nFlags that had resources that were NOT finalized:")
-for flag in sorted(_non_finalized_flags.keys()):
-    print(f"  {flag}")
-    for value in _non_finalized_flags[flag]:
-        print(f"    {value}")
+_non_finalized_flags = sorted([f"    {flag}: {resource}" for flag, values in _non_finalized_flags.items() for resource in values])
+print(f"\n{len(_non_finalized_flags)} resource(s) were NOT finalized:")
+print("\n".join(_non_finalized_flags))
 
-print("\nFlags that had resources that were finalized:")
-for flag in sorted(_finalized_flags.keys()):
-    print(f"  {flag}")
-    for value in _finalized_flags[flag]:
-        print(f"    {value}")
+_finalized_flags = sorted([f"    {flag}: {resource}" for flag, values in _finalized_flags.items() for resource in values])
+print(f"\n{len(_finalized_flags)} resource(s) were finalized:")
+print("\n".join(_finalized_flags))

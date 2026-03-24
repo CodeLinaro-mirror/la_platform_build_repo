@@ -14,6 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if test -e "$TOP/prebuilts/sdk/extensions/$SDK_EXT_VERSION"; then
+    info "finalize-module-sdks: already done, exit early"
+    return
+fi
+
+# The module SDKs do not exist already; build them
+if [[ -z "$mainline_sdks_dir" ]]; then
+    TARGET_RELEASE=sdk_finalization TARGET_BUILD_VARIANT=userdebug UNBUNDLED_BUILD_SDKS_FROM_SOURCE=true vendor/google/build/mainline_modules_sdks.sh --build-release next
+    mainline_sdks_dir="$DIST_DIR"
+fi
+
 m unpack-module-sdks
 projects="$(unpack-module-sdks \
     --mainline-sdks-top "$mainline_sdks_dir" \
@@ -27,5 +38,9 @@ for project in $projects; do
 Finalize SDK extension $SDK_EXT_VERSION
 
 Import module SDK artifacts from ab/$BUILD_NUMBER.
+
+Bug: $BUG
+Test: N/A
+Flag: NONE platform SDK finalization
 EOF
 done
