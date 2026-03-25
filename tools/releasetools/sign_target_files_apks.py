@@ -1007,7 +1007,13 @@ def ProcessTargetFileEntries(input_tf_zip: zipfile.ZipFile, output_tf_dir: str, 
             misc_info, extra_args)
         WriteOutputFile(output_tf_dir, image.name, filename)
     elif fnmatch.fnmatch(filename, "SYSTEM_EXT/etc/vm/trusty_vm/trusty_*.elf"):
-      payload_key = OPTIONS.extra_apex_payload_keys["com.google.android.virt.apex"]
+      payload_key = OPTIONS.extra_apex_payload_keys.get("com.google.android.virt.apex") or \
+                    OPTIONS.extra_apex_payload_keys.get("com.android.virt.apex")
+      assert payload_key is not None, \
+          ("No payload key found for com.google.android.virt.apex or "
+           "com.android.virt.apex in OPTIONS.extra_apex_payload_keys "
+           "for Trusty VM: {}".format(filename))
+
       if payload_key == 'PRESIGNED':
         # TODO(b/491364851): Ensure Trusty VM is signed with microdroid vbmeta key
         print("Skip re-signing %s: virt APEX is PRESIGNED" % filename)
@@ -1016,6 +1022,25 @@ def ProcessTargetFileEntries(input_tf_zip: zipfile.ZipFile, output_tf_dir: str, 
           image.write(data)
           image.flush()
           ResignTrustyVM(image, payload_key, "SHA256_RSA4096",
+              misc_info)
+          WriteOutputFile(output_tf_dir, image.name, filename)
+    elif fnmatch.fnmatch(filename, "VENDOR/etc/vm/trusty_vm/trusty_*.elf"):
+      vendor_trusty_vm_key = OPTIONS.avb_keys.get("vendor_trusty_vm") or \
+          OPTIONS.extra_apex_payload_keys.get("com.google.android.virt.apex") or \
+          OPTIONS.extra_apex_payload_keys.get("com.android.virt.apex")
+
+      assert vendor_trusty_vm_key is not None, \
+          ("No key found for vendor_trusty_vm or com.google.android.virt.apex "
+           "or com.android.virt.apex for Trusty VM: {}".format(filename))
+
+      if vendor_trusty_vm_key == 'PRESIGNED':
+        # TODO(b/491364851): Ensure Trusty VM is signed with microdroid vbmeta key
+        print("Skip re-signing %s: virt APEX is PRESIGNED" % filename)
+      else:
+        with tempfile.NamedTemporaryFile() as image:
+          image.write(data)
+          image.flush()
+          ResignTrustyVM(image, vendor_trusty_vm_key, "SHA256_RSA4096",
               misc_info)
           WriteOutputFile(output_tf_dir, image.name, filename)
     # A non-APK file; copy it verbatim.
@@ -1912,6 +1937,8 @@ def main(argv):
         raise ValueError("--threads must be a positive integer")
     elif o == "--apk_logging_on_success":
       OPTIONS.apk_logging_on_success = True
+    elif o == "--avb_vendor_trusty_vm_key":
+      OPTIONS.avb_keys["vendor_trusty_vm"] = a
     else:
       return False
     return True
@@ -1976,6 +2003,7 @@ def main(argv):
           "override_apex_keys=",
           "threads=",
           "apk_logging_on_success",
+          "avb_vendor_trusty_vm_key=",
       ],
       extra_option_handler=[option_handler, payload_signer.signer_options])
 

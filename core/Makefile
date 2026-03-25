@@ -3121,6 +3121,88 @@ INTERNAL_TEST_HARNESS_RAMDISK_FILES := $(filter $(TARGET_TEST_HARNESS_RAMDISK_OU
     $(INTERNAL_TEST_HARNESS_RAMDISK_ADB_DEBUG_PROP_TARGET) \
     $(ALL_DEFAULT_INSTALLED_MODULES))
 
+# -----------------------------------------------------------------
+# vendor_boot_recovery_media.img and recovery_media.img (installer bundle)
+ifeq ($(BOARD_USES_RECOVERY_MEDIA),true)
+
+# Real path to the custom recovery media binary and rc script
+CUSTOM_RECOVERY_MEDIA_BINARY := $(call intermediates-dir-for,EXECUTABLES,recovery_media)/recovery_media
+CUSTOM_RECOVERY_MEDIA_RC := $(call intermediates-dir-for,ETC,recovery_media_init_rc_config)/recovery_media_init_rc_config
+INTERNAL_VENDOR_RAMDISK_RECOVERY_MEDIA_TARGET := $(call intermediates-dir-for,PACKAGING,vendor_boot_recovery_media)/vendor_ramdisk.cpio$(RAMDISK_EXT)
+INSTALLED_VENDOR_BOOT_RECOVERY_MEDIA_TARGET := $(PRODUCT_OUT)/vendor_boot_recovery_media.img
+
+$(INTERNAL_VENDOR_RAMDISK_RECOVERY_MEDIA_TARGET): PRIVATE_STAGING_DIR := $(call intermediates-dir-for,PACKAGING,vendor_boot_recovery_media_ramdisk)
+$(INTERNAL_VENDOR_RAMDISK_RECOVERY_MEDIA_TARGET): $(MKBOOTFS) $(INTERNAL_VENDOR_RAMDISK_FILES) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(CUSTOM_RECOVERY_MEDIA_BINARY) $(CUSTOM_RECOVERY_MEDIA_RC) $(INTERNAL_VENDOR_RAMDISK_TARGET) | $(COMPRESSION_COMMAND_DEPS)
+	@echo "Target vendor ramdisk (recovery media): $@"
+	$(hide) rm -rf $(PRIVATE_STAGING_DIR) && mkdir -p $(PRIVATE_STAGING_DIR)
+	$(hide) cp -af $(TARGET_VENDOR_RAMDISK_OUT)/. $(PRIVATE_STAGING_DIR)/
+	$(hide) if [ -d "$(TARGET_RECOVERY_ROOT_OUT)" ]; then \
+	    cp -af $(TARGET_RECOVERY_ROOT_OUT)/. $(PRIVATE_STAGING_DIR)/; \
+	fi
+	$(hide) $(foreach fragment,$(INTERNAL_VENDOR_RAMDISK_FRAGMENTS), \
+	    if [ -d "$(VENDOR_RAMDISK_FRAGMENT.$(fragment).STAGING_DIR)" ]; then \
+	        cp -af $(VENDOR_RAMDISK_FRAGMENT.$(fragment).STAGING_DIR)/. $(PRIVATE_STAGING_DIR)/; \
+	    fi; \
+	)
+	$(hide) mkdir -p $(PRIVATE_STAGING_DIR)/system/bin $(PRIVATE_STAGING_DIR)/vendor/etc/init
+	$(hide) cp -f $(CUSTOM_RECOVERY_MEDIA_BINARY) $(PRIVATE_STAGING_DIR)/system/bin/recovery_media
+	$(hide) cp -f $(CUSTOM_RECOVERY_MEDIA_RC) $(PRIVATE_STAGING_DIR)/vendor/etc/init/recovery_media.rc
+	$(hide) $(MKBOOTFS) -d $(TARGET_OUT) $(PRIVATE_STAGING_DIR) | $(COMPRESSION_COMMAND) > $@
+
+$(INSTALLED_VENDOR_BOOT_RECOVERY_MEDIA_TARGET): PRIVATE_BOOTCONFIG := androidboot.init_rc=/vendor/etc/init/recovery_media.rc
+$(INSTALLED_VENDOR_BOOT_RECOVERY_MEDIA_TARGET): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_RECOVERY_MEDIA_TARGET) $(AVBTOOL)
+	@echo "Target Recovery Media Image: $@"
+	$(hide) echo "$(PRIVATE_BOOTCONFIG)" > $(dir $@)vendor-bootconfig-recovery-media.img
+	$(hide) $(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_RAMDISK_RECOVERY_MEDIA_TARGET) --vendor_bootconfig $(dir $@)vendor-bootconfig-recovery-media.img --vendor_boot $@
+ifeq ($(BOARD_AVB_ENABLE),true)
+	$(hide) $(AVBTOOL) add_hash_footer \
+	    --image $@ \
+	    $(call get-partition-size-argument,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)) \
+	    --partition_name vendor_boot \
+	    --algorithm $(BOARD_AVB_ALGORITHM) --key $(BOARD_AVB_KEY_PATH)
+endif
+
+# recovery_media.img bundle (installer kernel image)
+INSTALLED_RECOVERY_MEDIA_TARGET := $(PRODUCT_OUT)/recovery_media.img
+$(INSTALLED_RECOVERY_MEDIA_TARGET): PRIVATE_STAGING_DIR := $(call intermediates-dir-for,PACKAGING,recovery_media_bundle)
+$(INSTALLED_RECOVERY_MEDIA_TARGET): $(MKEROFS) $(AVBTOOL) $(INSTALLED_BOOTIMAGE_TARGET) $(INSTALLED_INIT_BOOT_IMAGE_TARGET) $(INSTALLED_PVMFWIMAGE_TARGET) $(INSTALLED_VENDOR_BOOT_RECOVERY_MEDIA_TARGET)
+	@echo "Target Recovery Media EROFS Image: $@"
+	$(hide) rm -rf $(PRIVATE_STAGING_DIR) && mkdir -p $(PRIVATE_STAGING_DIR)
+	$(hide) cp $(INSTALLED_BOOTIMAGE_TARGET) $(PRIVATE_STAGING_DIR)/boot.img
+	$(hide) cp $(INSTALLED_INIT_BOOT_IMAGE_TARGET) $(PRIVATE_STAGING_DIR)/init_boot.img
+	$(hide) cp $(INSTALLED_VENDOR_BOOT_RECOVERY_MEDIA_TARGET) $(PRIVATE_STAGING_DIR)/vendor_boot.img
+	$(hide) if [ -f "$(INSTALLED_PVMFWIMAGE_TARGET)" ]; then \
+	    cp $(INSTALLED_PVMFWIMAGE_TARGET) $(PRIVATE_STAGING_DIR)/pvmfw.img; \
+	    PVMFW_ARG="--include_descriptors_from_image $(INSTALLED_PVMFWIMAGE_TARGET)"; \
+	else \
+	    truncate -s 1M $(PRIVATE_STAGING_DIR)/pvmfw.img; \
+	    PVMFW_ARG=""; \
+	fi; \
+	$(AVBTOOL) make_vbmeta_image \
+	    --rollback_index $(if $(BOARD_AVB_ROLLBACK_INDEX),$(BOARD_AVB_ROLLBACK_INDEX),0) \
+	    --output $(PRIVATE_STAGING_DIR)/vbmeta \
+	    --algorithm $(BOARD_AVB_ALGORITHM) --key $(BOARD_AVB_KEY_PATH) \
+	    --include_descriptors_from_image $(INSTALLED_BOOTIMAGE_TARGET) \
+	    --include_descriptors_from_image $(INSTALLED_INIT_BOOT_IMAGE_TARGET) \
+	    --include_descriptors_from_image $(INSTALLED_VENDOR_BOOT_RECOVERY_MEDIA_TARGET) \
+	    $$PVMFW_ARG
+	$(hide) $(MKEROFS) -z lz4hc,9 $@ $(PRIVATE_STAGING_DIR)
+	$(hide) rm -rf $(PRIVATE_STAGING_DIR)
+
+# Provide recovery_media.img as recovery-kernel for the packing script
+$(PRODUCT_OUT)/recovery-kernel: $(INSTALLED_RECOVERY_MEDIA_TARGET)
+	$(hide) cp -f $< $@
+
+.PHONY: recovery-media-image
+recovery-media-image: $(INSTALLED_RECOVERY_MEDIA_TARGET) $(PRODUCT_OUT)/recovery-kernel
+
+$(call dist-for-goals, recovery-media-image, $(INSTALLED_RECOVERY_MEDIA_TARGET))
+
+# Ensure the packing script depends on our dynamic recovery image
+$(PACK_RECOVERY_IMAGE_TARGET): $(INSTALLED_RECOVERY_MEDIA_TARGET)
+
+endif # BOARD_USES_RECOVERY_MEDIA
+
 # The order is important here. The test harness ramdisk staging directory has to
 # come last so that it can override the adb_debug.prop in the debug ramdisk
 # staging directory.

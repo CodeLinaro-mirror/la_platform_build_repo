@@ -47,6 +47,10 @@
         "com_android_profiling": {
             "container": "com.android.profiling",
             "allow_exported": true
+        },
+        "com_android_nfcservices": {
+            "container": "com.android.nfcservices",
+            "allow_exported": true
         }
     }
 }
