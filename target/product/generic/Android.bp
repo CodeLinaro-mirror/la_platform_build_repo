@@ -542,7 +542,6 @@ system_image_defaults {
         "abx",
         "aconfigd-system",
         "aflags",
-        "aoad",
         "am",
         "android.software.credentials.prebuilt.xml", // generic_system
         "android.software.webview.prebuilt.xml", // media_system
@@ -574,6 +573,7 @@ system_image_defaults {
         "cppreopts.sh", // generic_system
         "credstore",
         "debuggerd",
+        "default-permissions-virtualization.xml",
         "device_config",
         "dirty-image-objects",
         "dmctl",
@@ -603,7 +603,6 @@ system_image_defaults {
         "gsid",
         "heapprofd",
         "hid",
-        "hidservice",
         "hiddenapi-package-whitelist.xml", // from runtime_libart
         "idc_data",
         "idmap2",

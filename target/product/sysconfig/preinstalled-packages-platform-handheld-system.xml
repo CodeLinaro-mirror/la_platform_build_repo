@@ -15,9 +15,6 @@
 -->
 <!-- System packages to preinstall on all devices with handheld_system, per user type.
      Documentation at frameworks/base/data/etc/preinstalled-packages-platform.xml
-
-     The packages below are added to $PRODUCT_PACKAGES in
-     build/make/target/product/handheld_system.mk.
 -->
 <config>
     <!-- Files (DocumentsUI) -->
@@ -187,13 +184,6 @@
         <install-in user-type="android.os.usertype.profile.PRIVATE" />
     </install-in-user-type>
 
-    <!-- Key Chain app (KeyChain) -->
-    <install-in-user-type package="com.android.keychain">
-        <install-in user-type="SYSTEM" />
-        <install-in user-type="FULL" />
-        <install-in user-type="PROFILE" />
-    </install-in-user-type>
-
     <!-- System Tracing (Traceur) -->
     <install-in-user-type package="com.android.traceur">
         <install-in user-type="FULL" />
@@ -219,10 +209,5 @@
         <install-in user-type="SYSTEM" />
         <install-in user-type="FULL" />
         <install-in user-type="PROFILE" />
-    </install-in-user-type>
-
-    <!-- EasterEgg. Everyone (except the headless system user) loves the easter egg. -->
-    <install-in-user-type package="com.android.egg">
-        <install-in user-type="FULL" />
     </install-in-user-type>
 </config>
