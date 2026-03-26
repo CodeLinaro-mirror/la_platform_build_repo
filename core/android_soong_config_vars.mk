@@ -237,18 +237,6 @@ endif
 # Add uwb build flag to soong
 $(call soong_config_set,bootclasspath,release_ranging_stack,$(RELEASE_RANGING_STACK))
 
-# Add crashrecovery build flag to soong
-$(call soong_config_set,ANDROID,release_crashrecovery_module,$(RELEASE_CRASHRECOVERY_MODULE))
-# Add crashrecovery file move flags to soong, for both platform and module
-ifeq (true,$(RELEASE_CRASHRECOVERY_FILE_MOVE))
-  $(call soong_config_set,ANDROID,crashrecovery_files_in_module,true)
-  $(call soong_config_set,ANDROID,crashrecovery_files_in_platform,false)
-else
-  $(call soong_config_set,ANDROID,crashrecovery_files_in_module,false)
-  $(call soong_config_set,ANDROID,crashrecovery_files_in_platform,true)
-endif
-# Required as platform_bootclasspath is using this namespace
-$(call soong_config_set,bootclasspath,release_crashrecovery_module,$(RELEASE_CRASHRECOVERY_MODULE))
 
 
 # Add ondeviceintelligence module build flag to soong
@@ -513,7 +501,7 @@ $(call soong_config_set,berberis,target_native_bridge_abi,$(TARGET_NATIVE_BRIDGE
 
 # Flags for SDK packages
 $(call soong_config_set,sdk,PLATFORM_VERSION,$(PLATFORM_VERSION))
-$(call soong_config_set,sdk,PLATFORM_SDK_VERSION,$(subst ",,$(PLATFORM_SDK_VERSION_FULL)))
+$(call soong_config_set,sdk,PLATFORM_SDK_VERSION,$(PLATFORM_SDK_VERSION_FULL))
 $(call soong_config_set,sdk,PLATFORM_SDK_EXTENSION_VERSION,$(PLATFORM_SDK_EXTENSION_VERSION))
 $(call soong_config_set,sdk,PLATFORM_IS_BASE_SDK,$(if $(filter $(PLATFORM_SDK_EXTENSION_VERSION),$(PLATFORM_BASE_SDK_EXTENSION_VERSION)),true,false))
 $(call soong_config_set,sdk,PLATFORM_VERSION_CODENAME,$(subst REL,,$(PLATFORM_VERSION_CODENAME)))

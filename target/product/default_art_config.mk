@@ -68,6 +68,7 @@ PRODUCT_APEX_BOOT_JARS := \
     com.android.bt:framework-bluetooth \
     com.android.configinfrastructure:framework-configinfrastructure \
     com.android.conscrypt:conscrypt \
+    com.android.crashrecovery:framework-crashrecovery \
     com.android.devicelock:framework-devicelock \
     com.android.healthfitness:framework-healthfitness \
     com.android.i18n:core-icu4j \
@@ -90,18 +91,6 @@ PRODUCT_APEX_BOOT_JARS := \
     com.android.uwb:framework-uwb \
     com.android.virt:framework-virtualization \
     com.android.wifi:framework-wifi \
-
-# When crashrecovery module is ready use apex jar
-# else put the platform jar in system
-ifeq ($(RELEASE_CRASHRECOVERY_MODULE),true)
-    PRODUCT_APEX_BOOT_JARS += \
-        com.android.crashrecovery:framework-crashrecovery \
-
-else
-    PRODUCT_BOOT_JARS += \
-        framework-platformcrashrecovery \
-
-endif
 
 # When we release ondeviceintelligence in NeuralNetworks module
 ifeq ($(RELEASE_ONDEVICE_INTELLIGENCE_MODULE),true)
@@ -199,18 +188,12 @@ PRODUCT_APEX_SYSTEM_SERVER_JARS := \
     com.android.appsearch:service-appsearch \
     com.android.art:service-art \
     com.android.configinfrastructure:service-configinfrastructure \
+    com.android.crashrecovery:service-crashrecovery \
     com.android.healthfitness:service-healthfitness \
     com.android.media:service-media-s \
     com.android.ondevicepersonalization:service-ondevicepersonalization \
     com.android.permission:service-permission \
     com.android.rkpd:service-rkp \
-
-# When we release crashrecovery module
-ifeq ($(RELEASE_CRASHRECOVERY_MODULE),true)
-  PRODUCT_APEX_SYSTEM_SERVER_JARS += \
-        com.android.crashrecovery:service-crashrecovery \
-
-endif
 
 # When we release ondeviceintelligence in NeuralNetworks module
 ifeq ($(RELEASE_ONDEVICE_INTELLIGENCE_MODULE),true)
