@@ -4031,6 +4031,16 @@ qcom_glink
 msm_kgsl
 endef
 
+# lists of vendor_dlkm/lib/modules
+ES_VENDOR_DLKMIMAGE_MODULES_FILES := \
+    $(filter $(TARGET_OUT_VENDOR_DLKM)/lib/modules/%,\
+      $(ALL_DEFAULT_INSTALLED_MODULES))
+
+# lists of system_dlkm/lib/modules
+ES_SYSTEM_DLKMIMAGE_MODULES_FILES := \
+    $(filter $(TARGET_OUT_SYSTEM_DLKM)/lib/modules/%,\
+      $(ALL_DEFAULT_INSTALLED_MODULES))
+
 ES_SYSTEM_DEPS := \
  $(PRODUCT_OUT)/system/etc/selinux/plat_file_contexts \
  $(PRODUCT_OUT)/system/lib64/libbase.so \
@@ -4106,6 +4116,8 @@ ES_SYSTEM_DEPS := \
  $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/bin/init_early_test \
  $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/bin/init_early_lxc \
  $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/bin/early_video_app \
+ $(ES_SYSTEM_DLKMIMAGE_MODULES_FILES) \
+ $(ES_VENDOR_DLKMIMAGE_MODULES_FILES) \
 
 # list of mods to search via sed
 es_get_mods = $(subst $(space),,$(foreach mod,$(1),$(if $(filter NEWLINE, $(mod)),,$(mod)\|)))
