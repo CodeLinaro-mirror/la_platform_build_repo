@@ -4128,8 +4128,6 @@ ES_SYSTEM_DEPS := \
  $(PRODUCT_OUT)/system/lib64/libui.so \
  $(PRODUCT_OUT)/system/lib64/libgraphicsenv.so \
  $(PRODUCT_OUT)/system/lib64/libnativewindow.so \
- $(PRODUCT_OUT)/system/lib64/android.hardware.configstore@1.0.so \
- $(PRODUCT_OUT)/system/lib64/android.hardware.configstore-utils.so \
  $(PRODUCT_OUT)/system/lib64/libnativebridge_lazy.so \
  $(PRODUCT_OUT)/system/lib64/libnativeloader_lazy.so \
  $(PRODUCT_OUT)/system/lib64/libSurfaceFlingerProp.so \
@@ -4144,9 +4142,8 @@ ES_SYSTEM_DEPS := \
  $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@3.0.so \
  $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.mapper@4.0.so \
  $(PRODUCT_OUT)/system/lib64/libgralloctypes.so \
- $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.1.so \
- $(PRODUCT_OUT)/system/lib64/android.hardware.configstore@1.1.so \
  $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.0.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common@1.1.so \
  $(PRODUCT_OUT)/system/lib64/android.hardware.common-V2-ndk.so \
  $(PRODUCT_OUT)/system/lib64/libbinder_ndk.so \
  $(PRODUCT_OUT)/system/lib64/libandroid_runtime_lazy.so \
