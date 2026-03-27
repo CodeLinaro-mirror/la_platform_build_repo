@@ -46,14 +46,14 @@ PRODUCT_PACKAGES += com.android.runtime
 # (listed in ART_APEX_JARS), which should no longer be added directly to
 # PRODUCT_PACKAGES.
 
-art_target_include_debug_build := $(PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD)
-ifneq (false,$(art_target_include_debug_build))
+ifneq (false,$(PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD))
   ifneq (,$(filter eng,$(TARGET_BUILD_VARIANT)))
-    art_target_include_debug_build := true
+#   TODO: Re-enable eng builds using libartd b/478960347.
+#   PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD := true
   endif
 endif
 
-ifeq (true,$(art_target_include_debug_build))
+ifeq (true,$(PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD))
   PRODUCT_PACKAGES += com.android.art.debug
   apex_test_module := art-check-debug-apex-gen-fakebin
   PRODUCT_VENDOR_PROPERTIES += persist.sys.dalvik.vm.lib.2=libartd.so
@@ -67,7 +67,6 @@ ifeq (true,$(call soong_config_get,art_module,source_build))
   PRODUCT_HOST_PACKAGES += $(apex_test_module)
 endif
 
-art_target_include_debug_build :=
 apex_test_module :=
 
 # Certificates.
