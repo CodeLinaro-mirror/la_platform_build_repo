@@ -889,6 +889,7 @@ system_image_defaults {
                 "charger_res_images", // generic_system
                 "com.android.apex.cts.shim.v1_prebuilt", // ok
                 "com.android.cellbroadcast", // telephony_system
+                "com.android.crashrecovery", // base_system
                 "com.android.future.usb.accessory", // media_system
                 "com.android.location.provider", // base_system
                 "com.android.media.remotedisplay", // media_system
@@ -924,13 +925,6 @@ system_image_defaults {
                 true: [],
                 default: [
                     "SecureElement", // handheld_system
-                ],
-            }) + select(soong_config_variable("ANDROID", "release_crashrecovery_module"), {
-                "true": [
-                    "com.android.crashrecovery", // base_system (RELEASE_CRASHRECOVERY_MODULE)
-                ],
-                default: [
-                    "framework-platformcrashrecovery", // base_system
                 ],
             }) + select(release_flag("RELEASE_ONDEVICE_INTELLIGENCE_MODULE"), {
                 true: [

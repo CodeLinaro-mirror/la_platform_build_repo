@@ -101,3 +101,10 @@ prebuilt_etc {
     system_ext_specific: true,
     src: "preinstalled-packages-telephony-system-ext.xml",
 }
+
+prebuilt_etc {
+    name: "preinstalled-packages-base-product.xml",
+    sub_dir: "sysconfig",
+    system_ext_specific: true,
+    src: "preinstalled-packages-base-product.xml",
+}
