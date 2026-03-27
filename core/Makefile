@@ -3829,70 +3829,47 @@ endef
 # but not loaded by modules.load and modules_di.order
 # Load seq: modules.load --- modules_di.order ---- modules_end.order --- MM Modules
 define ES_MOD_ORDER_END
+pinctrl-spmi-gpio
 synx-driver
 governor_msm_adreno_tz
 governor_msm_adreno_ro
+adsp_sleepmon
+qcom_spss
+videocc-canoe
+camcc-canoe
+qcom_pd_mapper
+leds-qcom-flash
+smp2p_sleepstate
+smp2p
+slimbus
+qrtr-smd
+smmu_proxy_dlkm
+bam_dma
+slim-qcom-ngd-ctrl
+msm-mmrm
+msm_sysstats
+msm_performance
+coresight
 
 endef
 
 # MM Display modules
 define ES_MOD_ORDER_DI_GEN4
-msm_geni_serial i2c-mux qseecom_dlkm refgen gpio-pca953x i2c-msm-geni spi-msm-geni qcom_ipcc anx7625
-qcom_va_minidump i2c-mux-pca954x smcinvoke_dlkm hdcp_qseecom_dlkm
-msm_drm
 
 endef
 
 # MM AIS modules
 define ES_MOD_ORDER_AIS
-pinctrl-spmi-gpio
-minidump
-qcom_va_minidump
-smem
-qcom_glink
-qcom_glink_smem
-qcom_smd
-msm-mmrm
-camcc-canoe
-rproc_qcom_common
-qmi_helpers
-qcom_pdr_msg
-pdr_interface
-qti_pmic_glink
-panel_event_notifier
-qti_battery_charger
-leds-qcom-flash
-msm_hw_fence
-ipclite
-synx-driver
-mem_buf_dev
-mdt_loader
-qcom-scm
-smmu_proxy_dlkm
-qcom_rpmh
-crm-v2
 camera
-
 endef
 
 # MM RVC modules
 define ES_MOD_ORDER_RV_GEN4
-gpucc-lemans dcvs_fp qcom_llcc_pmu mdt_loader nvmem_qfprom qcom_ipcc
-qcom-dcvs qcom-pmu-lib
-msm_performance
 
 endef
 
 # MM RVC modules
 define ES_MOD_ORDER_RV
-smem
-qcom_glink
-qcom_glink_smem
-qcom_smd
-rproc_qcom_common
-qmi_helpers
-heap_mem_ext_v01
-qcom-scm
 msm_memshare
 dcvs_fp
 qcom-dcvs
@@ -3902,7 +3879,6 @@ endef
 
 # MM QCXServer modules
 define ES_MOD_ORDER_QCX
-pinctrl-spmi-gpio
 gpio-pca953x
 camera
 
@@ -3910,67 +3886,14 @@ endef
 
 #Early Video APP modules
 define ES_MOD_ORDER_EARLY_VIDEO_APP
-socinfo
-qcom-scm
-mdt_loader
-qcom_va_minidump
-minidump
-mem_buf_dev
-msm-mmrm
-msm_dma_iommu_mapping
-llcc-qcom
-proxy-consumer
-debug-regulator
-gdsc-regulator
-qcom_ipc_logging
-crm-v2
-icc-clk
-clk-qcom
-
-smem
-qcom_glink
-debug_symbol
-qcom_dma_heaps
-qcom_glink_smem
-qcom_smd
-rproc_qcom_common
-
-ipclite
-
-gh_dbl
-gh_arm_drv
-gh_msgq
-gh_rm_drv
-msm_hw_fence
-synx-driver
-
-videocc-canoe
 msm_video
 
 endef
 
 # MM Audio reach modules
 define ES_MOD_ORDER_R_AU
-smp2p_sleepstate
-qcom_pil_info
-qcom_ramdump
-smp2p
-qcom_glink
-qcom_glink_spss
-qmi_helpers
-qcom_glink_smem
-qcom_smd
-rproc_qcom_common
 smem-mailbox
-slimbus
-qcom_sysmon
-qcom_pdr_msg
-pdr_interface
 frpc-adsprpc
-qcom_q6v5
-qrtr-smd
-qcom_q6v5_pas
-qcom_spss
 snd_event_dlkm
 q6_pdr_dlkm
 stub_dlkm
@@ -3984,7 +3907,6 @@ adsp_loader_dlkm
 q6_dlkm
 pinctrl_lpi_dlkm
 wcd_core_dlkm
-wcd_usbss_i2c
 mbhc_dlkm
 sdca_registers_dlkm
 swr_dlkm
@@ -3997,9 +3919,6 @@ wcd939x_slave_dlkm
 wcd939x_dlkm
 wsa883x_dlkm
 wsa884x_dlkm
-bam_dma
-slim-qcom-ngd-ctrl
-heap_mem_ext_v01
 swr_dmic_dlkm
 swr_ctrl_dlkm
 lpass_cdc_dlkm
@@ -4018,16 +3937,6 @@ endef
 
 # Early lxc modules
 define ES_MOD_ORDER_LXC
-msm_sysstats
-msm_performance
-ipclite
-msm_hw_fence
-qcom_va_minidump
-coresight
-rproc_qcom_common
-qcom_smd
-qcom_glink_smem
-qcom_glink
 msm_kgsl
 endef
 
@@ -4133,10 +4042,8 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH) $(ES_SYSTEM_DEPS)
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/ ;\
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lxc-data/; \
-  cp -r $(PRODUCT_OUT)/system_dlkm/lib/modules/rfkill.ko $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/rfkill.ko;\
         $(foreach fn, $(ES_MOD_ORDER_R_AU), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
         $(foreach fn, $(ES_MOD_ORDER_EARLY_VIDEO_APP), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
-		$(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/camera.ko --strip-debug $(PRODUCT_OUT)/dlkm/lib/modules/camera.ko;\
         $(foreach fn, $(ES_MOD_ORDER_AIS), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
 		$(foreach fn, $(ES_MOD_ORDER_LXC), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
 	echo > "$(TARGET_VENDOR_RAMDISK_OUT)/$(ES_VNDR_MOD_PATH)/modules.order" ;\
