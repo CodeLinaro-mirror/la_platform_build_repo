@@ -426,7 +426,7 @@ android_filesystem_defaults {
         // media_product
         ///////////////////////////////////////////
         "webview",
-
+        "preinstalled-packages-media-product.xml",
         ///////////////////////////////////////////
         // base_product
         ///////////////////////////////////////////
@@ -642,6 +642,7 @@ system_image_defaults {
         "mdnsd", // base_system
         "media_profiles_V1_0.dtd", // base_system
         "mediacodec.policy", // base_system
+        "mediacodeclist_generator", // base_system
         "mediaextractor", // base_system
         "misctrl", // from base_system
         "mke2fs", // base_system
@@ -1156,6 +1157,11 @@ system_image_defaults {
                 ],
                 default: [
                 ],
+            }) + select(release_flag("RELEASE_NPUMANAGER_MODULE"), {
+                true: [
+                    "libnpumanager", // base_system (RELEASE_NPUMANAGER_MODULE)
+                ],
+                default: [],
             }),
         },
     },

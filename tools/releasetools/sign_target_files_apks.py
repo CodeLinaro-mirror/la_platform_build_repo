@@ -1021,8 +1021,9 @@ def ProcessTargetFileEntries(input_tf_zip: zipfile.ZipFile, output_tf_dir: str, 
         with tempfile.NamedTemporaryFile() as image:
           image.write(data)
           image.flush()
-          ResignTrustyVM(image, payload_key, "SHA256_RSA4096",
-              misc_info)
+
+          # TODO(b/491073829): Enable re-signing of Trusty VMs on SYSTEM_EXT
+          # partition once the CF auto issue is resolved.
           WriteOutputFile(output_tf_dir, image.name, filename)
     elif fnmatch.fnmatch(filename, "VENDOR/etc/vm/trusty_vm/trusty_*.elf"):
       vendor_trusty_vm_key = OPTIONS.avb_keys.get("vendor_trusty_vm") or \

@@ -228,6 +228,7 @@ PRODUCT_PACKAGES += \
     lshal \
     mdnsd \
     mediacodec.policy \
+    mediacodeclist_generator \
     mediaextractor \
     media_profiles_V1_0.dtd \
     mediaserver \
@@ -386,12 +387,18 @@ endif
 
 ifeq ($(RELEASE_NPUMANAGER_MODULE),true)
     PRODUCT_PACKAGES += \
-       com.android.npumanager
+       com.android.npumanager \
+       libnpumanager
 endif
 
 ifeq ($(RELEASE_WEBAPP_MODULE),true)
     PRODUCT_PACKAGES += \
        com.android.webapp
+endif
+
+ifeq ($(RELEASE_BETTERTOGETHER_MODULE),true)
+    PRODUCT_PACKAGES += \
+       com.android.bettertogether
 endif
 
 # include in framework regardless of flag, so that we have overlap

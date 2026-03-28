@@ -3131,35 +3131,60 @@ CUSTOM_RECOVERY_MEDIA_RC := $(call intermediates-dir-for,ETC,recovery_media_init
 INTERNAL_VENDOR_RAMDISK_RECOVERY_MEDIA_TARGET := $(call intermediates-dir-for,PACKAGING,vendor_boot_recovery_media)/vendor_ramdisk.cpio$(RAMDISK_EXT)
 INSTALLED_VENDOR_BOOT_RECOVERY_MEDIA_TARGET := $(PRODUCT_OUT)/vendor_boot_recovery_media.img
 
+# Find the original recovery fragment to use as a base
+INTERNAL_VENDOR_RAMDISK_RECOVERY_BASE := $(filter %recovery.cpio$(RAMDISK_EXT),$(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS))
+
 $(INTERNAL_VENDOR_RAMDISK_RECOVERY_MEDIA_TARGET): PRIVATE_STAGING_DIR := $(call intermediates-dir-for,PACKAGING,vendor_boot_recovery_media_ramdisk)
-$(INTERNAL_VENDOR_RAMDISK_RECOVERY_MEDIA_TARGET): $(MKBOOTFS) $(INTERNAL_VENDOR_RAMDISK_FILES) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(CUSTOM_RECOVERY_MEDIA_BINARY) $(CUSTOM_RECOVERY_MEDIA_RC) $(INTERNAL_VENDOR_RAMDISK_TARGET) | $(COMPRESSION_COMMAND_DEPS)
-	@echo "Target vendor ramdisk (recovery media): $@"
+$(INTERNAL_VENDOR_RAMDISK_RECOVERY_MEDIA_TARGET): $(MKBOOTFS) $(CUSTOM_RECOVERY_MEDIA_BINARY) $(CUSTOM_RECOVERY_MEDIA_RC) $(INTERNAL_VENDOR_RAMDISK_RECOVERY_BASE) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) | $(COMPRESSION_COMMAND_DEPS)
+	@echo "Target vendor ramdisk fragment (all merged for media): $@"
 	$(hide) rm -rf $(PRIVATE_STAGING_DIR) && mkdir -p $(PRIVATE_STAGING_DIR)
-	$(hide) cp -af $(TARGET_VENDOR_RAMDISK_OUT)/. $(PRIVATE_STAGING_DIR)/
-	$(hide) if [ -d "$(TARGET_RECOVERY_ROOT_OUT)" ]; then \
-	    cp -af $(TARGET_RECOVERY_ROOT_OUT)/. $(PRIVATE_STAGING_DIR)/; \
+	$(hide) if [ -n "$(INTERNAL_VENDOR_RAMDISK_TARGET)" ]; then \
+	    $(LZ4) -d -c $(INTERNAL_VENDOR_RAMDISK_TARGET) | (cd $(PRIVATE_STAGING_DIR) && cpio -i -u); \
 	fi
-	$(hide) $(foreach fragment,$(INTERNAL_VENDOR_RAMDISK_FRAGMENTS), \
-	    if [ -d "$(VENDOR_RAMDISK_FRAGMENT.$(fragment).STAGING_DIR)" ]; then \
-	        cp -af $(VENDOR_RAMDISK_FRAGMENT.$(fragment).STAGING_DIR)/. $(PRIVATE_STAGING_DIR)/; \
-	    fi; \
+	$(hide) $(foreach fragment,$(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS), \
+	    $(LZ4) -d -c $(fragment) | (cd $(PRIVATE_STAGING_DIR) && cpio -i -u); \
 	)
 	$(hide) mkdir -p $(PRIVATE_STAGING_DIR)/system/bin $(PRIVATE_STAGING_DIR)/vendor/etc/init
+	$(hide) cp -f $(CUSTOM_RECOVERY_MEDIA_BINARY) $(PRIVATE_STAGING_DIR)/system/bin/recovery
 	$(hide) cp -f $(CUSTOM_RECOVERY_MEDIA_BINARY) $(PRIVATE_STAGING_DIR)/system/bin/recovery_media
 	$(hide) cp -f $(CUSTOM_RECOVERY_MEDIA_RC) $(PRIVATE_STAGING_DIR)/vendor/etc/init/recovery_media.rc
-	$(hide) $(MKBOOTFS) -d $(TARGET_OUT) $(PRIVATE_STAGING_DIR) | $(COMPRESSION_COMMAND) > $@
+	$(hide) if [ -d $(PRIVATE_STAGING_DIR)/first_stage_ramdisk ]; then \
+	    mkdir -p $(PRIVATE_STAGING_DIR)/first_stage_ramdisk/system/bin; \
+	    cp -f $(CUSTOM_RECOVERY_MEDIA_BINARY) $(PRIVATE_STAGING_DIR)/first_stage_ramdisk/system/bin/recovery; \
+	fi
+	$(hide) $(MKBOOTFS) $(PRIVATE_STAGING_DIR) | $(COMPRESSION_COMMAND) > $@
 
 $(INSTALLED_VENDOR_BOOT_RECOVERY_MEDIA_TARGET): PRIVATE_BOOTCONFIG := androidboot.init_rc=/vendor/etc/init/recovery_media.rc
-$(INSTALLED_VENDOR_BOOT_RECOVERY_MEDIA_TARGET): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_RECOVERY_MEDIA_TARGET) $(AVBTOOL)
+$(INSTALLED_VENDOR_BOOT_RECOVERY_MEDIA_TARGET): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_RECOVERY_MEDIA_TARGET) $(AVBTOOL) $(INTERNAL_VENDOR_BOOTCONFIG_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_RAMDISK_TARGET)
 	@echo "Target Recovery Media Image: $@"
-	$(hide) echo "$(PRIVATE_BOOTCONFIG)" > $(dir $@)vendor-bootconfig-recovery-media.img
-	$(hide) $(MKBOOTIMG) $(INTERNAL_VENDOR_BOOTIMAGE_ARGS) $(BOARD_MKBOOTIMG_ARGS) --vendor_ramdisk $(INTERNAL_VENDOR_RAMDISK_RECOVERY_MEDIA_TARGET) --vendor_bootconfig $(dir $@)vendor-bootconfig-recovery-media.img --vendor_boot $@
+	$(hide) rm -f $(dir $@)vendor-bootconfig-recovery-media.img
+	$(hide) if [ -f "$(INTERNAL_VENDOR_BOOTCONFIG_TARGET)" ]; then \
+	    sed -e 's/androidboot.force_normal_boot *= *"1"/androidboot.force_normal_boot = "0"/' \
+	        -e 's/androidboot.force_normal_boot=1/androidboot.force_normal_boot=0/' \
+	        $(INTERNAL_VENDOR_BOOTCONFIG_TARGET) > $(dir $@)vendor-bootconfig-recovery-media.img; \
+	else \
+	    echo "androidboot.force_normal_boot=0" > $(dir $@)vendor-bootconfig-recovery-media.img; \
+	fi
+	$(hide) if ! grep -q "androidboot.force_normal_boot" $(dir $@)vendor-bootconfig-recovery-media.img; then \
+	    echo "androidboot.force_normal_boot=0" >> $(dir $@)vendor-bootconfig-recovery-media.img; \
+	fi
+	$(hide) echo "$(PRIVATE_BOOTCONFIG)" >> $(dir $@)vendor-bootconfig-recovery-media.img
+	$(hide) $(MKBOOTIMG) \
+		$(filter-out --vendor_bootconfig $(INTERNAL_VENDOR_BOOTCONFIG_TARGET),$(INTERNAL_VENDOR_BOOTIMAGE_ARGS)) \
+		$(BOARD_MKBOOTIMG_ARGS) \
+		--vendor_ramdisk $(INTERNAL_VENDOR_RAMDISK_RECOVERY_MEDIA_TARGET) \
+		--vendor_bootconfig $(dir $@)vendor-bootconfig-recovery-media.img \
+		--vendor_boot $@
 ifeq ($(BOARD_AVB_ENABLE),true)
+	$(call assert-max-image-size,$@,$(call get-hash-image-max-size,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)))
 	$(hide) $(AVBTOOL) add_hash_footer \
 	    --image $@ \
 	    $(call get-partition-size-argument,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE)) \
-	    --partition_name vendor_boot \
-	    --algorithm $(BOARD_AVB_ALGORITHM) --key $(BOARD_AVB_KEY_PATH)
+	    --salt $$(sha256sum $(BUILD_NUMBER_FILE) $(BUILD_DATETIME_FILE) | cut -d " " -f 1 | tr -d '\n') \
+	    --partition_name vendor_boot $(INTERNAL_AVB_VENDOR_BOOT_SIGNING_ARGS) \
+	    $(BOARD_AVB_VENDOR_BOOT_ADD_HASH_FOOTER_ARGS)
+else
+	$(call assert-max-image-size,$@,$(BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE))
 endif
 
 # recovery_media.img bundle (installer kernel image)
