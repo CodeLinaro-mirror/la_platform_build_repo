@@ -103,6 +103,10 @@ message flag_declaration {
 
   // Additional information about the flag, including its purpose and form factors (optional)
   optional flag_metadata metadata = 7;
+
+  // Value type of the flag. Assume FLAG_TYPE_BOOLEAN if unspecified for backward compatibility.
+  // Currently only boolean flags are supported.
+  optional flag_type type = 8 [default = FLAG_TYPE_UNSPECIFIED];
 };
 
 // Optional metadata about the flag, such as its purpose and its intended form factors.

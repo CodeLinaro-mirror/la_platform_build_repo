@@ -137,6 +137,7 @@ android_filesystem_defaults {
         "messaging",
         "apns-full-conf.xml",
         "frameworks-base-overlays",
+        "preinstalled-packages-base-product.xml",
 
         ///////////////////////////////////////////
         // PRODUCT_PACKAGES_SHIPPING_API_LEVEL_33

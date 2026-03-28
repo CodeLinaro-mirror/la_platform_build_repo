@@ -50,10 +50,9 @@ endif
 
 art_target_include_debug_build := $(PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD)
 ifneq (false,$(art_target_include_debug_build))
-  # TODO: Re-enable eng builds using libartd b/478960347.
-  #ifneq (,$(filter eng,$(TARGET_BUILD_VARIANT)))
-  #  art_target_include_debug_build := true
-  #endif
+  ifneq (,$(filter eng,$(TARGET_BUILD_VARIANT)))
+    art_target_include_debug_build := true
+  endif
 endif
 
 ifeq (true,$(art_target_include_debug_build))

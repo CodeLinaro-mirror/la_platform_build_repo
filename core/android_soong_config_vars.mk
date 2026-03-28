@@ -289,6 +289,10 @@ $(call soong_config_set,bootclasspath,release_npumanager_module,$(RELEASE_NPUMAN
 $(call soong_config_set,ANDROID,release_webapp_module,$(RELEASE_WEBAPP_MODULE))
 $(call soong_config_set,bootclasspath,release_webapp_module,$(RELEASE_WEBAPP_MODULE))
 
+# Add bettertogether build flag to soong
+$(call soong_config_set,ANDROID,release_bettertogether_module,$(RELEASE_BETTERTOGETHER_MODULE))
+$(call soong_config_set,bootclasspath,release_bettertogether_module,$(RELEASE_BETTERTOGETHER_MODULE))
+
 # Add perf-setup build flag to soong
 # Note: BOARD_PERFSETUP_SCRIPT location must be under platform_testing/scripts/perf-setup/.
 ifdef BOARD_PERFSETUP_SCRIPT

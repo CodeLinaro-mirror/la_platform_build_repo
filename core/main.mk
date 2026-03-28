@@ -1892,6 +1892,12 @@ define add-make-module-to-json
       $(call add_json_list, static_libs, $(sort $(ALL_MODULES.$(1).STATIC_LIBS) $(ALL_MODULES.$(1).LOCAL_STATIC_LIBRARIES)))) \
     $(if $(strip $(ALL_MODULES.$(1).WHOLE_STATIC_LIBS)), \
       $(call add_json_list, whole_static_libs, $(sort $(ALL_MODULES.$(1).WHOLE_STATIC_LIBS)))) \
+    $(if $(strip $(ALL_MODULES.$(1).LICENSE_KINDS)), \
+      $(call add_json_list, license_kinds, $(sort $(ALL_MODULES.$(1).LICENSE_KINDS)))) \
+    $(if $(strip $(ALL_MODULES.$(1).LICENSE_CONDITIONS)), \
+      $(call add_json_list, license_kind_conditions, $(sort $(ALL_MODULES.$(1).LICENSE_CONDITIONS)))) \
+    $(if $(strip $(ALL_MODULES.$(1).NOTICES)), \
+      $(call add_json_list, license_text, $(sort $(ALL_MODULES.$(1).NOTICES)))) \
   $(call end_json_map)
 endef
 

@@ -179,6 +179,12 @@ ifeq ($(RELEASE_UPROBESTATS_BRIDGE_SERVICE),true)
 
 endif
 
+ifeq ($(RELEASE_BETTERTOGETHER_MODULE),true)
+    PRODUCT_APEX_BOOT_JARS += \
+        com.android.bettertogether:framework-bettertogether \
+
+endif
+
 # List of system_server classpath jars delivered via apex.
 # Keep the list sorted by module names and then library names.
 # Note: For modules available in Q, DO NOT add new entries here.
@@ -254,6 +260,13 @@ endif
 ifeq ($(RELEASE_UPROBESTATS_BRIDGE_SERVICE),true)
     PRODUCT_APEX_STANDALONE_SYSTEM_SERVER_JARS += \
         com.android.uprobestats:service-uprobestats-bridge
+endif
+
+ifeq ($(RELEASE_BETTERTOGETHER_MODULE),true)
+    PRODUCT_APEX_STANDALONE_SYSTEM_SERVER_JARS += \
+        com.android.bettertogether:service-device-to-device
+    PRODUCT_APEX_SYSTEM_SERVER_JARS += \
+        com.android.bettertogether:service-device-to-device
 endif
 
 # Overrides the (apex, jar) pairs above when determining the on-device location. The format is:
