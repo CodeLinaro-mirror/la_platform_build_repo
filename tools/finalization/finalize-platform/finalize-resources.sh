@@ -19,10 +19,19 @@ if grep -q '<public type="attr" name="zygotePreloadNativeLib"' "$TOP/frameworks/
     return
 fi
 
+tmp=$(mktemp)
+trap "rm -f $tmp" EXIT
 m finalize_res
 finalize_res \
     "$TOP/frameworks/base/core/res/res/values/public-staging.xml" \
-    "$TOP/frameworks/base/core/res/res/values/public-final.xml"
+    "$TOP/frameworks/base/core/res/res/values/public-final.xml" | tee $tmp
+
+if grep -q -e '^0 resource(s) were finalized' $tmp; then
+    pushd "$TOP/frameworks/base"
+    git reset --hard
+    popd
+    return
+fi
 
 m update-api
 

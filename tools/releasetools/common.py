@@ -1650,9 +1650,10 @@ def BuildVBMeta(image_path, partitions, name, needed_partitions,
   cmd = [avbtool, "make_vbmeta_image", "--output", image_path]
   AppendAVBSigningArgs(cmd, name)
 
-  custom_partitions = OPTIONS.info_dict.get(
-      "avb_custom_images_partition_list", "").strip().split()
-  custom_avb_partitions = ["vbmeta_" + part for part in OPTIONS.info_dict.get(
+  custom_partitions = OPTIONS.info_dict.get("custom_images_partition_list", "").strip().split()
+  custom_avb_partitions = OPTIONS.info_dict.get(
+        "avb_custom_images_partition_list", "").strip().split()
+  custom_vbmeta_partitions = ["vbmeta_" + part for part in OPTIONS.info_dict.get(
       "avb_custom_vbmeta_images_partition_list", "").strip().split()]
 
   avb_partitions = {}
@@ -1661,8 +1662,9 @@ def BuildVBMeta(image_path, partitions, name, needed_partitions,
       continue
     assert (partition in AVB_PARTITIONS or
             partition in AVB_VBMETA_PARTITIONS or
+            partition in custom_partitions or
             partition in custom_avb_partitions or
-            partition in custom_partitions), \
+            partition in custom_vbmeta_partitions), \
         'Unknown partition: {}'.format(partition)
     assert os.path.exists(path), \
         'Failed to find {} for {}'.format(path, partition)

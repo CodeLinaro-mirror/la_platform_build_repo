@@ -70,14 +70,16 @@ PROJECTS+=(cts)
 PROJECTS+=(development)
 PROJECTS+=(frameworks/base)
 PROJECTS+=(frameworks/libs/modules-utils)
+PROJECTS+=(frameworks/opt/net/wifi)
 PROJECTS+=(libcore)
 PROJECTS+=(packages/apps/Settings)
+PROJECTS+=(packages/modules/Permission)
 PROJECTS+=(packages/modules/SdkExtensions)
 PROJECTS+=(packages/modules/common)
 PROJECTS+=(platform_testing)
-PROJECTS+=(prebuilts/sdk)
 PROJECTS+=(prebuilts/abi-dumps/ndk)
 PROJECTS+=(prebuilts/abi-dumps/platform)
+PROJECTS+=(prebuilts/sdk)
 PROJECTS+=(tools/platform-compat)
 PROJECTS+=(vendor/google/release)
 PROJECTS+=(vendor/google_shared/build/release)
@@ -198,7 +200,7 @@ function apply_patches() {
     if [[ ! $RUNNING_ON_BUILD_SERVER ]]; then
         # the CLs were presumably downloaded from the build server; claim
         # ownership of them to be able to upload them to gerrit
-        git commit --amend --reset-author -C HEAD
+        git rebase --exec 'git commit --amend --reset-author -C HEAD' goog/main
     fi
     popd
 }
@@ -211,7 +213,17 @@ function apply_patches() {
 # $1: path to directory of patches
 function apply_patches_from_patchdir() {
     local patch_dir="$1"
-    for absolute_project_path in $(find $patch_dir -type f | xargs dirname | sort -u); do
+    if [[ ! -d "$patch_dir" ]]; then
+        info "nothing to do: patch directory does not exist: $patch_dir"
+        return
+    fi
+
+    if [[ $(find "$patch_dir" -type f | wc -l) -eq 0 ]]; then
+        info "nothing to do: no patches found in $patch_dir"
+        return
+    fi
+
+    for absolute_project_path in $(find "$patch_dir" -type f | xargs dirname | sort -u); do
         relative_project_path="${absolute_project_path#$patch_dir/}"
         # Hack to remove stray patches/ folder. NOOP if there isn't one
         project="${relative_project_path#patches/}"
@@ -308,4 +320,24 @@ Bug: $BUG
 Test: N/A
 Flag: NONE platform SDK finalization
 EOF
+}
+
+# Temporarily set RELEASE_PLATFORM_PROSPECTIVE_SDK_VERSION_FULL. Caller is
+# expected to call clear_prospective_sdk_version_full before exiting.
+function set_prospective_sdk_version_full() {
+    local value="$1"
+
+    cat > $TOP/vendor/google_shared/build/release/flag_values/cp2a/RELEASE_PLATFORM_PROSPECTIVE_SDK_VERSION_FULL.textproto <<EOF
+name: "RELEASE_PLATFORM_PROSPECTIVE_SDK_VERSION_FULL"
+value: {
+  string_value: "$value"
+}
+EOF
+    trap "rm -f $TOP/vendor/google_shared/build/release/flag_values/cp2a/RELEASE_PLATFORM_PROSPECTIVE_SDK_VERSION_FULL.textproto" EXIT
+}
+
+# Unset RELEASE_PLATFORM_PROSPECTIVE_SDK_VERSION_FULL
+function clear_prospective_sdk_version_full() {
+    # (build-flag doesn't allow unsetting flag values, so remove it explicitly. FIXME: hard-codes cp2a as next)
+    rm -f $TOP/vendor/google_shared/build/release/flag_values/cp2a/RELEASE_PLATFORM_PROSPECTIVE_SDK_VERSION_FULL.textproto
 }

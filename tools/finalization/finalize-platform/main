@@ -62,7 +62,7 @@ while [[ $# -gt 0 ]]; do
                 error "--patch-dir: missing <value>"
                 exit 1
             fi
-            patch_dir="$(readlink -f "$2")"
+            patch_dir="$(readlink -m "$2")"
             shift 2
             ;;
         --mainline-sdks-dir)
@@ -137,10 +137,14 @@ case "$command" in
         source "$(dirname "$0")"/finalize-release-configs.sh
         ;;
 
+    re-finalize-platform-sdk-with-deps)
+        source "$(dirname "$0")"/re-finalize-platform-sdk-with-deps.sh
+        ;;
+
     # special commands
     download-patches)
         require_arg "--patch-dir" "patch_dir"
-        require_arg "--target" "build_server_target"
+        require_arg "--build-server-target" "build_server_target"
         download_patches_to_patchdir "$patch_dir" "$build_server_target" "$build_server_id"
         ;;
     apply-patches)
