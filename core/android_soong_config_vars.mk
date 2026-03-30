@@ -146,6 +146,13 @@ ifdef PRODUCT_AVF_MICRODROID_GUEST_GKI_VERSION
 $(call add_soong_config_var_value,ANDROID,avf_microdroid_guest_gki_version,$(PRODUCT_AVF_MICRODROID_GUEST_GKI_VERSION))
 endif
 
+ifdef PRODUCT_AVF_MICRODROID_PAGE_REPORTING_ORDER
+  ifeq ($(filter $(PRODUCT_AVF_MICRODROID_PAGE_REPORTING_ORDER),0 1 2 3 4 5 6 7 8 9 10),)
+    $(error PRODUCT_AVF_MICRODROID_PAGE_REPORTING_ORDER must be between 0 and 10, got $(PRODUCT_AVF_MICRODROID_PAGE_REPORTING_ORDER))
+  endif
+  $(call add_soong_config_var_value,ANDROID,avf_microdroid_page_reporting_order,$(PRODUCT_AVF_MICRODROID_PAGE_REPORTING_ORDER))
+endif
+
 ifdef TARGET_BOOTS_16K
 $(call soong_config_set_bool,ANDROID,target_boots_16k,$(filter true,$(TARGET_BOOTS_16K)))
 endif

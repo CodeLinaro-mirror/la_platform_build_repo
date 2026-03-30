@@ -39,6 +39,14 @@
         "com_android_bt": {
             "container": "com.android.bt",
             "allow_exported": true
+        },
+        "com_android_crashrecovery": {
+            "container": "com.android.crashrecovery",
+            "allow_exported": true
+        },
+        "com_android_profiling": {
+            "container": "com.android.profiling",
+            "allow_exported": true
         }
     }
 }

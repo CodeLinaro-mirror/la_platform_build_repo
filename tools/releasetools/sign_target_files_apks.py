@@ -1003,9 +1003,21 @@ def ProcessTargetFileEntries(input_tf_zip: zipfile.ZipFile, output_tf_dir: str, 
         image.write(data)
         image.flush()
         extra_args = OPTIONS.avb_extra_args.get("apex")
-        ResignDesktopTrusty(image, desktop_key, desktop_algorithm,
+        ResignTrustyVM(image, desktop_key, desktop_algorithm,
             misc_info, extra_args)
         WriteOutputFile(output_tf_dir, image.name, filename)
+    elif fnmatch.fnmatch(filename, "SYSTEM_EXT/etc/vm/trusty_vm/trusty_*.elf"):
+      payload_key = OPTIONS.extra_apex_payload_keys["com.google.android.virt.apex"]
+      if payload_key == 'PRESIGNED':
+        # TODO(b/491364851): Ensure Trusty VM is signed with microdroid vbmeta key
+        print("Skip re-signing %s: virt APEX is PRESIGNED" % filename)
+      else:
+        with tempfile.NamedTemporaryFile() as image:
+          image.write(data)
+          image.flush()
+          ResignTrustyVM(image, payload_key, "SHA256_RSA4096",
+              misc_info)
+          WriteOutputFile(output_tf_dir, image.name, filename)
     # A non-APK file; copy it verbatim.
     else:
       WriteOutputData(output_tf_dir, out_info, data)
@@ -1076,14 +1088,16 @@ def ProcessTargetFiles(input_tf_zip: zipfile.ZipFile, output_tf_dir: str, misc_i
   # Write back misc_info with the latest values.
   ReplaceMiscInfoTxt(input_tf_zip, output_tf_dir, misc_info)
 
-def ResignDesktopTrusty(image, new_key, new_algorithm, misc_info, extra_args):
+def ResignTrustyVM(image, new_key, new_algorithm, misc_info, extra_args=None):
     avbtool = misc_info["avb_avbtool"]
     cmd = ["trusty_vm_signing_tool",
       "--avbtool", avbtool,
       "--key", new_key,
       "--algorithm", new_algorithm,
       "--elf-file", image.name,
-    ] + shlex.split(extra_args)
+    ]
+    if extra_args:
+      cmd += shlex.split(extra_args)
     common.RunAndCheckOutput(cmd)
 
 def ReplaceKeyInAvbHashtreeFooter(image, new_key, new_algorithm, misc_info):

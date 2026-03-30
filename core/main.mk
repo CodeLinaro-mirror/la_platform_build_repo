@@ -1876,13 +1876,23 @@ $(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/installed_files.stamp: $(
 _MAKE_METADATA_JSON := $(SOONG_OUT_DIR)/soong_api/$(TARGET_PRODUCT)/make-modules.json
 _SOONG_API_ZIP := $(SOONG_OUT_DIR)/soong_api/$(TARGET_PRODUCT)/soong_api.zip
 
+# To populate the JSON 'static_libs' field, we merge two variables:
+# STATIC_LIBS (used by native modules) and LOCAL_STATIC_LIBRARIES (used by Java modules).
 define add-make-module-to-json
   $(call add_json_map_anon) \
     $(call add_json_str, name, $(1)) \
     $(call add_json_str, type, $(sort $(ALL_MODULES.$(1).MAKE_MODULE_TYPE))) \
     $(call add_json_list, path, $(sort $(ALL_MODULES.$(1).PATH))) \
-    $(call add_json_list, installed, $(sort $(ALL_MODULES.$(1).INSTALLED))) \
+    $(call add_json_bool, enabled, true) \
+    $(if $(strip $(ALL_MODULES.$(1).INSTALLED)), \
+      $(call add_json_list, install_files, $(sort $(ALL_MODULES.$(1).INSTALLED)))) \
     $(call add_json_bool, is_make_module, true) \
+    $(if $(strip $(ALL_MODULES.$(1).BUILT)), \
+      $(call add_json_list, built_files, $(sort $(ALL_MODULES.$(1).BUILT)))) \
+    $(if $(strip $(ALL_MODULES.$(1).STATIC_LIBS) $(ALL_MODULES.$(1).LOCAL_STATIC_LIBRARIES)), \
+      $(call add_json_list, static_libs, $(sort $(ALL_MODULES.$(1).STATIC_LIBS) $(ALL_MODULES.$(1).LOCAL_STATIC_LIBRARIES)))) \
+    $(if $(strip $(ALL_MODULES.$(1).WHOLE_STATIC_LIBS)), \
+      $(call add_json_list, whole_static_libs, $(sort $(ALL_MODULES.$(1).WHOLE_STATIC_LIBS)))) \
   $(call end_json_map)
 endef
 

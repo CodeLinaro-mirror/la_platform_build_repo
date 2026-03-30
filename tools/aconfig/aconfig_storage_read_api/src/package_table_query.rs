@@ -78,7 +78,7 @@ pub fn find_package_read_context(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aconfig_storage_file::{test_utils::create_test_package_table, DEFAULT_FILE_VERSION};
+    use aconfig_storage_file::test_utils::create_test_package_table;
 
     #[test]
     // this test point locks down table query - v1 files.
@@ -251,35 +251,39 @@ mod tests {
     #[test]
     // this test point locks down table query of a non exist package
     fn test_not_existed_package_query() {
-        // this will land at an empty bucket
-        let package_table = create_test_package_table(DEFAULT_FILE_VERSION).into_bytes();
-        let package_context =
-            find_package_read_context(&package_table[..], "com.android.aconfig.storage.test_3")
-                .unwrap();
-        assert_eq!(package_context, None);
-        // this will land at the end of a linked list
-        let package_context =
-            find_package_read_context(&package_table[..], "com.android.aconfig.storage.test_5")
-                .unwrap();
-        assert_eq!(package_context, None);
+        for version in 1..=MAX_SUPPORTED_FILE_VERSION {
+            // this will land at an empty bucket
+            let package_table = create_test_package_table(version).into_bytes();
+            let package_context =
+                find_package_read_context(&package_table[..], "com.android.aconfig.storage.test_3")
+                    .unwrap();
+            assert_eq!(package_context, None);
+            // this will land at the end of a linked list
+            let package_context =
+                find_package_read_context(&package_table[..], "com.android.aconfig.storage.test_5")
+                    .unwrap();
+            assert_eq!(package_context, None);
+        }
     }
 
     #[test]
     // this test point locks down query error when file has a higher version
     fn test_higher_version_storage_file() {
-        let mut table = create_test_package_table(DEFAULT_FILE_VERSION);
-        table.header.version = MAX_SUPPORTED_FILE_VERSION + 1;
-        let package_table = table.into_bytes();
-        let error =
-            find_package_read_context(&package_table[..], "com.android.aconfig.storage.test_1")
-                .unwrap_err();
-        assert!(
-            format!("{:?}", error).starts_with(&
-            format!(
-                "HigherStorageFileVersion(Cannot read storage file with a higher version of {} with lib version {}",
-                MAX_SUPPORTED_FILE_VERSION + 1,
-                MAX_SUPPORTED_FILE_VERSION
-            ))
-        );
+        for version in 1..=MAX_SUPPORTED_FILE_VERSION {
+            let mut table = create_test_package_table(version);
+            table.header.version = MAX_SUPPORTED_FILE_VERSION + 1;
+            let package_table = table.into_bytes();
+            let error =
+                find_package_read_context(&package_table[..], "com.android.aconfig.storage.test_1")
+                    .unwrap_err();
+            assert!(
+                format!("{:?}", error).starts_with(&
+                format!(
+                    "HigherStorageFileVersion(Cannot read storage file with a higher version of {} with lib version {}",
+                    MAX_SUPPORTED_FILE_VERSION + 1,
+                    MAX_SUPPORTED_FILE_VERSION
+                ))
+            );
+        }
     }
 }

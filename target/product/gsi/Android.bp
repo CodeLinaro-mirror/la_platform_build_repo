@@ -107,6 +107,7 @@ android_filesystem_defaults {
 
         // telephony packages
         "CarrierConfig",
+        "preinstalled-packages-gsi-system-ext.xml",
 
         ///////////////////////////////////////////
         // gsi_release
@@ -136,6 +137,11 @@ android_filesystem_defaults {
         "messaging",
         "apns-full-conf.xml",
         "frameworks-base-overlays",
+
+        ///////////////////////////////////////////
+        // PRODUCT_PACKAGES_SHIPPING_API_LEVEL_33
+        ///////////////////////////////////////////
+        "wificond",
 
         ///////////////////////////////////////////
         // PRODUCT_PACKAGES_SHIPPING_API_LEVEL_34
@@ -207,6 +213,7 @@ android_system_image {
         // telephony_product
         "ImsServiceEntitlement",
         "preinstalled-packages-platform-telephony-product.xml",
+        "preinstalled-packages-telephony-system-ext.xml",
 
         // more AOSP packages
         "initial-package-stopped-states-aosp.xml",
