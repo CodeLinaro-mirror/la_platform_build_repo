@@ -124,7 +124,8 @@ namespace {cpp_namespace} \{
                 {{ if use_package_fingerprint- }}
 
                 if (!fingerprint_matches_) \{
-                    ALOGI("error: package fingerprint mismtach for package {package}, returning flag default value.");
+                    // TODO (b/480204891)
+                    // ALOGI("error: package fingerprint mismatch for package {package}, returning flag default value.");
                     return {item.default_value};
                 }
                 {{ -endif }}{#- end of use_package_fingerprint #}
@@ -239,7 +240,8 @@ namespace {cpp_namespace} \{
                 {{ if use_package_fingerprint- }}
 
                 if (!fingerprint_matches_) \{
-                    ALOGI("error: package fingerprint mismtach for package {package}, returning flag default value.");
+                    // TODO (b/480204891)
+                    // ALOGI("error: package fingerprint mismatch for package {package}, returning flag default value.");
                     return {item.default_value};
                 }
                 {{ -endif }}{#- end of use_package_fingerprint #}

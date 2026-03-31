@@ -462,6 +462,35 @@ else
 endif
 .KATI_READONLY := TARGET_MAX_PAGE_SIZE_SUPPORTED
 
+TARGET_RESTRICTS_ASHMEM_USAGE := false
+
+# TODO: b/443130838
+#
+# This needs to be removed after all targets that have vendor API level
+# 202604 have migrated to 6.12+ kernels, excluding CF WearOS and TV.
+TARGET_FORCES_ASHMEM_USAGE ?= false
+
+# If the vendor API level is 202604, then the device restricts what
+# applications can use ashmem.
+#
+# Check if the build is for CF on either WearOS or TV, as they are pinned to
+# older kernel versions that do not have memfd_class support, and therefore
+# must continue to use ashmem unconditionally. This can be simplified to just
+# the VSR_VENDOR_API_LEVEL check once all CF instances move to kernel version
+# 6.12 or newer.
+#
+# TARGET_FORCES_ASHMEM_USAGE is only to be used if vendor API level is 202604
+# or higher, but the kernel hasn't been upgraded to 6.12+ just yet.
+ifeq ($(call math_gt_or_eq,$(VSR_VENDOR_API_LEVEL),202604),true)
+ifneq (true,$(CLOCKWORK_EMULATOR_PRODUCT))
+ifeq (,$(findstring x86_tv,$(PRODUCT_NAME)))
+ifneq (true,$(TARGET_FORCES_ASHMEM_USAGE))
+  TARGET_RESTRICTS_ASHMEM_USAGE := true
+endif
+endif
+endif
+endif
+
 # Boolean variable determining if AOSP relies on bionic's PAGE_SIZE macro.
 ifdef PRODUCT_NO_BIONIC_PAGE_SIZE_MACRO
   TARGET_NO_BIONIC_PAGE_SIZE_MACRO := $(PRODUCT_NO_BIONIC_PAGE_SIZE_MACRO)
@@ -771,8 +800,7 @@ endif
     PRODUCT_COMPATIBLE_PROPERTY
 
 $(KATI_obsolete_var PRODUCT_TREBLE_LINKER_NAMESPACES,This is now always true.)
-# TODO(b/307369186): restore
-# $(KATI_obsolete_var PRODUCT_ENFORCE_VINTF_MANIFEST,This is now always true.)
+$(KATI_obsolete_var PRODUCT_ENFORCE_VINTF_MANIFEST,This is now always true.)
 $(KATI_obsolete_var PRODUCT_TREBLE_LINKER_NAMESPACES_OVERRIDE,Deprecated.)
 $(KATI_obsolete_var PRODUCT_ENFORCE_VINTF_MANIFEST_OVERRIDE,Deprecated.)
 $(KATI_obsolete_var PRODUCT_FULL_TREBLE_OVERRIDE,Deprecated.)

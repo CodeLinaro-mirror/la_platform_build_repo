@@ -1078,7 +1078,7 @@ def ProcessTargetFiles(input_tf_zip: zipfile.ZipFile, output_tf_dir: str, misc_i
 
 def ResignDesktopTrusty(image, new_key, new_algorithm, misc_info, extra_args):
     avbtool = misc_info["avb_avbtool"]
-    cmd = ["desktop_trusty_signing_tool",
+    cmd = ["trusty_vm_signing_tool",
       "--avbtool", avbtool,
       "--key", new_key,
       "--algorithm", new_algorithm,

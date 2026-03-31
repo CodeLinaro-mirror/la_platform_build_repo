@@ -3,6 +3,9 @@ From: =?UTF-8?q?M=C3=A5rten=20Kongstad?= <amhk@google.com>
 Date: Mon, 9 Feb 2026 14:28:24 +0000
 Subject: [PATCH 2/2] Rename VersionCodes.C -> VersionCodes.CINNAMON_BUN
 
+Bug: 480974361
+Test: N/A
+Flag: NONE platform SDK finalization
 Change-Id: Ia5e338bf15ad6812d95953b970200ef045f65d3d
 ---
  .../harmony/tests/java/util/ScannerTest.java  | 32 +++++++++----------

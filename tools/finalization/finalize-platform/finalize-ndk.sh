@@ -14,13 +14,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+if test -e "$TOP/prebuilts/abi-dumps/ndk/$MAJOR"; then
+    info "finalize-ndk: already done, exit early"
+    return
+fi
+
 # TODO: Use sdk_finalization ?
 TARGET_RELEASE=trunk_staging
-
-# TODO: remove this when it is no longer needed (when wear has fixed their setup or landed 37)
-apply_patches \
-    prebuilts/sdk \
-    "$BUNDLED_PATCHES"/prebuilts/sdk/0001-wear-temporarily-hard-code-wear-sdk-public-jar-sourc.patch
 
 set_build_flags $TARGET_RELEASE \
     RELEASE_PLATFORM_SDK_VERSION=$MAJOR \
@@ -33,8 +33,9 @@ Record the NDK APIs for $MAJOR
 Generated with development/tools/ndk/update_ndk_abi.sh with
 RELEASE_PLATFORM_SDK_VERSION set to $MAJOR for $TARGET_RELEASE
 
-Test: N/A
 Bug: $BUG
+Test: N/A
+Flag: NONE platform SDK finalization
 EOF
 
 m create_reference_dumps
@@ -51,8 +52,9 @@ create_reference_dumps \\
     --build-variant $TARGET_BUILD_VARIANT \\
     --lib-variant APEX
 
-Test: N/A
 Bug: $BUG
+Test: N/A
+Flag: NONE platform SDK finalization
 EOF
 
 project=$(get_project_for_release $TARGET_RELEASE)

@@ -553,6 +553,58 @@ class DaemonManagerTest(unittest.TestCase):
     )
 
 
+  def test_aggregate_and_send_metrics(self):
+    fake_cclient = FakeClearcutClient()
+    dm = daemon_manager.DaemonManager(
+        TEST_BINARY_FILE,
+        daemon_target=simple_daemon,
+        cclient=fake_cclient,
+    )
+    dm.total_memory_size = 1000
+    cpu_samples = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+    memory_samples = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+    dm._aggregate_and_send_metrics(cpu_samples, memory_samples, 60)
+    sent_events = fake_cclient.get_sent_events()
+    self.assertEqual(len(sent_events), 1)
+    metrics_event = edit_event_pb2.EditEvent.FromString(
+        sent_events[0].source_extension
+    ).metrics_event
+    self.assertAlmostEqual(metrics_event.cpu_usage_p50, 5.5)
+    self.assertAlmostEqual(metrics_event.cpu_usage_p95, 9.55)
+    self.assertAlmostEqual(metrics_event.cpu_usage_max, 10.0)
+    self.assertAlmostEqual(metrics_event.memory_usage_p50, 550.0)
+    self.assertAlmostEqual(metrics_event.memory_usage_p95, 955.0)
+    self.assertAlmostEqual(metrics_event.memory_usage_max, 1000.0)
+    self.assertEqual(metrics_event.time_window_seconds, 60)
+
+  def test_get_percentile_linear_interpolation(self):
+    dm = daemon_manager.DaemonManager(TEST_BINARY_FILE)
+    samples = [1.0, 2.0, 3.0, 4.0, 5.0]
+    # P50 (median) of [1, 2, 3, 4, 5] should be 3.0
+    self.assertAlmostEqual(dm._get_percentile(samples, 0.5), 3.0)
+    # P95: index = 4 * 0.95 = 3.8. lower = 3, upper = 4.
+    # value = samples[3] * 0.2 + samples[4] * 0.8 = 4.0 * 0.2 + 5.0 * 0.8 = 0.8 + 4.0 = 4.8
+    self.assertAlmostEqual(dm._get_percentile(samples, 0.95), 4.8)
+
+  def test_get_percentile_empty_samples(self):
+    dm = daemon_manager.DaemonManager(TEST_BINARY_FILE)
+    self.assertEqual(dm._get_percentile([], 0.95), 0.0)
+
+  def test_get_percentile_single_sample(self):
+    dm = daemon_manager.DaemonManager(TEST_BINARY_FILE)
+    self.assertEqual(dm._get_percentile([10.0], 0.5), 10.0)
+    self.assertEqual(dm._get_percentile([10.0], 0.95), 10.0)
+
+  def test_aggregate_and_send_metrics_empty(self):
+    fake_cclient = FakeClearcutClient()
+    dm = daemon_manager.DaemonManager(
+        TEST_BINARY_FILE,
+        daemon_target=simple_daemon,
+        cclient=fake_cclient,
+    )
+    dm._aggregate_and_send_metrics([], [], 60)
+    self.assertEqual(len(fake_cclient.get_sent_events()), 0)
+
 class FakeClearcutClient:
 
   def __init__(self):

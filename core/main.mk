@@ -677,7 +677,7 @@ endef
 # Scan all modules in general-tests, device-tests and other selected suites and
 # flatten the shared library dependencies.
 define update-host-shared-libs-deps-for-suites
-$(foreach suite,general-tests device-tests vts tvts art-host-tests host-unit-tests camera-hal-tests,\
+$(foreach suite,general-tests device-tests vts tvts sdvts art-host-tests host-unit-tests camera-hal-tests,\
   $(eval COMPATIBILITY.$(suite).SYMLINKS :=)\
   $(eval COMPATIBILITY.$(suite).HOST_SHARED_LIBRARY.FILES :=)\
   $(foreach m,$(COMPATIBILITY.$(suite).MODULES),\
@@ -1868,6 +1868,65 @@ $(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/make_modules.csv:
 
 $(SOONG_OUT_DIR)/compliance-metadata/$(TARGET_PRODUCT)/installed_files.stamp: $(installed_files)
 	touch $@
+
+# -----------------------------------------------------------------
+# ==============================================================================
+# Soong API Integration (Analysis-Time)
+# ==============================================================================
+_MAKE_METADATA_JSON := $(SOONG_OUT_DIR)/soong_api/$(TARGET_PRODUCT)/make-modules.json
+_SOONG_API_ZIP := $(SOONG_OUT_DIR)/soong_api/$(TARGET_PRODUCT)/soong_api.zip
+
+define add-make-module-to-json
+  $(call add_json_map_anon) \
+    $(call add_json_str, name, $(1)) \
+    $(call add_json_str, type, $(sort $(ALL_MODULES.$(1).MAKE_MODULE_TYPE))) \
+    $(call add_json_list, path, $(sort $(ALL_MODULES.$(1).PATH))) \
+    $(call add_json_list, installed, $(sort $(ALL_MODULES.$(1).INSTALLED))) \
+    $(call add_json_bool, is_make_module, true) \
+  $(call end_json_map)
+endef
+
+# Preparing make module json content.
+_make_modules := $(strip $(foreach m,$(ALL_MODULES),$(if $(ALL_MODULES.$(m).IS_SOONG_MODULE),,$(m))))
+
+_json_contents := [$(newline)
+_json_indent := $(4space)
+
+ifneq ($(_make_modules),)
+  $(foreach m,$(_make_modules),$(call add-make-module-to-json,$(m)))
+endif
+
+_json_contents := $(subst $(comma)$(newline)__SV_END,$(newline),$(_json_contents)__SV_END)]$(newline)
+
+# Write it to file
+_make_metadata_json := \
+  $(shell mkdir -p $(dir $(_MAKE_METADATA_JSON))) \
+  $(file >$(_MAKE_METADATA_JSON),$(_json_contents))
+
+# Merge and update soong_api.zip IN-PLACE
+_make_metadata_soong_integration := \
+  $(shell \
+    if [ ! -f "$(_SOONG_API_ZIP)" ]; then \
+      echo "[SNAPI] ERROR: Soong API Zip not found at $(_SOONG_API_ZIP)"; \
+      exit 1; \
+    fi; \
+    \
+    if [ ! -f "$(_MAKE_METADATA_JSON)" ]; then \
+      echo "[SNAPI] ERROR: Make metadata JSON not found at $(_MAKE_METADATA_JSON)"; \
+      exit 1; \
+    fi; \
+    \
+    zip -qj "$(_SOONG_API_ZIP)" "$(_MAKE_METADATA_JSON)" \
+  )
+
+ifneq ($(.SHELLSTATUS),0)
+  $(error $(_make_metadata_soong_integration))
+endif
+
+# ==============================================================================
+# End Soong API Integration (Analysis-Time)
+# ==============================================================================
+# -----------------------------------------------------------------
 
 # Remove the always_dirty_file.txt whenever the makefile is evaluated
 $(shell rm -f $(PRODUCT_OUT)/always_dirty_file.txt)

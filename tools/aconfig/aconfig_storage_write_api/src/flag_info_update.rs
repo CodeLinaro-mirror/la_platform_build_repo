@@ -105,7 +105,7 @@ mod tests {
     fn test_update_flag_has_server_override() {
         let flag_info_list = create_test_flag_info_list(DEFAULT_FILE_VERSION);
         let mut buf = flag_info_list.into_bytes();
-        for i in 0..flag_info_list.header.num_flags {
+        for i in 0..flag_info_list.header.num_boolean_flags {
             update_flag_has_server_override(&mut buf, FlagValueType::Boolean, i, true).unwrap();
             let attribute = find_flag_attribute(&buf, FlagValueType::Boolean, i).unwrap();
             assert!((attribute & (FlagInfoBit::HasServerOverride as u8)) != 0);
@@ -113,6 +113,8 @@ mod tests {
             let attribute = find_flag_attribute(&buf, FlagValueType::Boolean, i).unwrap();
             assert!((attribute & (FlagInfoBit::HasServerOverride as u8)) == 0);
         }
+
+        // TODO(b/439864800): Add test for integer flags.
     }
 
     #[test]
@@ -120,7 +122,7 @@ mod tests {
     fn test_update_flag_has_local_override() {
         let flag_info_list = create_test_flag_info_list(DEFAULT_FILE_VERSION);
         let mut buf = flag_info_list.into_bytes();
-        for i in 0..flag_info_list.header.num_flags {
+        for i in 0..flag_info_list.header.num_boolean_flags {
             update_flag_has_local_override(&mut buf, FlagValueType::Boolean, i, true).unwrap();
             let attribute = find_flag_attribute(&buf, FlagValueType::Boolean, i).unwrap();
             assert!((attribute & (FlagInfoBit::HasLocalOverride as u8)) != 0);
@@ -128,5 +130,7 @@ mod tests {
             let attribute = find_flag_attribute(&buf, FlagValueType::Boolean, i).unwrap();
             assert!((attribute & (FlagInfoBit::HasLocalOverride as u8)) == 0);
         }
+
+        // TODO(b/439864800): Add test for integer flags.
     }
 }

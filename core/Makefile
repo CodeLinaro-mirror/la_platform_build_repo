@@ -7059,6 +7059,9 @@ $(BUILT_TARGET_FILES_PACKAGE): $(BUILT_TARGET_FILES_DIR)
 .PHONY: target-files-package
 target-files-package: $(BUILT_TARGET_FILES_PACKAGE)
 
+.PHONY: target-files-package-soong-diff-test
+target-files-package-soong-diff-test: target-files-package
+
 .PHONY: target-files-dir
 target-files-dir: $(BUILT_TARGET_FILES_DIR)
 
@@ -7475,6 +7478,7 @@ $(INTERNAL_SUPERIMAGE_DIST_TARGET): $(LPMAKE) $(BUILT_TARGET_FILES_DIR) $(BUILD_
 # Skip packing it in dist package because it is in update package.
 ifneq (true,$(BOARD_SUPER_IMAGE_IN_UPDATE_PACKAGE))
 $(call dist-for-goals,dist_files,$(INTERNAL_SUPERIMAGE_DIST_TARGET))
+$(call dist-for-goals,target-files-package-soong-diff-test,$(INTERNAL_SUPERIMAGE_DIST_TARGET))
 endif
 
 .PHONY: superimage_dist
@@ -7808,19 +7812,28 @@ deps := \
 	$(sdk_atree_files) \
 	$(HOST_OUT_EXECUTABLES)/atree
 
-# The name of the subdir within the platforms dir of the sdk. One of:
-# - android-<SDK_INT> (stable base dessert SDKs)
-# - android-<CODENAME> (stable extension SDKs)
-# - android-<SDK_INT>-ext<EXT_INT> (codename SDKs)
-sdk_platform_dir_name := $(strip \
-  $(if $(filter REL,$(PLATFORM_VERSION_CODENAME)), \
-    $(if $(filter $(PLATFORM_SDK_EXTENSION_VERSION),$(PLATFORM_BASE_SDK_EXTENSION_VERSION)), \
-      android-$(PLATFORM_SDK_VERSION_FULL), \
-      android-$(PLATFORM_SDK_VERSION_FULL)-ext$(PLATFORM_SDK_EXTENSION_VERSION) \
-    ), \
-    android-$(PLATFORM_VERSION_CODENAME) \
-  ) \
-)
+# The name of the subdir within the platforms dir of the sdk.
+#   if canary build          : android-canary-$PREVIEW_SDK_INT         (android-canary-20250617)
+#   if beta build            : android-$UPCOMING_SDK_INT_FULL-ext$BETA (android-36.1-beta2)
+#   if REL                   : android-$SDK_INT_FULL                   (android-36.1)
+#   if REL with newer SDK ext: android-$SDK_INT_FULL-ext$SDK_EXT       (android-36.1-ext22)
+#   else (internal DEV)      : android-$CODENAME                       (android-CinnamonBun)
+ifeq ($(PLATFORM_VERSION_CODENAME),CANARY)
+sdk_platform_dir_name := android-canary-$(PLATFORM_PREVIEW_SDK_VERSION)
+else ifeq (,$(filter $(PLATFORM_PREVIEW_SDK_VERSION),0 1))
+major := $(shell echo "$(PLATFORM_PREVIEW_SDK_VERSION)" | cut -c 1-2)
+minor := $(shell echo "$(PLATFORM_PREVIEW_SDK_VERSION)" | cut -c 3)
+beta := $(shell echo "$(PLATFORM_PREVIEW_SDK_VERSION)" | cut -c 4)
+sdk_platform_dir_name := android-$(major).$(minor)-beta$(beta)
+else ifeq ($(PLATFORM_VERSION_CODENAME),REL)
+  ifeq ($(PLATFORM_SDK_EXTENSION_VERSION),$(PLATFORM_BASE_SDK_EXTENSION_VERSION))
+    sdk_platform_dir_name := android-$(PLATFORM_SDK_VERSION_FULL)
+  else
+    sdk_platform_dir_name := android-$(PLATFORM_SDK_VERSION_FULL)-ext$(PLATFORM_SDK_EXTENSION_VERSION)
+  endif
+else
+sdk_platform_dir_name := android-$(PLATFORM_VERSION_CODENAME)
+endif
 
 INTERNAL_SDK_TARGET := $(sdk_dir)/$(sdk_name).zip
 $(INTERNAL_SDK_TARGET): PRIVATE_NAME := $(sdk_name)
@@ -7928,6 +7941,14 @@ ifneq (,$(GENERATED_FW_IMAGE))
 $(call dist-for-goals,dist_files,$(GENERATED_FW_IMAGE):${TARGET_PRODUCT}-firmware.img)
 endif
 
+# What is passed into recovery image creation.
+DESKTOP_FIRMWARE_MODULE_RECOVERY := $(GENERATED_FW_IMAGE)
+
+# Only set this after dist call.
+ifneq (,$(DESKTOP_FIRMWARE_MODULE_RECOVERY_INTERCEPT))
+DESKTOP_FIRMWARE_MODULE_RECOVERY := $(call module-built-files,$(DESKTOP_FIRMWARE_MODULE_RECOVERY_INTERCEPT))
+endif
+
 # -----------------------------------------------------------------
 # Desktop generated partition image.
 GENERATED_PARTITION_IMAGE := $(call module-built-files,gen-partition-image)
@@ -7942,8 +7963,10 @@ $(PACK_IMAGE_TARGET): $(PACK_IMAGE_DEPS)
 
 PACKED_IMAGE_ARCHIVE_TARGET := $(PACK_IMAGE_TARGET).gz
 
+# We force stdout redirection (-c) rather than using the keep flag (-fk).
+# To prevent appending extraneous data/garbage to the file.
 $(PACKED_IMAGE_ARCHIVE_TARGET): $(PACK_IMAGE_TARGET) | $(GZIP)
-	$(GZIP) -fk $(PACK_IMAGE_TARGET)
+	$(GZIP) -c $(PACK_IMAGE_TARGET) > $@
 
 $(call dist-for-goals,dist_files,$(PACKED_IMAGE_ARCHIVE_TARGET))
 
@@ -7955,20 +7978,20 @@ endif # PACK_DESKTOP_FILESYSTEM_IMAGES
 # -----------------------------------------------------------------
 # Desktop pack recovery image hook.
 ifeq ($(BOARD_USES_DESKTOP_RECOVERY_IMAGE),true)
-ifeq ($(GENERATED_FW_IMAGE),)
+ifeq ($(DESKTOP_FIRMWARE_MODULE_RECOVERY),)
 $(error The desktop recovery image requires AP and EC firmware. \
 	Please ensure RELEASE_FIRMWARE_$(call to-upper,$(TARGET_PRODUCT))_VERSION is set, \
 	or disable the recovery image by specifying \
 	PRODUCT_BUILD_DESKTOP_RECOVERY_IMAGE := false)
-endif # ($(GENERATED_FW_IMAGE),)
+endif # ($(DESKTOP_FIRMWARE_MODULE_RECOVERY),)
 PACK_RECOVERY_IMAGE_TARGET := $(PRODUCT_OUT)/android-desktop_recovery_image.bin
-PACK_RECOVERY_IMAGE_ARGS := --noarchive --recovery --firmware $(GENERATED_FW_IMAGE) --partition-image $(GENERATED_PARTITION_IMAGE)
+PACK_RECOVERY_IMAGE_ARGS := --noarchive --recovery --firmware $(DESKTOP_FIRMWARE_MODULE_RECOVERY) --partition-image $(GENERATED_PARTITION_IMAGE)
 
 ifneq (,$(strip $(PACK_RECOVERY_IMAGE_EXPERIMENTAL)))
 PACK_RECOVERY_IMAGE_ARGS += --experimental
 endif # PACK_RECOVERY_IMAGE_EXPERIMENTAL
 
-$(PACK_RECOVERY_IMAGE_TARGET): $(PACK_IMAGE_DEPS) $(PRODUCT_OUT)/recovery-kernel $(GENERATED_FW_IMAGE) $(GENERATED_PARTITION_IMAGE)
+$(PACK_RECOVERY_IMAGE_TARGET): $(PACK_IMAGE_DEPS) $(PRODUCT_OUT)/recovery-kernel $(DESKTOP_FIRMWARE_MODULE_RECOVERY) $(GENERATED_PARTITION_IMAGE)
 	$(PACK_IMAGE_SCRIPT) --out_dir $(PRODUCT_OUT) $(PACK_RECOVERY_IMAGE_ARGS) $(PACK_IMAGE_ARGS)
 
 PACKED_RECOVERY_IMAGE_ARCHIVE_TARGET := $(PACK_RECOVERY_IMAGE_TARGET).zst
