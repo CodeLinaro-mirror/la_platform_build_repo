@@ -198,6 +198,7 @@ android_system_image {
 
         // telephony_system_ext
         "EmergencyInfo",
+        "preinstalled-packages-platform-telephony-system-ext.xml",
 
         // handheld_product
         "Calendar",

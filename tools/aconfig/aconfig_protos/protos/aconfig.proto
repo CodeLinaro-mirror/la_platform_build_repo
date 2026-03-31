@@ -146,6 +146,9 @@ message flag_declarations {
   optional string container = 3;
 };
 
+// The flag type of a flag_value follows the type of the corresponding flag_declaration. state
+// or value_int is only valid when the type is boolean or int correspondingly. See comments in
+// the parsed_flag for details.
 message flag_value {
   // Package to which the flag belongs (required)
   // See # package for format detail
@@ -157,6 +160,8 @@ message flag_value {
 
   optional flag_state state = 3;
   optional flag_permission permission = 4;
+
+  optional int64 value_int = 5;
 };
 
 message flag_values {
