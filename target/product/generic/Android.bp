@@ -394,6 +394,7 @@ android_filesystem_defaults {
         // media_system_ext
         ///////////////////////////////////////////
         "StatementService",
+        "preinstalled-packages-media-system-ext.xml",
 
         ///////////////////////////////////////////
         // window_extensions_base
