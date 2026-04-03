@@ -33,9 +33,11 @@ PRODUCT_PACKAGES += \
     PartnerBookmarksProvider
 
 ifneq ($(TARGET_NO_TELEPHONY), true)
+ifneq ($(TARGET_TELEPHONY_DATA_ONLY), true)
 PRODUCT_PACKAGES += \
     preinstalled-packages-platform-generic-system.xml \
     Stk
+endif #TARGET_TELEPHONY_DATA_ONLY
 endif #TARGET_NO_TELEPHONY
 
 # OTA support
