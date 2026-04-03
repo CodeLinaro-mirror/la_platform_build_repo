@@ -68,6 +68,7 @@ PRODUCT_APEX_BOOT_JARS := \
     com.android.bt:framework-bluetooth \
     com.android.configinfrastructure:framework-configinfrastructure \
     com.android.conscrypt:conscrypt \
+    com.android.crashrecovery:framework-crashrecovery \
     com.android.devicelock:framework-devicelock \
     com.android.healthfitness:framework-healthfitness \
     com.android.i18n:core-icu4j \
@@ -90,18 +91,6 @@ PRODUCT_APEX_BOOT_JARS := \
     com.android.uwb:framework-uwb \
     com.android.virt:framework-virtualization \
     com.android.wifi:framework-wifi \
-
-# When crashrecovery module is ready use apex jar
-# else put the platform jar in system
-ifeq ($(RELEASE_CRASHRECOVERY_MODULE),true)
-    PRODUCT_APEX_BOOT_JARS += \
-        com.android.crashrecovery:framework-crashrecovery \
-
-else
-    PRODUCT_BOOT_JARS += \
-        framework-platformcrashrecovery \
-
-endif
 
 # When we release ondeviceintelligence in NeuralNetworks module
 ifeq ($(RELEASE_ONDEVICE_INTELLIGENCE_MODULE),true)
@@ -190,6 +179,12 @@ ifeq ($(RELEASE_UPROBESTATS_BRIDGE_SERVICE),true)
 
 endif
 
+ifeq ($(RELEASE_BETTERTOGETHER_MODULE),true)
+    PRODUCT_APEX_BOOT_JARS += \
+        com.android.bettertogether:framework-bettertogether \
+
+endif
+
 # List of system_server classpath jars delivered via apex.
 # Keep the list sorted by module names and then library names.
 # Note: For modules available in Q, DO NOT add new entries here.
@@ -199,18 +194,12 @@ PRODUCT_APEX_SYSTEM_SERVER_JARS := \
     com.android.appsearch:service-appsearch \
     com.android.art:service-art \
     com.android.configinfrastructure:service-configinfrastructure \
+    com.android.crashrecovery:service-crashrecovery \
     com.android.healthfitness:service-healthfitness \
     com.android.media:service-media-s \
     com.android.ondevicepersonalization:service-ondevicepersonalization \
     com.android.permission:service-permission \
     com.android.rkpd:service-rkp \
-
-# When we release crashrecovery module
-ifeq ($(RELEASE_CRASHRECOVERY_MODULE),true)
-  PRODUCT_APEX_SYSTEM_SERVER_JARS += \
-        com.android.crashrecovery:service-crashrecovery \
-
-endif
 
 # When we release ondeviceintelligence in NeuralNetworks module
 ifeq ($(RELEASE_ONDEVICE_INTELLIGENCE_MODULE),true)
@@ -273,6 +262,13 @@ ifeq ($(RELEASE_UPROBESTATS_BRIDGE_SERVICE),true)
         com.android.uprobestats:service-uprobestats-bridge
 endif
 
+ifeq ($(RELEASE_BETTERTOGETHER_MODULE),true)
+    PRODUCT_APEX_STANDALONE_SYSTEM_SERVER_JARS += \
+        com.android.bettertogether:service-device-to-device
+    PRODUCT_APEX_SYSTEM_SERVER_JARS += \
+        com.android.bettertogether:service-device-to-device
+endif
+
 # Overrides the (apex, jar) pairs above when determining the on-device location. The format is:
 # <old_apex>:<old_jar>:<new_apex>:<new_jar>
 PRODUCT_CONFIGURED_JAR_LOCATION_OVERRIDES := \
@@ -287,6 +283,12 @@ PRODUCT_SYSTEM_PROPERTIES += \
     dalvik.vm.image-dex2oat-Xms=64m \
     dalvik.vm.image-dex2oat-Xmx=512m \
     dalvik.vm.dex2oat-Xms=64m \
-    dalvik.vm.dex2oat-Xmx=512m \
 
+ifneq ($(TARGET_IS_QLMD), true)
+PRODUCT_SYSTEM_PROPERTIES += \
+    dalvik.vm.dex2oat-Xmx=512m
+else
+PRODUCT_SYSTEM_PROPERTIES += \
+    dalvik.vm.dex2oat-Xmx=256m
+endif
 PRODUCT_ENABLE_UFFD_GC := default

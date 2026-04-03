@@ -21,6 +21,7 @@ mod sdk_version;
 mod tests {
     use crate::build_flags::{ReleaseConfigs, FLAGS_WE_CARE_ABOUT};
     use crate::sdk_version::SdkVersion;
+    use regex::Regex;
     use std::sync::LazyLock;
 
     // the subset of build flags relevant for SDK finalization
@@ -160,18 +161,50 @@ mod tests {
 
     #[test]
     fn test_preview_sdk_int() {
-        // invariants: if codename is REL, RELEASE_PLATFORM_PREVIEW_SDK_INT must be 0, else it
-        // should be non-zero (but old release configs from before we resurrected PREVIEW_SDK_INT,
-        // may still set it to 0)
+        // invariants for the value of RELEASE_PLATFORM_PREVIEW_SDK_INT:
+        //   - codename is CANARY: ${YYYY}${MM}${DD}
+        //   - if codename is REL and this is not a beta release: 0
+        //   - if codename is REL and this is a beta release: ${MM}${m}${b}
+        //     (four chars, MM: major version, m: minor version, b: beta release number)
+        //  - if codename is not REL: 1
+
+        let re_release_config_beta = Regex::new(r"^.p.\d$").unwrap();
+        let re_preview_sdk_int_canary = Regex::new(r"^(\d{4})(\d{2})(\d{2})$").unwrap();
+        let re_preview_sdk_int_beta = Regex::new(r"^(\d{2})(\d)\d$").unwrap();
         for release_config in RELEASE_CONFIGS.flags.keys() {
             let codename =
                 &RELEASE_CONFIGS.flags[release_config]["RELEASE_PLATFORM_VERSION_CODENAME"];
             let preview_sdk_int =
                 &RELEASE_CONFIGS.flags[release_config]["RELEASE_PLATFORM_PREVIEW_SDK_INT"];
-            let preview_sdk_int = preview_sdk_int.parse::<u32>().unwrap();
-            if codename == "REL" {
+
+            if codename == "CANARY" {
+                let error_msg = format!("in release config {release_config}, expected RELEASE_PLATFORM_PREVIEW_SDK_INT to be ${{YYYY}}${{MM}}${{DD}} but was {preview_sdk_int}");
+                let Some(caps) = re_preview_sdk_int_canary.captures(preview_sdk_int) else {
+                    panic!("{error_msg}");
+                };
+                let year = caps[1].parse::<u32>().unwrap();
+                let month = caps[2].parse::<u32>().unwrap();
+                let day = caps[3].parse::<u32>().unwrap();
+                assert!((2026..=3000).contains(&year), "{error_msg}: unreasonable year");
+                assert!((1..=12).contains(&month), "{error_msg}: unreasonable month");
+                // not all months have 31 days, but this is good enough
+                assert!((1..=31).contains(&day), "{error_msg}: unreasonable day");
+            } else if codename == "REL" {
+                let preview_sdk_int = preview_sdk_int.parse::<u32>().unwrap();
                 assert_eq!(preview_sdk_int, 0, "in release config {release_config}, expected RELEASE_PLATFORM_PREVIEW_SDK_INT to be 0 but was {preview_sdk_int}");
+            } else if re_release_config_beta.is_match(release_config) {
+                let error_msg = format!("in release config {release_config}, expected RELEASE_PLATFORM_PREVIEW_SDK_INT to be ${{MM}}${{m}}${{b}} but was {preview_sdk_int}");
+                let Some(caps) = re_preview_sdk_int_beta.captures(preview_sdk_int) else {
+                    panic!("{error_msg}");
+                };
+                let beta = SdkVersion {
+                    major: caps[1].parse::<u32>().unwrap(),
+                    minor: caps[2].parse::<u32>().unwrap(),
+                };
+                let current = sdk_version(release_config);
+                assert!((beta.major > current.major && beta.minor == 0) || (beta.major == current.major && beta.minor > current.minor), "in release config {release_config}, expected the release encoded in RELEASE_PLATFORM_PREVIEW_SDK_INT ({beta}) to encode a later release than RELEASE_PLATFORM_SDK_VERSION_FULL ({beta})");
             } else {
+                let preview_sdk_int = preview_sdk_int.parse::<u32>().unwrap();
                 assert_ne!(preview_sdk_int, 0, "in release config {release_config}, expected RELEASE_PLATFORM_PREVIEW_SDK_INT to be non-zero but was 0");
             }
         }

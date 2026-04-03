@@ -15,6 +15,9 @@
 -->
 <!-- System packages to preinstall on all devices with handheld_system, per user type.
      Documentation at frameworks/base/data/etc/preinstalled-packages-platform.xml
+
+     The packages below are added to $PRODUCT_PACKAGES in
+     build/make/target/product/handheld_system.mk.
 -->
 <config>
     <!-- Files (DocumentsUI) -->
@@ -62,6 +65,12 @@
         <install-in user-type="android.os.usertype.profile.MANAGED" />
         <install-in user-type="android.os.usertype.profile.PRIVATE" />
         <do-not-install-in user-type="android.os.usertype.profile.CLONE" />
+    </install-in-user-type>
+
+    <!-- Certificate Installer (CertInstaller) -->
+    <install-in-user-type package="com.android.certinstaller">
+        <install-in user-type="FULL" />
+        <install-in user-type="android.os.usertype.profile.MANAGED" />
     </install-in-user-type>
 
     <!-- EyeDropper App that implements a public API in the form of an intent action. -->
@@ -184,6 +193,13 @@
         <install-in user-type="android.os.usertype.profile.PRIVATE" />
     </install-in-user-type>
 
+    <!-- Key Chain app (KeyChain) -->
+    <install-in-user-type package="com.android.keychain">
+        <install-in user-type="SYSTEM" />
+        <install-in user-type="FULL" />
+        <install-in user-type="PROFILE" />
+    </install-in-user-type>
+
     <!-- System Tracing (Traceur) -->
     <install-in-user-type package="com.android.traceur">
         <install-in user-type="FULL" />
@@ -209,5 +225,24 @@
         <install-in user-type="SYSTEM" />
         <install-in user-type="FULL" />
         <install-in user-type="PROFILE" />
+    </install-in-user-type>
+
+    <!-- Calendar Provider (CalendarProvider) -->
+    <install-in-user-type package="com.android.providers.calendar">
+        <install-in user-type="FULL" />
+        <install-in user-type="PROFILE" />
+    </install-in-user-type>
+
+    <!-- EasterEgg. Everyone (except the headless system user) loves the easter egg. -->
+    <install-in-user-type package="com.android.egg">
+        <install-in user-type="FULL" />
+    </install-in-user-type>
+
+    <!-- DeviceAsWebcam allows the user to use a device camera as USB webcam.
+         Currently it only supports full system users. Non-system users and HSUM
+         devices are currently not supported. -->
+    <!-- TODO(b/382417919): Make DeviceAsWebcam work well with non-system users. -->
+    <install-in-user-type package="com.android.DeviceAsWebcam">
+        <install-in user-type="android.os.usertype.full.SYSTEM" />
     </install-in-user-type>
 </config>

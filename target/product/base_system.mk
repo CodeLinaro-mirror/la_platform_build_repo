@@ -32,6 +32,7 @@ PRODUCT_PACKAGES += \
     android.test.base \
     android.test.mock \
     android.test.runner \
+    aoad \
     apexd \
     apexd.mainline_patch_level_2 \
     app-lock-exempt.xml \
@@ -63,6 +64,7 @@ PRODUCT_PACKAGES += \
     com.android.bt \
     com.android.configinfrastructure \
     com.android.conscrypt \
+    com.android.crashrecovery \
     com.android.devicelock \
     com.android.extservices \
     com.android.healthfitness \
@@ -77,7 +79,6 @@ PRODUCT_PACKAGES += \
     com.android.permission \
     com.android.resolv \
     com.android.rkpd \
-    com.android.neuralnetworks \
     com.android.scheduling \
     com.android.sdkext \
     com.android.tethering \
@@ -88,10 +89,7 @@ PRODUCT_PACKAGES += \
     com.android.wifi \
     ContactsProvider \
     content \
-    CtsShimPrebuilt \
-    CtsShimPrivPrebuilt \
     debuggerd\
-    default-permissions-virtualization.xml \
     device_config \
     dmctl \
     dnsmasq \
@@ -122,6 +120,7 @@ PRODUCT_PACKAGES += \
     gsi_tool \
     heapprofd \
     heapprofd_client \
+    hidservice \
     gatekeeperd \
     gpuservice \
     hid \
@@ -226,6 +225,7 @@ PRODUCT_PACKAGES += \
     lshal \
     mdnsd \
     mediacodec.policy \
+    mediacodeclist_generator \
     mediaextractor \
     media_profiles_V1_0.dtd \
     mediaserver \
@@ -308,6 +308,13 @@ PRODUCT_PACKAGES += \
     wm \
 # LINT.ThenChange(/target/product/generic/Android.bp)
 
+ifneq ($(TARGET_IS_QLMD), true)
+PRODUCT_PACKAGES += \
+    com.android.neuralnetworks \
+    CtsShimPrebuilt \
+    CtsShimPrivPrebuilt
+endif
+
 ifeq ($(RELEASE_CROSS_DEVICE_SYNC),true)
   PRODUCT_PACKAGES += \
         CrossDeviceSync
@@ -321,17 +328,6 @@ PRODUCT_PACKAGES += \
 ifneq ($(RELEASE_TELECOM_MAINLINE_MODULE),true)
   PRODUCT_PACKAGES += \
       framework-telecom
-
-endif
-
-# When we release crashrecovery module
-ifeq ($(RELEASE_CRASHRECOVERY_MODULE),true)
-  PRODUCT_PACKAGES += \
-        com.android.crashrecovery \
-
-else
-  PRODUCT_PACKAGES += \
-    framework-platformcrashrecovery \
 
 endif
 
@@ -395,12 +391,18 @@ endif
 
 ifeq ($(RELEASE_NPUMANAGER_MODULE),true)
     PRODUCT_PACKAGES += \
-       com.android.npumanager
+       com.android.npumanager \
+       libnpumanager
 endif
 
 ifeq ($(RELEASE_WEBAPP_MODULE),true)
     PRODUCT_PACKAGES += \
        com.android.webapp
+endif
+
+ifeq ($(RELEASE_BETTERTOGETHER_MODULE),true)
+    PRODUCT_PACKAGES += \
+       com.android.bettertogether
 endif
 
 # include in framework regardless of flag, so that we have overlap
