@@ -42,4 +42,12 @@
         <install-in user-type="FULL" />
         <install-in user-type="PROFILE" />
     </install-in-user-type>
+
+    <!-- SystemUI: "everything you see that's not an app™" -->
+    <!-- com.android.systemui needs to be pretty much everywhere: HSU, full and managed users -->
+    <install-in-user-type package="com.android.systemui">
+        <install-in user-type="SYSTEM" />
+        <install-in user-type="FULL" />
+        <install-in user-type="PROFILE" />
+    </install-in-user-type>
 </config>

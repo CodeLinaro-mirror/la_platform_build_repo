@@ -21,8 +21,8 @@ use std::str::FromStr;
 #[derive(Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub struct SdkVersion {
     // The order of the fields is significant for the derived implementation of Ord
-    major: u32,
-    minor: u32,
+    pub major: u32,
+    pub minor: u32,
 }
 
 impl FromStr for SdkVersion {

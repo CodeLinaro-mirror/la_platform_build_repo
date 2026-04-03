@@ -209,6 +209,7 @@ java_library {
     ],
     static_libs: [
         "aconfig_storage_file_java",
+        "libstatslog_aconfig_java_platform",
     ],
     sdk_version: "current",
     visibility: [
