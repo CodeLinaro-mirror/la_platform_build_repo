@@ -30,14 +30,14 @@ PRODUCT_PACKAGES += \
 
 # Applications
 PRODUCT_PACKAGES += \
-    PartnerBookmarksProvider
+    LiveWallpapersPicker \
+    PartnerBookmarksProvider \
+    Tag \
 
 ifneq ($(TARGET_NO_TELEPHONY), true)
-ifneq ($(TARGET_TELEPHONY_DATA_ONLY), true)
 PRODUCT_PACKAGES += \
     preinstalled-packages-platform-generic-system.xml \
     Stk
-endif #TARGET_TELEPHONY_DATA_ONLY
 endif #TARGET_NO_TELEPHONY
 
 # OTA support
@@ -79,12 +79,6 @@ PRODUCT_PACKAGES += \
     libminui \
     libnl \
     libprotobuf-cpp-full \
-
-ifneq ($(TARGET_IS_QLMD), true)
-PRODUCT_PACKAGES += \
-    LiveWallpapersPicker \
-    Tag
-endif
 
 # These libraries are empty and have been combined into libhidlbase, but are still depended
 # on by things off /system.

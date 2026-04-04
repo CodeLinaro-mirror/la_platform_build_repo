@@ -170,14 +170,11 @@ message flag_values {
 
 // aconfig output messages: parsed and verified flag declarations and values
 
-// Type of tracepoint is in sync with parent parsed_flag. For state and value_int, see the
-// corresponding comments in the parsed_flag
 message tracepoint {
   // path to declaration or value file relative to $TOP
   optional string source = 1;
   optional flag_state state = 2;
   optional flag_permission permission = 3;
-  optional int64 value_int = 4;
 }
 
 // Type of this flag (boolean, int etc,.) is defined by flag_type, and fields required by each type

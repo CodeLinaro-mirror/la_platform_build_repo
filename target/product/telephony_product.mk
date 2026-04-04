@@ -19,10 +19,7 @@
 
 # /product packages
 ifneq ($(TARGET_NO_TELEPHONY), true)
-ifneq ($(TARGET_TELEPHONY_DATA_ONLY), true)
 PRODUCT_PACKAGES += \
-    ImsServiceEntitlement
-endif #TARGET_TELEPHONY_DATA_ONLY
-PRODUCT_PACKAGES += \
+    ImsServiceEntitlement \
     preinstalled-packages-platform-telephony-product.xml
 endif #TARGET_NO_TELEPHONY
