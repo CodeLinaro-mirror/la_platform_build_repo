@@ -61,22 +61,25 @@ fn read_header_and_check_version(buf: &[u8]) -> Result<FlagValueHeader, AconfigS
 #[cfg(test)]
 mod tests {
     use super::*;
-    use aconfig_storage_file::{test_utils::create_test_flag_value_list, DEFAULT_FILE_VERSION};
+    use aconfig_storage_file::test_utils::create_test_flag_value_list;
 
     #[test]
     // this test point locks down flag value query
     fn test_flag_value_query() {
-        let flag_value_list = create_test_flag_value_list(DEFAULT_FILE_VERSION).into_bytes();
-        let baseline: Vec<bool> = vec![false, true, true, false, true, true, true, true];
-        for (offset, expected_value) in baseline.into_iter().enumerate() {
-            let flag_value = find_boolean_flag_value(&flag_value_list[..], offset as u32).unwrap();
-            assert_eq!(flag_value, expected_value);
+        for version in 1..=MAX_SUPPORTED_FILE_VERSION {
+            let flag_value_list = create_test_flag_value_list(version).into_bytes();
+            let baseline: Vec<bool> = vec![false, true, true, false, true, true, true, true];
+            for (offset, expected_value) in baseline.into_iter().enumerate() {
+                let flag_value =
+                    find_boolean_flag_value(&flag_value_list[..], offset as u32).unwrap();
+                assert_eq!(flag_value, expected_value);
+            }
         }
     }
 
     #[test]
     #[cfg(enable_parse_v4)]
-    fn test_int32_flag_value_query() {
+    fn test_int64_flag_value_query() {
         let flag_value_list = create_test_flag_value_list(4).into_bytes();
         let baseline: Vec<i64> = vec![0, 1, 2, 3, 4, 5, 6, 7];
         for (offset, expected_value) in baseline.into_iter().enumerate() {
@@ -88,11 +91,12 @@ mod tests {
     #[test]
     // this test point locks down query beyond the end of boolean section
     fn test_boolean_out_of_range() {
-        let flag_value_list = create_test_flag_value_list(DEFAULT_FILE_VERSION).into_bytes();
-        let error = find_boolean_flag_value(&flag_value_list[..], 8).unwrap_err();
-        assert!(format!("{:?}", error).starts_with(
-            "InvalidStorageFileOffset(Flag value offset goes beyond the end of the file."
-        ));
+        for version in 1..=MAX_SUPPORTED_FILE_VERSION {
+            let flag_value_list = create_test_flag_value_list(version).into_bytes();
+            let error = find_boolean_flag_value(&flag_value_list[..], 8).unwrap_err();
+            assert!(format!("{:?}", error)
+                .starts_with("InvalidStorageFileOffset(Flag value offset goes beyond"));
+        }
     }
 
     #[test]
@@ -118,17 +122,19 @@ mod tests {
     #[test]
     // this test point locks down query error when file has a higher version
     fn test_higher_version_storage_file() {
-        let mut value_list = create_test_flag_value_list(DEFAULT_FILE_VERSION);
-        value_list.header.version = MAX_SUPPORTED_FILE_VERSION + 1;
-        let flag_value = value_list.into_bytes();
-        let error = find_boolean_flag_value(&flag_value[..], 4).unwrap_err();
-        assert!(
+        for version in 1..=MAX_SUPPORTED_FILE_VERSION {
+            let mut value_list = create_test_flag_value_list(version);
+            value_list.header.version = MAX_SUPPORTED_FILE_VERSION + 1;
+            let flag_value = value_list.into_bytes();
+            let error = find_boolean_flag_value(&flag_value[..], 4).unwrap_err();
+            assert!(
             format!("{:?}", error).starts_with(
-            &format!(
-                "HigherStorageFileVersion(Cannot read storage file with a higher version of {} with lib version {}",
-                MAX_SUPPORTED_FILE_VERSION + 1,
-                MAX_SUPPORTED_FILE_VERSION
-            ))
-        );
+                &format!(
+                    "HigherStorageFileVersion(Cannot read storage file with a higher version of {} with lib version {}",
+                    MAX_SUPPORTED_FILE_VERSION + 1,
+                    MAX_SUPPORTED_FILE_VERSION
+                ))
+            );
+        }
     }
 }

@@ -94,3 +94,10 @@ prebuilt_etc {
     sub_dir: "sysconfig",
     src: "preinstalled-packages-platform-telephony-system.xml",
 }
+
+prebuilt_etc {
+    name: "preinstalled-packages-telephony-system-ext.xml",
+    sub_dir: "sysconfig",
+    system_ext_specific: true,
+    src: "preinstalled-packages-telephony-system-ext.xml",
+}
