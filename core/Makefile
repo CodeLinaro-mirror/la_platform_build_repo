@@ -617,6 +617,16 @@ $(if $(filter top,$(1)),\
     $(call copy-many-files,$(call module-load-list-copy-paths,$(call intermediates-dir-for,PACKAGING,vendor_kernel_ramdisk_recovery_module_list$(_sep)$(_kver)),$(BOARD_VENDOR_KERNEL_RAMDISK_KERNEL_MODULES$(_sep)$(_kver)),$(BOARD_VENDOR_KERNEL_RAMDISK_RECOVERY_KERNEL_MODULES_LOAD$(_sep)$(_kver)),modules.load.recovery,$(TARGET_VENDOR_KERNEL_RAMDISK_OUT))))
 endef
 
+# Macro for generating modules.load.recovery into the 16k ramdisk staging dir
+# $(1): staging dir
+# $(2): all ramdisk modules
+# $(3): recovery modules
+define build-ramdisk-16k-recovery-load
+$(1)/lib/modules/0.0/modules.load.recovery: PRIVATE_LOAD_MODULES := $(3)
+$(1)/lib/modules/0.0/modules.load.recovery: $(foreach file,$(2),$(1)/lib/modules/0.0/$(notdir $(file)))
+	@echo '$$(strip $$(notdir $$(PRIVATE_LOAD_MODULES)))' | tr ' ' '\n' > $$(@)
+endef
+
 # $(1): kernel module directory name (top is an out of band value for no directory)
 define build-vendor-charger-load
 $(if $(filter top,$(1)),\
@@ -1148,6 +1158,18 @@ ifndef BOARD_KERNEL_MODULES_LOAD_16K
   BOARD_KERNEL_MODULES_LOAD_16K := $(BOARD_KERNEL_MODULES_16K)
 endif
 
+# Add vendor module loading support for recovery mode
+ifneq ($(BOARD_VENDOR_RAMDISK_RECOVERY_KERNEL_MODULES_LOAD_16KB_MODE),)
+$(eval $(call build-ramdisk-16k-recovery-load,$(RAMDISK_16K_STAGING_DIR),$(BOARD_KERNEL_MODULES_16K),$(BOARD_VENDOR_RAMDISK_RECOVERY_KERNEL_MODULES_LOAD_16KB_MODE)))
+$(BUILT_RAMDISK_16K_TARGET): $(RAMDISK_16K_STAGING_DIR)/lib/modules/0.0/modules.load.recovery
+endif
+
+# Add possible blocklist for vendor ramdisk modules
+ifneq ($(BOARD_VENDOR_RAMDISK_RECOVERY_KERNEL_MODULES_16KB_MODE_BLOCKLIST_FILE),)
+$(eval $(call copy-one-file,$(BOARD_VENDOR_RAMDISK_RECOVERY_KERNEL_MODULES_16KB_MODE_BLOCKLIST_FILE),$(RAMDISK_16K_STAGING_DIR)/lib/modules/0.0/modules.blocklist))
+$(BUILT_RAMDISK_16K_TARGET): $(RAMDISK_16K_STAGING_DIR)/lib/modules/0.0/modules.blocklist
+endif
+
 $(BUILT_RAMDISK_16K_TARGET): $(DEPMOD) $(MKBOOTFS) $(EXTRACT_KERNEL) $(COMPRESSION_COMMAND_DEPS)
 $(BUILT_RAMDISK_16K_TARGET): $(foreach file,$(BOARD_KERNEL_MODULES_16K),$(RAMDISK_16K_STAGING_DIR)/lib/modules/0.0/$(notdir $(file)))
 	$(DEPMOD) -b $(RAMDISK_16K_STAGING_DIR) 0.0
@@ -1516,16 +1538,65 @@ $(eval $(call copy-one-file,$(BUILT_BOOT_OTA_PACKAGE_16K),$(TARGET_OUT_VENDOR)/b
 ALL_DEFAULT_INSTALLED_MODULES += $(TARGET_OUT_VENDOR)/boot_otas/boot_ota_4k.zip
 ALL_DEFAULT_INSTALLED_MODULES += $(TARGET_OUT_VENDOR)/boot_otas/boot_ota_16k.zip
 
+# Macro for stripping and copying 16k second stage modules
+# It also generates the modular dependencies needed by the directories
+# $(1): modules list
+# $(2): output dir
+# $(3): mount point
+# $(4): staging dir (depod_vendor_dlkm_16k or similar)
+# $(5): modules.load list
+# $(6): staging dir for stripped modules
+# $(7): blocklist, for modules.blocklist
+# $(8): For specific blocklist, e.g. system_dlkm.modules.blocklist
+
+# uses build-image-kernel-modules which returns src:dest pairs to install the modules using copy-many-files
+define build-16k-second-stage-modules
+$(eval _2 := $(strip $(2)))$(eval _3 := $(strip $(3)))$(eval _4 := $(strip $(4)))$(eval _6 := $(strip $(6)))
+
+$(eval _16k_staging_dir := $(call intermediates-dir-for,PACKAGING,$(_4))) \
+$(if $(_6),$(eval _16k_stripped_staging_dir := $(call intermediates-dir-for,PACKAGING,$(_6))),$(eval _16k_stripped_staging_dir :=)) \
+$(eval _16k_module_files := $(call build-image-kernel-modules,$(strip $(1)),$(_2),$(_3),$(_16k_staging_dir),$(strip $(5)),modules.load,,$(_16k_stripped_staging_dir),16k-mode,,)) \
+$(eval ALL_DEFAULT_INSTALLED_MODULES += $(call copy-many-files,$(_16k_module_files)))
+
+# For an optional modules blocklist
+$(if $(strip $(7)), \
+  $(eval $(call build-image-kernel-modules-blocklist-file,$(strip $(7)),$(_2)/lib/modules/16k-mode/modules.blocklist)) \
+  $(eval ALL_DEFAULT_INSTALLED_MODULES += $(_2)/lib/modules/16k-mode/modules.blocklist) \
+)
+
+# for other possible blocklist e.g. system_dlkm.modules.blocklist
+$(if $(strip $(8)), \
+  $(eval $(call copy-one-file,$(strip $(8)),$(_2)/lib/modules/16k-mode/system_dlkm.modules.blocklist)) \
+  $(eval ALL_DEFAULT_INSTALLED_MODULES += $(_2)/lib/modules/16k-mode/system_dlkm.modules.blocklist) \
+)
+endef
+
+ifneq ($(BOARD_SYSTEM_KERNEL_MODULES_2ND_STAGE_16KB_MODE),)
+# Add the 16k GKI modules that need to be loaded to /system_dlkm/lib/modules/16k-mode
+_16k_system_dlkm_modules := $(foreach module,$(BOARD_SYSTEM_KERNEL_MODULES_2ND_STAGE_16KB_MODE),$(SYSTEM_KERNEL_DIR_16K)/$(module))
+$(eval $(call build-16k-second-stage-modules,\
+  $(_16k_system_dlkm_modules),\
+  $(TARGET_OUT_SYSTEM_DLKM),\
+  system,\
+  depmod_system_dlkm_16k,\
+  $(_16k_system_dlkm_modules),,,))
+
+endif # BOARD_SYSTEM_KERNEL_MODULES_2ND_STAGE_16KB_MODE not empty
+
 ifneq ($(BOARD_VENDOR_KERNEL_MODULES_2ND_STAGE_16KB_MODE),)
 # Add the modules that need to be loaded in the Second Boot Stage
 # to /vendor_dlkm/lib/modules/16k-mode
-VENDOR_DLKM_16K_MODE_DIR := lib/modules/16k-mode
-$(foreach module,$(BOARD_VENDOR_KERNEL_MODULES_2ND_STAGE_16KB_MODE), \
-    $(eval $(call copy-one-file,$(TARGET_KERNEL_DIR_16K)/$(module),\
-                                $(TARGET_OUT_VENDOR_DLKM)/$(VENDOR_DLKM_16K_MODE_DIR)/$(module))))
+_16k_vendor_dlkm_modules := $(BOARD_VENDOR_KERNEL_MODULES_2ND_STAGE_16KB_MODE)
+$(eval $(call build-16k-second-stage-modules,\
+  $(_16k_vendor_dlkm_modules),\
+  $(TARGET_OUT_VENDOR_DLKM),\
+  vendor,\
+  depmod_vendor_dlkm_16k,\
+  $(_16k_vendor_dlkm_modules),\
+  depmod_vendor_dlkm_16k_stripped,\
+  $(BOARD_VENDOR_KERNEL_MODULES_2ND_STAGE_16KB_MODE_BLOCKLIST),\
+  $(BOARD_VENDOR_KERNEL_MODULES_2ND_STAGE_16KB_MODE_SYSTEM_DLKM_BLOCKLIST)))
 
-ALL_DEFAULT_INSTALLED_MODULES += $(foreach module,$(BOARD_VENDOR_KERNEL_MODULES_2ND_STAGE_16KB_MODE),\
-    $(TARGET_OUT_VENDOR_DLKM)/$(VENDOR_DLKM_16K_MODE_DIR)/$(module))
 endif # BOARD_VENDOR_KERNEL_MODULES_2ND_STAGE_16KB_MODE not empty
 
 else
