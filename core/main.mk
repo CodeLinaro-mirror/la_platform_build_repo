@@ -1881,8 +1881,12 @@ define add-make-module-to-json
     $(call add_json_str, name, $(1)) \
     $(call add_json_str, type, $(sort $(ALL_MODULES.$(1).MAKE_MODULE_TYPE))) \
     $(call add_json_list, path, $(sort $(ALL_MODULES.$(1).PATH))) \
-    $(call add_json_list, installed, $(sort $(ALL_MODULES.$(1).INSTALLED))) \
+    $(call add_json_bool, enabled, true) \
+    $(if $(strip $(ALL_MODULES.$(1).INSTALLED)), \
+      $(call add_json_list, install_files, $(sort $(ALL_MODULES.$(1).INSTALLED)))) \
     $(call add_json_bool, is_make_module, true) \
+    $(if $(strip $(ALL_MODULES.$(1).BUILT)), \
+      $(call add_json_list, built_files, $(sort $(ALL_MODULES.$(1).BUILT)))) \
   $(call end_json_map)
 endef
 

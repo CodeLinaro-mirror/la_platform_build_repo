@@ -21,6 +21,8 @@
 PRODUCT_PACKAGES += \
     CarrierConfig \
     EmergencyInfo \
+    preinstalled-packages-telephony-system-ext.xml \
+    preinstalled-packages-gsi-system-ext.xml \
 
 PRODUCT_PACKAGES_SHIPPING_API_LEVEL_34 += \
     hwservicemanager \

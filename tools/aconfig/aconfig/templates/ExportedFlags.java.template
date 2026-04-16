@@ -16,6 +16,10 @@ public final class ExportedFlags \{
     private ExportedFlags() \{}
 
     private void init() \{
+        if (Build.VERSION.SDK_INT <= 35) \{
+            // Skip init, since flag infrastructure is introduced in 36
+            return;
+        }
         try \{
             AconfigPackage reader = AconfigPackage.load("{package_name}");
             {{ -for namespace_with_flags in namespace_flags }}
