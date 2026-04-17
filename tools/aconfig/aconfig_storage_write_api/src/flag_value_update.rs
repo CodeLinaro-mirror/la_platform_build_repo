@@ -150,7 +150,7 @@ mod tests {
         assert!(
             format!("{:?}", error).starts_with(
             &format!(
-                "HigherStorageFileVersion(Cannot read storage file with a higher version of {} with lib max version {}",
+                "HigherStorageFileVersion(Cannot read storage file with a higher version of {} with lib version {}",
                 MAX_SUPPORTED_FILE_VERSION + 8,
                 MAX_SUPPORTED_FILE_VERSION
             ))

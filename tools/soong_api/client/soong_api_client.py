@@ -100,25 +100,25 @@ class SoongApiClient:
         request = soong_api_pb2.GetAllModulesRequest()
         return self.stub.GetAllModules(request)
 
-    def GetModule(self, name):
+    def GetModule(self, name=None, **kwargs):
         """
-        Convenience method to get modules by name.
+        Query modules by name.
         Args:
             name (str): The name of the module (e.g., "libc").
-        Returns:
-            iterator: A stream of Module messages.
         """
+        if not name:
+            raise ValueError("The '--name' argument is required for GetModule.")
         request = soong_api_pb2.GetModuleRequest(name=name)
         return self.stub.GetModule(request)
 
-    def GetModuleByInstallPath(self, install_path):
+    def GetModuleByInstallPath(self, install_path=None, **kwargs):
         """
-        Convenience method to get modules by install path.
+        Query modules by their installation path.
         Args:
-            install_path (str): The absolute installation path.
-        Returns:
-            iterator: A stream of Module messages.
+            install_path (str): The absolute installation path (e.g., "/system/lib64/libc.so").
         """
+        if not install_path:
+            raise ValueError("The '--install_path' argument is required for GetModuleByInstallPath.")
         request = soong_api_pb2.GetModuleByInstallPathRequest(install_path=install_path)
         return self.stub.GetModuleByInstallPath(request)
 

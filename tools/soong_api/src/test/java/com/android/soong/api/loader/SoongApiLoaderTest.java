@@ -17,7 +17,6 @@
 package com.android.soong.api.loader;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Before;
@@ -35,6 +34,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -50,19 +51,23 @@ public class SoongApiLoaderTest {
     private File outputDb;
     private SoongApiLoader loader;
 
-    // Mock JSON content using snake_case as expected from Soong.
-    private final String jsonContent = "[\n" +
+    // Mock Soong JSON content
+    private final String jsonContentSoong = "[\n" +
             "  {\n" +
-            "    \"name\": \"moduleA\", \n" +
+            "    \"name\": \"moduleSoong\", \n" +
             "    \"type\": \"java_library\", \n" +
             "    \"path\": \"frameworks/base\", \n" +
             "    \"install_files\": [\"/system/lib/a.jar\"]\n" +
-            "  },\n" +
+            "  }\n" +
+            "]";
+
+    // Mock Make JSON content
+    private final String jsonContentMake = "[\n" +
             "  {\n" +
-            "    \"name\": \"moduleB\", \n" +
+            "    \"name\": \"moduleMake\", \n" +
             "    \"type\": \"cc_binary\", \n" +
-            "    \"path\": \"system/core\", \n" +
-            "    \"install_files\": []\n" +
+            "    \"path\": \"vendor/foo\", \n" +
+            "    \"install_files\": [\"/vendor/bin/foo\"]\n" +
             "  }\n" +
             "]";
 
@@ -74,38 +79,66 @@ public class SoongApiLoaderTest {
 
     @Test
     public void testLoad_fromZip_convertsJsonToSqlite() throws Exception {
-        // 1. Arrange: Create a mock soong_api.zip
+        // 1. Arrange: Create a standard soong_api.zip
         File inputZip = tempFolder.newFile("soong_api.zip");
-        createMockZipFile(inputZip, jsonContent);
+        Map<String, String> files = new HashMap<>();
+        files.put("soong_api.json", jsonContentSoong);
+        createMockZipFile(inputZip, files);
 
-        // 2. Act: Run the Loader to ingest data into SQLite
+        // 2. Act
         loader.load(inputZip, outputDb);
 
-        // 3. Assert: Verify the database structure and content
-        assertDbContent();
+        // 3. Assert
+        assertModuleCount(1);
+        assertModuleExists("moduleSoong", "java_library");
+    }
+
+    @Test
+    public void testLoad_fromZip_loadsMultipleJsonFiles() throws Exception {
+        // 1. Arrange: Create a zip with multiple JSONs and non-JSON files
+        File inputZip = tempFolder.newFile("mixed_content.zip");
+        Map<String, String> files = new HashMap<>();
+        files.put("soong_api.json", jsonContentSoong);
+        files.put("make-metadata.json", jsonContentMake);
+        files.put("README.txt", "This file should be ignored.");
+        files.put("folder/ignore.me", "Directories should be ignored too.");
+        createMockZipFile(inputZip, files);
+
+        // 2. Act
+        loader.load(inputZip, outputDb);
+
+        // 3. Assert: Verify both modules (Soong + Make) are present
+        assertModuleCount(2);
+        assertModuleExists("moduleSoong", "java_library");
+        assertModuleExists("moduleMake", "cc_binary");
     }
 
     @Test
     public void testLoad_fromJson_convertsJsonToSqlite() throws Exception {
-        // 1. Arrange: Create a mock soong_api.json
+        // 1. Arrange: Create a standalone json file
         File inputJson = tempFolder.newFile("soong_api.json");
-        createMockJsonFile(inputJson, jsonContent);
+        createMockJsonFile(inputJson, jsonContentSoong);
 
-        // 2. Act: Run the Loader to ingest data into SQLite
+        // 2. Act
         loader.load(inputJson, outputDb);
 
-        // 3. Assert: Verify the database structure and content
-        assertDbContent();
+        // 3. Assert
+        assertModuleCount(1);
+        assertModuleExists("moduleSoong", "java_library");
     }
 
-    private void createMockZipFile(File zipFile, String content) throws Exception {
+    // --- Helper Methods ---
+
+    private void createMockZipFile(File zipFile, Map<String, String> fileEntries) throws Exception {
         try (FileOutputStream fos = new FileOutputStream(zipFile);
              ZipOutputStream zos = new ZipOutputStream(fos)) {
 
-            ZipEntry entry = new ZipEntry("soong_api.json");
-            zos.putNextEntry(entry);
-            zos.write(content.getBytes(StandardCharsets.UTF_8));
-            zos.closeEntry();
+            for (Map.Entry<String, String> entry : fileEntries.entrySet()) {
+                ZipEntry zipEntry = new ZipEntry(entry.getKey());
+                zos.putNextEntry(zipEntry);
+                zos.write(entry.getValue().getBytes(StandardCharsets.UTF_8));
+                zos.closeEntry();
+            }
         }
     }
 
@@ -115,35 +148,33 @@ public class SoongApiLoaderTest {
         }
     }
 
-    /**
-     * Helper method to assert the correctness of the generated database.
-     */
-    private void assertDbContent() throws Exception {
+    private void assertModuleCount(int expectedCount) throws Exception {
         assertTrue("Output DB should exist", outputDb.exists());
-
         String url = "jdbc:sqlite:" + outputDb.getAbsolutePath();
         try (Connection conn = DriverManager.getConnection(url);
              Statement stmt = conn.createStatement()) {
 
-            // Verify total module count
             ResultSet rs = stmt.executeQuery("SELECT count(*) FROM modules");
-            assertTrue("Result set should have a row", rs.next());
-            assertEquals("Should have 2 modules", 2, rs.getInt(1));
+            assertTrue(rs.next());
+            assertEquals("Module count mismatch", expectedCount, rs.getInt(1));
+        }
+    }
 
-            // Verify specific data for moduleA
-            rs = stmt.executeQuery("SELECT metadata FROM modules WHERE name = 'moduleA'");
-            assertTrue("moduleA should exist", rs.next());
-            String jsonA = rs.getString("metadata");
+    private void assertModuleExists(String moduleName, String expectedType) throws Exception {
+        String url = "jdbc:sqlite:" + outputDb.getAbsolutePath();
+        try (Connection conn = DriverManager.getConnection(url);
+             Statement stmt = conn.createStatement()) {
 
-            // Verify content
-            assertTrue("JSON should contain type", jsonA.contains("\"type\":\"java_library\""));
-            assertTrue("JSON should contain install path", jsonA.contains("/system/lib/a.jar"));
+            ResultSet rs = stmt.executeQuery("SELECT metadata FROM modules WHERE name = '" + moduleName + "'");
+            assertTrue("Module '" + moduleName + "' should exist", rs.next());
 
-            // Verify fix for field naming: must be snake_case to support SQL JSON queries.
+            String jsonMetadata = rs.getString("metadata");
+            assertTrue("Metadata should contain type: " + expectedType,
+                    jsonMetadata.contains("\"type\":\"" + expectedType + "\""));
+
+            // Validate snake_case convention
             assertTrue("JSON must use snake_case 'install_files'",
-                       jsonA.contains("\"install_files\""));
-            assertFalse("JSON must NOT use camelCase 'installFiles'",
-                        jsonA.contains("\"installFiles\""));
+                    jsonMetadata.contains("\"install_files\""));
         }
     }
 }

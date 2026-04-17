@@ -66,6 +66,10 @@ to contain a list of ints, and the package map needs to have both the int and
 the boolean offset for its flags.
 
 *   **Package Map:** Added an integer `int_start_index` to each node.
-*   **Flag Value:** Added support for integer flags. The header was extended to
-    include `num_int_flags` and `int_value_offset`. The file now contains a list
-    of integer values after the list of boolean values.
+*   **Flag Value:** The header was extended to include `num_int_flags` and
+    `int_value_offset`. The file now contains a list of integer values after the
+    list of boolean values.
+*   **Flag Info:** Similar to flag value, the header was extended to include
+    `num_int_flags` and `int_flag_offset`. The nodes for int flag info are
+    appended after the nodes for boolean. Note that unlike flag value, the
+    structure of the flag info node are the same for boolean and int.

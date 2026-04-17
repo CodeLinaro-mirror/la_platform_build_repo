@@ -25,6 +25,7 @@ import com.google.protobuf.util.JsonFormat;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
+import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -76,14 +77,24 @@ public class SoongApiLoader {
 
     private void processZip(Connection conn, File inputZip) throws IOException, SQLException {
         try (ZipFile zf = new ZipFile(inputZip)) {
-            ZipEntry entry = zf.getEntry("soong_api.json");
-            if (entry == null) {
-                throw new IOException("soong_api.json not found in " + inputZip.getName());
+            Enumeration<? extends ZipEntry> entries = zf.entries();
+            boolean hasJsonFiles = false;
+
+            while (entries.hasMoreElements()) {
+                ZipEntry entry = entries.nextElement();
+
+                if (!entry.isDirectory() && entry.getName().toLowerCase().endsWith(".json")) {
+                    hasJsonFiles = true;
+
+                    try (InputStream is = zf.getInputStream(entry);
+                         InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+                        parseAndInsertMetadata(conn, isr);
+                    }
+                }
             }
 
-            try (InputStream is = zf.getInputStream(entry);
-                 InputStreamReader isr = new InputStreamReader(is, StandardCharsets.UTF_8)) {
-                parseAndInsertMetadata(conn, isr);
+            if (!hasJsonFiles) {
+                throw new IOException("No .json files found in " + inputZip.getName());
             }
         }
     }

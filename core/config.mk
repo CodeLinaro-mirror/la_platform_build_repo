@@ -323,6 +323,13 @@ $(call soong_config_define_internal,$1,$2) \
 $(eval SOONG_CONFIG_$(strip $1)_$(strip $2):=$(strip $3))
 endef
 
+# soong_config_set_if_exist defines the variable in the given Soong config
+# namespace and sets its value ONLY if the value is not empty.
+# $1 is the namespace. $2 is the variable name. $3 is the variable value.
+define soong_config_set_if_exist
+$(if $(strip $3),$(call soong_config_set,$1,$2,$3))
+endef
+
 # soong_config_set_bool is the same as soong_config_set, but it will
 # also type the variable as a bool, so that when using select() expressions
 # in blueprint files they can use boolean values instead of strings.
@@ -464,6 +471,12 @@ endif
 
 TARGET_RESTRICTS_ASHMEM_USAGE := false
 
+# TODO: b/443130838
+#
+# This needs to be removed after all targets that have vendor API level
+# 202604 have migrated to 6.12+ kernels, excluding CF WearOS and TV.
+TARGET_FORCES_ASHMEM_USAGE ?= false
+
 # If the vendor API level is 202604, then the device restricts what
 # applications can use ashmem.
 #
@@ -472,10 +485,15 @@ TARGET_RESTRICTS_ASHMEM_USAGE := false
 # must continue to use ashmem unconditionally. This can be simplified to just
 # the VSR_VENDOR_API_LEVEL check once all CF instances move to kernel version
 # 6.12 or newer.
+#
+# TARGET_FORCES_ASHMEM_USAGE is only to be used if vendor API level is 202604
+# or higher, but the kernel hasn't been upgraded to 6.12+ just yet.
 ifeq ($(call math_gt_or_eq,$(VSR_VENDOR_API_LEVEL),202604),true)
 ifneq (true,$(CLOCKWORK_EMULATOR_PRODUCT))
 ifeq (,$(findstring x86_tv,$(PRODUCT_NAME)))
+ifneq (true,$(TARGET_FORCES_ASHMEM_USAGE))
   TARGET_RESTRICTS_ASHMEM_USAGE := true
+endif
 endif
 endif
 endif
@@ -789,8 +807,7 @@ endif
     PRODUCT_COMPATIBLE_PROPERTY
 
 $(KATI_obsolete_var PRODUCT_TREBLE_LINKER_NAMESPACES,This is now always true.)
-# TODO(b/307369186): restore
-# $(KATI_obsolete_var PRODUCT_ENFORCE_VINTF_MANIFEST,This is now always true.)
+$(KATI_obsolete_var PRODUCT_ENFORCE_VINTF_MANIFEST,This is now always true.)
 $(KATI_obsolete_var PRODUCT_TREBLE_LINKER_NAMESPACES_OVERRIDE,Deprecated.)
 $(KATI_obsolete_var PRODUCT_ENFORCE_VINTF_MANIFEST_OVERRIDE,Deprecated.)
 $(KATI_obsolete_var PRODUCT_FULL_TREBLE_OVERRIDE,Deprecated.)

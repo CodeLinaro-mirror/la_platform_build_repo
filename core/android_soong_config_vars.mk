@@ -138,14 +138,20 @@ endif
 $(call soong_config_set,ANDROID,platform_security_patch_timestamp_string,$(PLATFORM_SECURITY_PATCH_TIMESTAMP))
 $(call soong_config_set_int,ANDROID,platform_security_patch_timestamp,$(PLATFORM_SECURITY_PATCH_TIMESTAMP))
 
-# Enable AVF remote attestation according to the flag value if PRODUCT_AVF_REMOTE_ATTESTATION_DISABLED is not
-# set to true explicitly.
+# Enable AVF remote attestation if PRODUCT_AVF_REMOTE_ATTESTATION_DISABLED is not set to true explicitly.
 ifneq (true,$(PRODUCT_AVF_REMOTE_ATTESTATION_DISABLED))
-  $(call add_soong_config_var_value,ANDROID,avf_remote_attestation_enabled,$(RELEASE_AVF_ENABLE_REMOTE_ATTESTATION))
+  $(call add_soong_config_var_value,ANDROID,avf_remote_attestation_enabled,true)
 endif
 
 ifdef PRODUCT_AVF_MICRODROID_GUEST_GKI_VERSION
 $(call add_soong_config_var_value,ANDROID,avf_microdroid_guest_gki_version,$(PRODUCT_AVF_MICRODROID_GUEST_GKI_VERSION))
+endif
+
+ifdef PRODUCT_AVF_MICRODROID_PAGE_REPORTING_ORDER
+  ifeq ($(filter $(PRODUCT_AVF_MICRODROID_PAGE_REPORTING_ORDER),0 1 2 3 4 5 6 7 8 9 10),)
+    $(error PRODUCT_AVF_MICRODROID_PAGE_REPORTING_ORDER must be between 0 and 10, got $(PRODUCT_AVF_MICRODROID_PAGE_REPORTING_ORDER))
+  endif
+  $(call add_soong_config_var_value,ANDROID,avf_microdroid_page_reporting_order,$(PRODUCT_AVF_MICRODROID_PAGE_REPORTING_ORDER))
 endif
 
 ifdef TARGET_BOOTS_16K
@@ -161,7 +167,6 @@ $(call add_soong_config_var_value,ANDROID,release_avf_enable_multi_tenant_microd
 $(call add_soong_config_var_value,ANDROID,release_avf_enable_network,$(RELEASE_AVF_ENABLE_NETWORK))
 # TODO(b/341292601): This flag is needed until the V release. We with clean it up after V together
 # with most of the release_avf_ flags here.
-$(call add_soong_config_var_value,ANDROID,release_avf_enable_remote_attestation,$(RELEASE_AVF_ENABLE_REMOTE_ATTESTATION))
 $(call add_soong_config_var_value,ANDROID,release_avf_enable_vendor_modules,$(RELEASE_AVF_ENABLE_VENDOR_MODULES))
 $(call add_soong_config_var_value,ANDROID,release_avf_enable_virt_cpufreq,$(RELEASE_AVF_ENABLE_VIRT_CPUFREQ))
 $(call add_soong_config_var_value,ANDROID,release_avf_microdroid_kernel_version,$(RELEASE_AVF_MICRODROID_KERNEL_VERSION))
@@ -258,6 +263,9 @@ else
     $(call soong_config_set,bootclasspath,release_ondevice_intelligence_platform,true)
 
 endif
+
+# Add RELEASE_DEPRECATE_RUNTIME_APEX to soong
+$(call soong_config_set_bool,ANDROID,release_deprecate_runtime_apex,$(RELEASE_DEPRECATE_RUNTIME_APEX))
 
 # Add uprobestats build flags to soong
 $(call soong_config_set,ANDROID,release_uprobestats_bridge_service,$(RELEASE_UPROBESTATS_BRIDGE_SERVICE))
@@ -491,10 +499,6 @@ $(call soong_config_set_bool,fp_hal_feature,GOOGLE_CONFIG_TOUCH_TO_UNLOCK_ANYTIM
 # Flag for building static_apexer_tools
 $(call soong_config_set_bool,ANDROID,BUILD_HOST_static,$(if $(filter true 1,$(BUILD_HOST_static)),true,false))
 
-# Flags for CLOCKWORK
-$(call soong_config_set_bool,CLOCKWORK,CLOCKWORK_EMULATOR_PRODUCT,$(if $(filter true,$(CLOCKWORK_EMULATOR_PRODUCT)),true,false))
-$(call soong_config_set_bool,CLOCKWORK,CLOCKWORK_G3_BUILD,$(if $(filter true,$(CLOCKWORK_G3_BUILD)),true,false))
-
 # Flag for using SetupWizardCar certificate
 $(call soong_config_set_bool,AUTO,USE_AUTOMTIVE_SETUPWIZARD_TEST_CERTIFICATE,$(if $(filter true,$(USE_AUTOMTIVE_SETUPWIZARD_TEST_CERTIFICATE)),true,false))
 
@@ -517,6 +521,27 @@ $(call soong_config_set,sdk,PLATFORM_VERSION_CODENAME,$(subst REL,,$(PLATFORM_VE
 $(call soong_config_set,sdk,PLATFORM_PREVIEW_SDK_VERSION,$(PLATFORM_PREVIEW_SDK_VERSION))
 $(call soong_config_set,sdk,BETA_SDK_VERSION,$(shell if [[ "$(PLATFORM_PREVIEW_SDK_VERSION)" =~ ^[0-9]{4}$$ ]]; then echo "$(PLATFORM_PREVIEW_SDK_VERSION)" | cut -c4 ; fi))
 
-# Flags for the sdk platforms folder name
+# Flags for SDK plarforms package folder, move from build/core/Makefile
+# The name of the subdir within the platforms dir of the sdk.
+#   if canary build          : android-canary-$PREVIEW_SDK_INT         (android-canary-20250617)
+#   if beta build            : android-$UPCOMING_SDK_INT_FULL-ext$BETA (android-36.1-beta2)
+#   if REL                   : android-$SDK_INT_FULL                   (android-36.1)
+#   if REL with newer SDK ext: android-$SDK_INT_FULL-ext$SDK_EXT       (android-36.1-ext22)
+#   else (internal DEV)      : android-$CODENAME                       (android-CinnamonBun)
+ifeq ($(PLATFORM_VERSION_CODENAME),CANARY)
+sdk_platform_dir_name := android-canary-$(PLATFORM_PREVIEW_SDK_VERSION)
+else ifeq (,$(filter $(PLATFORM_PREVIEW_SDK_VERSION),0 1))
+major := $(shell echo "$(PLATFORM_PREVIEW_SDK_VERSION)" | cut -c 1-2)
+minor := $(shell echo "$(PLATFORM_PREVIEW_SDK_VERSION)" | cut -c 3)
+beta := $(shell echo "$(PLATFORM_PREVIEW_SDK_VERSION)" | cut -c 4)
+sdk_platform_dir_name := android-$(major).$(minor)-beta$(beta)
+else ifeq ($(PLATFORM_VERSION_CODENAME),REL)
+  ifeq ($(PLATFORM_SDK_EXTENSION_VERSION),$(PLATFORM_BASE_SDK_EXTENSION_VERSION))
+    sdk_platform_dir_name := android-$(PLATFORM_SDK_VERSION_FULL)
+  else
+    sdk_platform_dir_name := android-$(PLATFORM_SDK_VERSION_FULL)-ext$(PLATFORM_SDK_EXTENSION_VERSION)
+  endif
+else
 sdk_platform_dir_name := android-$(PLATFORM_VERSION_CODENAME)
+endif
 $(call soong_config_set,sdk,sdk_platform_dir_name,$(sdk_platform_dir_name))

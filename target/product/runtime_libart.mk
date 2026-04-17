@@ -26,8 +26,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PACKAGES += \
     ext \
 
+ifneq ($(RELEASE_DEPRECATE_RUNTIME_APEX),true)
 # Runtime (Bionic) APEX module.
 PRODUCT_PACKAGES += com.android.runtime
+endif
 
 # ART APEX module.
 #

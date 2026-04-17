@@ -675,7 +675,7 @@ def AddUserdata(output_zip):
   else:
     user_dir = common.MakeTempDir()
 
-  build_image.BuildImage(user_dir, image_props, img.name)
+  build_image.BuildImage(user_dir, image_props, img.name, None, getattr(OPTIONS, "vendor_otatools", None))
 
   common.CheckSize(img.name, "userdata.img", OPTIONS.info_dict)
   # Always use compression for useradata image.

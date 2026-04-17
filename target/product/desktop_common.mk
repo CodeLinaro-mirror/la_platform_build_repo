@@ -23,4 +23,6 @@ $(call inherit-product, build/make/target/product/hsu_as_login.mk)
 
 PRODUCT_PACKAGES += \
     DesktopCommonConfigOverlay \
-    preinstalled-packages-desktop-common.xml
+    preinstalled-packages-desktop-common.xml \
+    # TODO(482063300): Remove wificond once desktop migrates off of it \
+    wificond \

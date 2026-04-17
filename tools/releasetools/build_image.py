@@ -263,7 +263,7 @@ def CalculateSizeAndReserved(prop_dict, size):
   return int(size * 1.1) + reserved_size
 
 
-def BuildImageMkfs(in_dir, prop_dict, out_file, target_out, fs_config):
+def BuildImageMkfs(in_dir, prop_dict, out_file, target_out, fs_config, otatools_dir=None):
   """Builds a pure image for the files under in_dir and writes it to out_file.
 
   Args:
@@ -427,8 +427,15 @@ def BuildImageMkfs(in_dir, prop_dict, out_file, target_out, fs_config):
     raise BuildImageError(
         "Error: unknown filesystem type: {}".format(fs_type))
 
+  env = None
+  if otatools_dir:
+    exe = os.path.join(otatools_dir, "bin", build_command[0])
+    if os.path.exists(exe):
+      env = os.environ.copy()
+      env["PATH"] = f"{os.path.join(otatools_dir, 'bin')}:{env['PATH']}"
+      build_command[0] = exe
   try:
-    mkfs_output = common.RunAndCheckOutput(build_command)
+    mkfs_output = common.RunAndCheckOutput(build_command, env=env)
   except:
     try:
       du = GetDiskUsage(in_dir)
@@ -500,7 +507,7 @@ def SetUUIDIfNotExist(image_props):
   image_props["hash_seed"] = str(uuid.uuid5(uuid.NAMESPACE_URL, hash_seed))
 
 
-def BuildImage(in_dir, prop_dict, out_file, target_out=None):
+def BuildImage(in_dir, prop_dict, out_file, target_out=None, otatools_dir=None):
   """Builds an image for the files under in_dir and writes it to out_file.
 
   Args:
@@ -540,7 +547,7 @@ def BuildImage(in_dir, prop_dict, out_file, target_out=None):
     # For compressed file system, it's better to use the compressed size to avoid wasting space.
     if fs_type.startswith("erofs"):
       mkfs_output = BuildImageMkfs(
-          in_dir, prop_dict, out_file, target_out, fs_config)
+          in_dir, prop_dict, out_file, target_out, fs_config, otatools_dir)
       if "erofs_sparse_flag" in prop_dict and not disable_sparse:
         image_path = UnsparseImage(out_file, replace=False)
         size = GetDiskUsage(image_path)
@@ -562,7 +569,7 @@ def BuildImage(in_dir, prop_dict, out_file, target_out=None):
       logger.info(
           "First Pass based on estimates of %d MB and %s inodes.",
           size // BYTES_IN_MB, prop_dict["extfs_inode_count"])
-      BuildImageMkfs(in_dir, prop_dict, out_file, target_out, fs_config)
+      BuildImageMkfs(in_dir, prop_dict, out_file, target_out, fs_config, otatools_dir)
       sparse_image = False
       if "extfs_sparse_flag" in prop_dict and not disable_sparse:
         sparse_image = True
@@ -606,7 +613,7 @@ def BuildImage(in_dir, prop_dict, out_file, target_out=None):
     elif fs_type.startswith("f2fs") and prop_dict.get("f2fs_compress") == "true":
       prop_dict["partition_size"] = str(size)
       prop_dict["image_size"] = str(size)
-      BuildImageMkfs(in_dir, prop_dict, out_file, target_out, fs_config)
+      BuildImageMkfs(in_dir, prop_dict, out_file, target_out, fs_config, otatools_dir)
       sparse_image = False
       if "f2fs_sparse_flag" in prop_dict and not disable_sparse:
         sparse_image = True
@@ -631,7 +638,7 @@ def BuildImage(in_dir, prop_dict, out_file, target_out=None):
 
   if not mkfs_output:
     mkfs_output = BuildImageMkfs(
-        in_dir, prop_dict, out_file, target_out, fs_config)
+        in_dir, prop_dict, out_file, target_out, fs_config, otatools_dir)
 
   # Update the image (eg filesystem size). This can be different eg if mkfs
   # rounds the requested size down due to alignment.
