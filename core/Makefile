@@ -3134,23 +3134,39 @@ INSTALLED_VENDOR_BOOT_RECOVERY_MEDIA_TARGET := $(PRODUCT_OUT)/vendor_boot_recove
 # Find the original recovery fragment to use as a base
 INTERNAL_VENDOR_RAMDISK_RECOVERY_BASE := $(filter %recovery.cpio$(RAMDISK_EXT),$(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS))
 
+MEDIA_INSTALLER_DEPS := \
+    $(TARGET_OUT_VENDOR_EXECUTABLES)/cgpt \
+    $(TARGET_OUT_VENDOR_EXECUTABLES)/partition-common.sh \
+    $(TARGET_OUT_VENDOR_EXECUTABLES)/partition-script.sh \
+    $(TARGET_OUT_VENDOR_EXECUTABLES)/partition-common-cgpt.sh \
+
 $(INTERNAL_VENDOR_RAMDISK_RECOVERY_MEDIA_TARGET): PRIVATE_STAGING_DIR := $(call intermediates-dir-for,PACKAGING,vendor_boot_recovery_media_ramdisk)
-$(INTERNAL_VENDOR_RAMDISK_RECOVERY_MEDIA_TARGET): $(MKBOOTFS) $(CUSTOM_RECOVERY_MEDIA_BINARY) $(CUSTOM_RECOVERY_MEDIA_RC) $(INTERNAL_VENDOR_RAMDISK_RECOVERY_BASE) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) | $(COMPRESSION_COMMAND_DEPS)
+$(INTERNAL_VENDOR_RAMDISK_RECOVERY_MEDIA_TARGET): $(MKBOOTFS) $(CUSTOM_RECOVERY_MEDIA_BINARY) $(CUSTOM_RECOVERY_MEDIA_RC) $(INTERNAL_VENDOR_RAMDISK_RECOVERY_BASE) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(MEDIA_INSTALLER_DEPS) | $(COMPRESSION_COMMAND_DEPS)
 	@echo "Target vendor ramdisk fragment (all merged for media): $@"
 	$(hide) rm -rf $(PRIVATE_STAGING_DIR) && mkdir -p $(PRIVATE_STAGING_DIR)
 	$(hide) if [ -n "$(INTERNAL_VENDOR_RAMDISK_TARGET)" ]; then \
 	    $(LZ4) -d -c $(INTERNAL_VENDOR_RAMDISK_TARGET) | (cd $(PRIVATE_STAGING_DIR) && cpio -i -u); \
 	fi
-	$(hide) $(foreach fragment,$(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS), \
-	    $(LZ4) -d -c $(fragment) | (cd $(PRIVATE_STAGING_DIR) && cpio -i -u); \
-	)
-	$(hide) mkdir -p $(PRIVATE_STAGING_DIR)/system/bin $(PRIVATE_STAGING_DIR)/vendor/etc/init
+	$(hide) if [ -n "$(INTERNAL_VENDOR_RAMDISK_RECOVERY_BASE)" ]; then \
+	    $(LZ4) -d -c $(INTERNAL_VENDOR_RAMDISK_RECOVERY_BASE) | (cd $(PRIVATE_STAGING_DIR) && cpio -i -u); \
+	fi
+	# Purge large unnecessary files from the merged ramdisk to fit in 32MB
+	$(hide) rm -f $(PRIVATE_STAGING_DIR)/system/bin/adbd
+	$(hide) rm -f $(PRIVATE_STAGING_DIR)/system/bin/fastbootd
+	$(hide) rm -f $(PRIVATE_STAGING_DIR)/system/bin/strace
+	$(hide) rm -rf $(PRIVATE_STAGING_DIR)/res/images
+
+	$(hide) mkdir -p $(PRIVATE_STAGING_DIR)/system/bin $(PRIVATE_STAGING_DIR)/vendor/bin $(PRIVATE_STAGING_DIR)/system/lib64 $(PRIVATE_STAGING_DIR)/vendor/etc/init
 	$(hide) cp -f $(CUSTOM_RECOVERY_MEDIA_BINARY) $(PRIVATE_STAGING_DIR)/system/bin/recovery
-	$(hide) cp -f $(CUSTOM_RECOVERY_MEDIA_BINARY) $(PRIVATE_STAGING_DIR)/system/bin/recovery_media
+	$(hide) cp -f $(CUSTOM_RECOVERY_MEDIA_BINARY) $(PRIVATE_STAGING_DIR)/vendor/bin/recovery_media
 	$(hide) cp -f $(CUSTOM_RECOVERY_MEDIA_RC) $(PRIVATE_STAGING_DIR)/vendor/etc/init/recovery_media.rc
+
+	$(hide) cp -f $(MEDIA_INSTALLER_DEPS) $(PRIVATE_STAGING_DIR)/system/bin/
+
 	$(hide) if [ -d $(PRIVATE_STAGING_DIR)/first_stage_ramdisk ]; then \
-	    mkdir -p $(PRIVATE_STAGING_DIR)/first_stage_ramdisk/system/bin; \
+	    mkdir -p $(PRIVATE_STAGING_DIR)/first_stage_ramdisk/system/bin $(PRIVATE_STAGING_DIR)/first_stage_ramdisk/vendor/bin; \
 	    cp -f $(CUSTOM_RECOVERY_MEDIA_BINARY) $(PRIVATE_STAGING_DIR)/first_stage_ramdisk/system/bin/recovery; \
+	    cp -f $(CUSTOM_RECOVERY_MEDIA_BINARY) $(PRIVATE_STAGING_DIR)/first_stage_ramdisk/vendor/bin/recovery_media; \
 	fi
 	$(hide) $(MKBOOTFS) $(PRIVATE_STAGING_DIR) | $(COMPRESSION_COMMAND) > $@
 
@@ -3206,7 +3222,8 @@ $(INSTALLED_RECOVERY_MEDIA_TARGET): $(MKEROFS) $(AVBTOOL) $(INSTALLED_BOOTIMAGE_
 	$(AVBTOOL) make_vbmeta_image \
 	    --rollback_index $(if $(BOARD_AVB_ROLLBACK_INDEX),$(BOARD_AVB_ROLLBACK_INDEX),0) \
 	    --output $(PRIVATE_STAGING_DIR)/vbmeta \
-	    --algorithm $(BOARD_AVB_ALGORITHM) --key $(BOARD_AVB_KEY_PATH) \
+	    --algorithm $(if $(BOARD_AVB_RECOVERY_MEDIA_ALGORITHM),$(BOARD_AVB_RECOVERY_MEDIA_ALGORITHM),$(BOARD_AVB_ALGORITHM)) \
+	    --key $(if $(BOARD_AVB_RECOVERY_MEDIA_KEY_PATH),$(BOARD_AVB_RECOVERY_MEDIA_KEY_PATH),$(BOARD_AVB_KEY_PATH)) \
 	    --include_descriptors_from_image $(INSTALLED_BOOTIMAGE_TARGET) \
 	    --include_descriptors_from_image $(INSTALLED_INIT_BOOT_IMAGE_TARGET) \
 	    --include_descriptors_from_image $(INSTALLED_VENDOR_BOOT_RECOVERY_MEDIA_TARGET) \
@@ -3221,7 +3238,7 @@ $(PRODUCT_OUT)/recovery-kernel: $(INSTALLED_RECOVERY_MEDIA_TARGET)
 .PHONY: recovery-media-image
 recovery-media-image: $(INSTALLED_RECOVERY_MEDIA_TARGET) $(PRODUCT_OUT)/recovery-kernel
 
-$(call dist-for-goals, recovery-media-image, $(INSTALLED_RECOVERY_MEDIA_TARGET))
+$(call dist-for-goals,dist_files,$(INSTALLED_RECOVERY_MEDIA_TARGET))
 
 # Ensure the packing script depends on our dynamic recovery image
 $(PACK_RECOVERY_IMAGE_TARGET): $(INSTALLED_RECOVERY_MEDIA_TARGET)
