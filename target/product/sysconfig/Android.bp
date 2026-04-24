@@ -90,6 +90,27 @@ prebuilt_etc {
 }
 
 prebuilt_etc {
+    name: "preinstalled-packages-platform-telephony-system-ext.xml",
+    sub_dir: "sysconfig",
+    system_ext_specific: true,
+    src: "preinstalled-packages-platform-telephony-system-ext.xml",
+}
+
+prebuilt_etc {
+    name: "preinstalled-packages-media-product.xml",
+    product_specific: true,
+    sub_dir: "sysconfig",
+    src: "preinstalled-packages-media-product.xml",
+}
+
+prebuilt_etc {
+    name: "preinstalled-packages-media-system-ext.xml",
+    sub_dir: "sysconfig",
+    system_ext_specific: true,
+    src: "preinstalled-packages-media-system-ext.xml",
+}
+
+prebuilt_etc {
     name: "preinstalled-packages-platform-telephony-system.xml",
     sub_dir: "sysconfig",
     src: "preinstalled-packages-platform-telephony-system.xml",
@@ -100,4 +121,11 @@ prebuilt_etc {
     sub_dir: "sysconfig",
     system_ext_specific: true,
     src: "preinstalled-packages-telephony-system-ext.xml",
+}
+
+prebuilt_etc {
+    name: "preinstalled-packages-base-product.xml",
+    sub_dir: "sysconfig",
+    product_specific: true,
+    src: "preinstalled-packages-base-product.xml",
 }

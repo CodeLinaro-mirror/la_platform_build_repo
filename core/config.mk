@@ -471,12 +471,6 @@ endif
 
 TARGET_RESTRICTS_ASHMEM_USAGE := false
 
-# TODO: b/443130838
-#
-# This needs to be removed after all targets that have vendor API level
-# 202604 have migrated to 6.12+ kernels, excluding CF WearOS and TV.
-TARGET_FORCES_ASHMEM_USAGE ?= false
-
 # If the vendor API level is 202604, then the device restricts what
 # applications can use ashmem.
 #
@@ -485,15 +479,10 @@ TARGET_FORCES_ASHMEM_USAGE ?= false
 # must continue to use ashmem unconditionally. This can be simplified to just
 # the VSR_VENDOR_API_LEVEL check once all CF instances move to kernel version
 # 6.12 or newer.
-#
-# TARGET_FORCES_ASHMEM_USAGE is only to be used if vendor API level is 202604
-# or higher, but the kernel hasn't been upgraded to 6.12+ just yet.
 ifeq ($(call math_gt_or_eq,$(VSR_VENDOR_API_LEVEL),202604),true)
 ifneq (true,$(CLOCKWORK_EMULATOR_PRODUCT))
 ifeq (,$(findstring x86_tv,$(PRODUCT_NAME)))
-ifneq (true,$(TARGET_FORCES_ASHMEM_USAGE))
   TARGET_RESTRICTS_ASHMEM_USAGE := true
-endif
 endif
 endif
 endif
@@ -900,6 +889,16 @@ else
   MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES := $(dir build/make/target/product/security/testkey)
 endif
 .KATI_READONLY := MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES
+
+# Certificate for the Bluetooth sepolicy context
+ifdef PRODUCT_MAINLINE_NFC_SEPOLICY_DEV_CERTIFICATES
+  # Priority 1: Use the product specific variable if defined
+  MAINLINE_NFC_SEPOLICY_DEV_CERTIFICATES := $(PRODUCT_MAINLINE_NFC_SEPOLICY_DEV_CERTIFICATES)
+else
+  # Priority 2: Use Mainline Sepolicy cert
+  MAINLINE_NFC_SEPOLICY_DEV_CERTIFICATES := $(MAINLINE_SEPOLICY_DEV_CERTIFICATES)
+endif
+.KATI_READONLY := MAINLINE_NFC_SEPOLICY_DEV_CERTIFICATES
 
 BUILD_NUMBER_FROM_FILE := $$(cat $(SOONG_OUT_DIR)/build_number.txt)
 BUILD_HOSTNAME_FROM_FILE := $$(cat $(SOONG_OUT_DIR)/build_hostname.txt)
