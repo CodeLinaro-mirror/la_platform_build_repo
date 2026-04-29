@@ -37,6 +37,7 @@ mod auto_generated {
     pub use aconfig_rust_proto::aconfig::Flag_metadata as ProtoFlagMetadata;
     pub use aconfig_rust_proto::aconfig::Flag_permission as ProtoFlagPermission;
     pub use aconfig_rust_proto::aconfig::Flag_state as ProtoFlagState;
+    pub use aconfig_rust_proto::aconfig::Flag_type as ProtoFlagType;
     pub use aconfig_rust_proto::aconfig::Flag_value as ProtoFlagValue;
     pub use aconfig_rust_proto::aconfig::Flag_values as ProtoFlagValues;
     pub use aconfig_rust_proto::aconfig::Parsed_flag as ProtoParsedFlag;
@@ -58,6 +59,7 @@ mod auto_generated {
     pub use aconfig::Flag_metadata as ProtoFlagMetadata;
     pub use aconfig::Flag_permission as ProtoFlagPermission;
     pub use aconfig::Flag_state as ProtoFlagState;
+    pub use aconfig::Flag_type as ProtoFlagType;
     pub use aconfig::Flag_value as ProtoFlagValue;
     pub use aconfig::Flag_values as ProtoFlagValues;
     pub use aconfig::Parsed_flag as ProtoParsedFlag;
@@ -148,6 +150,13 @@ pub mod flag_declaration {
             !pdf.metadata.has_storage(),
             "bad flag declaration: storage in metadata should not be explicitly selected"
         );
+
+        if cfg!(not(enable_int_flag)) {
+            ensure!(
+                pdf.type_() != ProtoFlagType::FLAG_TYPE_INTEGER,
+                "bad flag declaration: int flag usage is not enabled"
+            );
+        }
 
         Ok(())
     }
@@ -660,6 +669,53 @@ flag {
         ));
 
         // TODO(b/312769710): Verify error when container is missing.
+    }
+
+    #[test]
+    #[cfg(not(enable_int_flag))]
+    // this test tests when int flag is not enabled.
+    fn test_flag_declarations_try_from_text_proto_int_flag_disabled() {
+        // bad input: use flag int when disabled
+        let error = flag_declarations::try_from_text_proto(
+            r#"
+package: "com.foo.bar"
+container: "system"
+flag {
+    name: "int_flag"
+    namespace: "int_flag_ns"
+    description: "This is the description of the int flag."
+    bug: "123"
+    is_exported: true
+    type: FLAG_TYPE_INTEGER
+}
+"#,
+        )
+        .unwrap_err();
+        assert!(
+            format!("{error:?}").contains("bad flag declaration: int flag usage is not enabled")
+        );
+    }
+
+    #[test]
+    #[cfg(enable_int_flag)]
+    // this test tests when int type flag can be specified when flag to guard it is enabled.
+    fn test_flag_declarations_try_from_text_proto_int_flag_enabled() {
+        // valid input: int type flag when flag to guard it is enabled
+        let flag_declarations = flag_declarations::try_from_text_proto(
+            r#"
+flag {
+    name: "int_flag"
+    namespace: "int_flag_ns"
+    description: "This is the description of the int flag."
+    bug: "123"
+    is_exported: true
+    type: FLAG_TYPE_INTEGER
+}
+"#,
+        )
+        .unwrap();
+        let flag_declaration = flag_declarations.flag.iter()[0].unwrap();
+        assert_eq!(flag_declaration.type_(), ProtoFlagType::FLAG_TYPE_INTEGER);
     }
 
     #[test]

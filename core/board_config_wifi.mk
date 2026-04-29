@@ -87,3 +87,6 @@ endif
 ifeq ($(strip $(TARGET_SUPPORTS_WEARABLES)),true)
     $(call soong_config_set,target_supports_wearables,true)
 endif
+ifdef WIFI_HAL_RETRY_SET_MAC_ADDRESS
+    $(call soong_config_set,wifi,hal_retry_set_mac_address,true)
+endif

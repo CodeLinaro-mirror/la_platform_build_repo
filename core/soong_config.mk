@@ -35,7 +35,7 @@ $(call add_json_bool, DisplayBuildNumber,                $(filter true,$(DISPLAY
 $(call add_json_str,  Platform_display_version_name,     $(PLATFORM_DISPLAY_VERSION))
 $(call add_json_str,  Platform_version_name,             $(PLATFORM_VERSION))
 $(call add_json_val,  Platform_sdk_version,              $(PLATFORM_SDK_VERSION))
-$(call add_json_val,  Platform_sdk_version_full,         $(PLATFORM_SDK_VERSION_FULL))
+$(call add_json_str,  Platform_sdk_version_full,         $(PLATFORM_SDK_VERSION_FULL))
 $(call add_json_val,  Platform_prospective_sdk_version_full, $(PLATFORM_PROSPECTIVE_SDK_VERSION_FULL))
 $(call add_json_str,  Platform_sdk_codename,             $(PLATFORM_VERSION_CODENAME))
 $(call add_json_bool, Platform_sdk_final,                $(filter REL,$(PLATFORM_VERSION_CODENAME)))
@@ -113,6 +113,7 @@ $(call add_json_list, ExtraOtaKeys,                      $(PRODUCT_EXTRA_OTA_KEY
 $(call add_json_list, ExtraOtaRecoveryKeys,              $(PRODUCT_EXTRA_RECOVERY_KEYS))
 $(call add_json_str,  MainlineSepolicyDevCertificates,   $(MAINLINE_SEPOLICY_DEV_CERTIFICATES))
 $(call add_json_str,  MainlineBluetoothSepolicyDevCertificates,   $(MAINLINE_BLUETOOTH_SEPOLICY_DEV_CERTIFICATES))
+$(call add_json_str,  MainlineNfcSepolicyDevCertificates,   $(MAINLINE_NFC_SEPOLICY_DEV_CERTIFICATES))
 
 $(call add_json_str,  AppsDefaultVersionName,            $(APPS_DEFAULT_VERSION_NAME))
 
@@ -169,6 +170,7 @@ $(call add_json_list, DeviceSystemSdkVersions,           $(BOARD_SYSTEMSDK_VERSI
 $(call add_json_str,  RamdiskSnapshotVersion,            $(RAMDISK_SNAPSHOT_VERSION))
 $(call add_json_list, Platform_systemsdk_versions,       $(PLATFORM_SYSTEMSDK_VERSIONS))
 $(call add_json_bool, Malloc_low_memory,                 $(findstring true,$(MALLOC_SVELTE) $(MALLOC_LOW_MEMORY)))
+$(call add_json_bool, Malloc_scudo_tsds_max,             $(MALLOC_SCUDO_TSDS_MAX))
 $(call add_json_bool, Malloc_zero_contents,              $(call invert_bool,$(filter false,$(MALLOC_ZERO_CONTENTS))))
 $(call add_json_bool, Malloc_pattern_fill_contents,      $(MALLOC_PATTERN_FILL_CONTENTS))
 $(call add_json_str,  Override_rs_driver,                $(OVERRIDE_RS_DRIVER))
