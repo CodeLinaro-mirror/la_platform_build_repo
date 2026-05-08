@@ -3466,37 +3466,7 @@ ifeq ($(BOARD_SUPPORTS_RAMDISK_EARLY_INIT), true)
 ifeq ($(BOARD_AVB_ENABLE),true)
 ifdef BUILDING_VENDOR_BOOT_IMAGE
 
-# MM Display modules
-define ES_MOD_ORDER_DI
-
-endef
-
-# MM End modules
-# This modules should load after display ready
-define ES_MOD_ORDER_END
-
-endef
-
-# MM AIS modules
-define ES_MOD_ORDER_AIS
-
-endef
-
-# MM RVC modules
-define ES_MOD_ORDER_RV
-
-endef
-
-#Early Video APP modules
-define ES_MOD_ORDER_EARLY_VIDEO_APP
-
-endef
-
-#Early Audio APP modules
-define ES_MOD_ORDER_R_AU
-
-endef
-
+#################################### binary start ####################################
 # List none .so files which needed by ES
 # It will copy to vendor_early_services manual
 ES_NONE_LIB_DEPS := \
@@ -3512,7 +3482,7 @@ ES_NONE_LIB_DEPS := \
  $(PRODUCT_OUT)/obj/ETC/precompiled_sepolicy_intermediates/precompiled_sepolicy \
  $(PRODUCT_OUT)/vendor/etc/selinux/vendor_file_contexts \
 
-
+#################################### .so start ####################################
 # List .so files which needed by ES
 # It will copy to vendor_early_services/system/lib64 by script
 ES_LIB_DEPS := \
@@ -3656,15 +3626,137 @@ ES_EGL_LIB_DEPS := \
  $(PRODUCT_OUT)/vendor/lib64/egl/libEGL_adreno.so \
  $(PRODUCT_OUT)/vendor/lib64/egl/libGLESv2_adreno.so \
 
+#################################### .ko start ####################################
+# lists of vendor_dlkm/lib/modules
+ES_VENDOR_DLKMIMAGE_MODULES_FILES := \
+    $(filter $(TARGET_OUT_VENDOR_DLKM)/lib/modules/%,\
+      $(ALL_DEFAULT_INSTALLED_MODULES))
+
+# lists of system_dlkm/lib/modules
+ES_SYSTEM_DLKMIMAGE_MODULES_FILES := \
+    $(filter $(TARGET_OUT_SYSTEM_DLKM)/lib/modules/%,\
+      $(ALL_DEFAULT_INSTALLED_MODULES))
+
+ES_KO_DEPS := \
+ $(ES_SYSTEM_DLKMIMAGE_MODULES_FILES) \
+ $(ES_VENDOR_DLKMIMAGE_MODULES_FILES) \
+
+# List all modules that should be copied form system_dlkm/lib/modules to vendor_ramdisk/system/lib/modules
+# Donot load system ko directly , it will be loaded as vendor required
+# Not for volcano !!!
+define ES_MOD_COPY_FROM_SYS_DLKM
+
+endef
+
+# MM Display modules
+define ES_MOD_ORDER_DI
+
+endef
+
+# MM End modules
+# This modules should load after display ready
+define ES_MOD_ORDER_END
+
+endef
+
+# MM AIS modules
+define ES_MOD_ORDER_AIS
+
+endef
+
+# MM RVC modules
+define ES_MOD_ORDER_RV
+
+endef
+
+#Early Video APP modules
+define ES_MOD_ORDER_EARLY_VIDEO_APP
+
+endef
+
+#Early Audio APP modules
+define ES_MOD_ORDER_R_AU
+
+endef
+
+# copy all modules.* files from directory $(1) to directory $(2)
+define copy-modules-files
+mkdir -p $(2); \
+for fl in $$(find $(1) -maxdepth 1 -name "modules.*" -type f 2>/dev/null); do \
+  cp -f "$$fl" "$(2)/"; \
+done;
+endef
+
+# For each module name in list $(1), check whether <module>.ko already exists
+# (as a regular file or a symlink) in directory $(3).  If it does not exist,
+# copy <module>.ko from directory $(2) into directory $(3).
+#
+# $(1): space-separated list of module base-names (without .ko)
+# $(2): source directory A  (e.g. $(PRODUCT_OUT)/vendor_dlkm/lib/modules)
+# $(3): destination directory B  (e.g. $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules)
+define copy-missing-ko-files
+for mod in $(1); do \
+  if [ ! -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$$mod.ko" ]; then \
+    if [ -f "$(2)/$$mod.ko" ]; then \
+      cp -f "$(2)/$$mod.ko" "$(3)/"; \
+    else \
+      echo "Warning: $(2)/$$mod.ko not found, skipping." >&2; \
+    fi; \
+  fi; \
+done;
+endef
+
+# For each entry in $(2)/modules.load, check (ignoring '-'/'_' differences) whether
+# its base-name (without .ko) is present in the module list $(1).  If so, write the
+# name (as it appears in modules.load, without .ko) to file $(3), one entry per line,
+# preserving the order from modules.load.  The output file is (re)created from scratch.
+#
+# $(1): space-separated list of module base-names (without .ko)
+# $(2): directory A that contains modules.load
+# $(3): output file B to write the ordered module names into
+define gen-order-and-load-file
+echo -n > $(2)/$(3).load; \
+echo -n > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/$(3).order; \
+for load_entry in $$(cat $(2)/modules.load 2>/dev/null); do \
+  mod_name=$$(basename "$$load_entry" .ko); \
+  norm_mod=$$(echo "$$mod_name" | tr '-' '_'); \
+  for want in $(1); do \
+    norm_want=$$(echo "$$want" | tr '-' '_'); \
+    if [ "$$norm_mod" = "$$norm_want" ]; then \
+      printf '%s\n' "$$load_entry" >> $(2)/$(3).load; \
+	  printf '%s\n' "$$load_entry" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/$(3).order; \
+      break; \
+    fi; \
+  done; \
+done;
+endef
+
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(MKBOOTIMG) $(INTERNAL_VENDOR_RAMDISK_TARGET) $(INSTALLED_DTBIMAGE_TARGET)
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INSTALLED_SYSTEMIMAGE_TARGET) $(INSTALLED_VENDORIMAGE_TARGET)
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $(INTERNAL_VENDOR_BOOTCONFIG_TARGET)
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH)
-$(INTERNAL_VENDOR_RAMDISK_UPDATE): $(ES_NONE_LIB_DEPS) $(ES_LIB_DEPS) $(ES_EGL_LIB_DEPS)
+$(INTERNAL_VENDOR_RAMDISK_UPDATE): $(ES_NONE_LIB_DEPS) $(ES_LIB_DEPS) $(ES_EGL_LIB_DEPS) $(ES_KO_DEPS)
 	echo "@@@@@@@@@@@ Start modules file process @@@@@@@@@@@" ;\
-	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules ;\
 	if ! grep -Fxq 'boot_stats' $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load; then echo boot_stats >> $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load; fi; \
-	echo "!!!!!!!!Copy ko file and generate order file!!!!!!!!TODO" ;\
+	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules; \
+	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/system/lib/modules; \
+	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules; \
+	$(call copy-modules-files,$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
+	$(call copy-modules-files,$(PRODUCT_OUT)/system_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/system/lib/modules)\
+	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_COPY_FROM_SYS_DLKM)),$(PRODUCT_OUT)/system_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/system/lib/modules)\
+	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_COPY_FROM_VND_DLKM)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
+	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_DI)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
+	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_DI)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/,modules_di)\
+	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_END)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
+	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_END)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/,modules_end)\
+	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_AIS)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
+	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_AIS)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/,modules_ais)\
+	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_RV)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
+	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_RV)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/,modules_rv)\
+	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_EARLY_VIDEO_APP)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
+	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_EARLY_VIDEO_APP)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/,modules_early_video_app)\
+	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_R_AU)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
+	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_R_AU)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/,modules_r_au)\
 	echo "@@@@@@@@@@@ Start none library file process @@@@@@@@@@@" ;\
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin/bootstrap/ ;\
 	cp -ar $(PRODUCT_OUT)/vendor/firmware $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/ ;\
