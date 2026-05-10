@@ -137,6 +137,7 @@ android_filesystem_defaults {
         "messaging",
         "apns-full-conf.xml",
         "frameworks-base-overlays",
+        "preinstalled-packages-base-product.xml",
 
         ///////////////////////////////////////////
         // PRODUCT_PACKAGES_SHIPPING_API_LEVEL_33
@@ -197,6 +198,7 @@ android_system_image {
 
         // telephony_system_ext
         "EmergencyInfo",
+        "preinstalled-packages-platform-telephony-system-ext.xml",
 
         // handheld_product
         "Calendar",
@@ -204,7 +206,6 @@ android_system_image {
         "DeskClock",
         "Gallery2",
         "Music",
-        "PersonalContext",
         "preinstalled-packages-platform-handheld-product.xml",
         "QuickSearchBox",
         "SettingsIntelligence",

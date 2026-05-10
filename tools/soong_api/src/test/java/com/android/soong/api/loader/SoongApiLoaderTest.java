@@ -29,6 +29,7 @@ import org.junit.runners.JUnit4;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -111,6 +112,26 @@ public class SoongApiLoaderTest {
         assertModuleCount(2);
         assertModuleExists("moduleSoong", "java_library");
         assertModuleExists("moduleMake", "cc_binary");
+    }
+
+    @Test
+    public void testLoad_fromZip_noJsonFiles_throwsException() throws Exception {
+        // 1. Arrange: Create a zip with no JSON files.
+        // Include a directory ending in .json to verify that directories are correctly ignored.
+        File inputZip = tempFolder.newFile("no_json.zip");
+        Map<String, String> files = new HashMap<>();
+        files.put("README.txt", "Just a text file");
+        files.put("fake_dir.json/", ""); // Directory ending in .json
+        createMockZipFile(inputZip, files);
+
+        // 2. Act & Assert: Verify that an IOException is thrown with the correct message.
+        IOException exception = org.junit.Assert.assertThrows(
+                IOException.class,
+                () -> loader.load(inputZip, outputDb)
+        );
+
+        assertTrue("Exception message should indicate no .json files were found",
+                exception.getMessage().contains("No .json files found in no_json.zip"));
     }
 
     @Test

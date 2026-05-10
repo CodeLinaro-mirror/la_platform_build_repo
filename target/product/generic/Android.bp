@@ -394,6 +394,7 @@ android_filesystem_defaults {
         // media_system_ext
         ///////////////////////////////////////////
         "StatementService",
+        "preinstalled-packages-media-system-ext.xml",
 
         ///////////////////////////////////////////
         // window_extensions_base
@@ -426,7 +427,7 @@ android_filesystem_defaults {
         // media_product
         ///////////////////////////////////////////
         "webview",
-
+        "preinstalled-packages-media-product.xml",
         ///////////////////////////////////////////
         // base_product
         ///////////////////////////////////////////
@@ -542,6 +543,7 @@ system_image_defaults {
         "abx",
         "aconfigd-system",
         "aflags",
+        "aoad",
         "am",
         "android.software.credentials.prebuilt.xml", // generic_system
         "android.software.webview.prebuilt.xml", // media_system
@@ -573,7 +575,6 @@ system_image_defaults {
         "cppreopts.sh", // generic_system
         "credstore",
         "debuggerd",
-        "default-permissions-virtualization.xml",
         "device_config",
         "dirty-image-objects",
         "dmctl",
@@ -603,6 +604,7 @@ system_image_defaults {
         "gsid",
         "heapprofd",
         "hid",
+        "hidservice",
         "hiddenapi-package-whitelist.xml", // from runtime_libart
         "idc_data",
         "idmap2",
@@ -641,6 +643,7 @@ system_image_defaults {
         "mdnsd", // base_system
         "media_profiles_V1_0.dtd", // base_system
         "mediacodec.policy", // base_system
+        "mediacodeclist_generator", // base_system
         "mediaextractor", // base_system
         "misctrl", // from base_system
         "mke2fs", // base_system
@@ -888,6 +891,7 @@ system_image_defaults {
                 "charger_res_images", // generic_system
                 "com.android.apex.cts.shim.v1_prebuilt", // ok
                 "com.android.cellbroadcast", // telephony_system
+                "com.android.crashrecovery", // base_system
                 "com.android.future.usb.accessory", // media_system
                 "com.android.location.provider", // base_system
                 "com.android.media.remotedisplay", // media_system
@@ -923,13 +927,6 @@ system_image_defaults {
                 true: [],
                 default: [
                     "SecureElement", // handheld_system
-                ],
-            }) + select(soong_config_variable("ANDROID", "release_crashrecovery_module"), {
-                "true": [
-                    "com.android.crashrecovery", // base_system (RELEASE_CRASHRECOVERY_MODULE)
-                ],
-                default: [
-                    "framework-platformcrashrecovery", // base_system
                 ],
             }) + select(release_flag("RELEASE_ONDEVICE_INTELLIGENCE_MODULE"), {
                 true: [
@@ -1154,6 +1151,11 @@ system_image_defaults {
                 ],
                 default: [
                 ],
+            }) + select(release_flag("RELEASE_NPUMANAGER_MODULE"), {
+                true: [
+                    "libnpumanager", // base_system (RELEASE_NPUMANAGER_MODULE)
+                ],
+                default: [],
             }),
         },
     },
