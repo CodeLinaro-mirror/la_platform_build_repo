@@ -28,12 +28,18 @@ PRODUCT_PRODUCT_PROPERTIES += \
     ro.com.android.dataroaming?=true \
 
 # More AOSP packages
+ifneq ($(TARGET_TELEPHONY_DATA_ONLY), true)
+PRODUCT_PACKAGES += \
+    messaging
+endif #TARGET_TELEPHONY_DATA_ONLY
+
+ifneq ($(TARGET_IS_QLMD), true)
 PRODUCT_PACKAGES += \
     initial-package-stopped-states-aosp.xml \
-    messaging \
     PhotoTable \
     preinstalled-packages-platform-aosp-product.xml \
-    ThemePicker \
+    ThemePicker
+endif #TARGET_IS_QLMD
 
 # Telephony:
 #   Provide a APN configuration to GSI product
