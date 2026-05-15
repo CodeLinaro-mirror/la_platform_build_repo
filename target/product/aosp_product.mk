@@ -34,8 +34,7 @@ PRODUCT_PACKAGES += \
     messaging \
     PhotoTable \
     preinstalled-packages-platform-aosp-product.xml \
-    ThemePicker \
-    WallpaperPicker
+    ThemePicker
 endif #TARGET_HAS_QTI_OPTIMIZATIONS
 
 # Telephony:
