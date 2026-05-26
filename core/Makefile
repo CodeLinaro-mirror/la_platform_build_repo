@@ -3552,8 +3552,6 @@ ES_LIB_DEPS := \
  $(PRODUCT_OUT)/vendor/lib64/android.hardware.audio@4.0.so \
  $(PRODUCT_OUT)/vendor/lib64/android.hardware.audio.common@4.0.so \
  $(PRODUCT_OUT)/vendor/lib64/android.hardware.audio.effect@4.0.so \
- $(PRODUCT_OUT)/vendor/lib64/hw/camera.qcom.so \
- $(PRODUCT_OUT)/vendor/lib64/hw/com.qti.chi.override.so \
  $(PRODUCT_OUT)/vendor/lib64/libadreno_app_profiles.so \
  $(PRODUCT_OUT)/vendor/lib64/libadreno_utils.so \
  $(PRODUCT_OUT)/vendor/lib64/libadsprpc.so \
@@ -3563,17 +3561,8 @@ ES_LIB_DEPS := \
  $(PRODUCT_OUT)/vendor/lib64/libar-gsl.so \
  $(PRODUCT_OUT)/vendor/lib64/libats.so \
  $(PRODUCT_OUT)/vendor/lib64/libaudio_log_utils.so \
- $(PRODUCT_OUT)/vendor/lib64/libbitmlenginev2.so \
- $(PRODUCT_OUT)/vendor/lib64/libcamxhwnodecontext.so \
- $(PRODUCT_OUT)/vendor/lib64/libcamxifestriping.so \
- $(PRODUCT_OUT)/vendor/lib64/libcamximageformatutils.so \
- $(PRODUCT_OUT)/vendor/lib64/libcamxsettingsmanager.so \
- $(PRODUCT_OUT)/vendor/lib64/libcamxswispiqmodule.so \
- $(PRODUCT_OUT)/vendor/lib64/libcamxtintlessalgo.so \
  $(PRODUCT_OUT)/vendor/lib64/libCB.so \
  $(PRODUCT_OUT)/vendor/lib64/libcdsprpc.so \
- $(PRODUCT_OUT)/vendor/lib64/libchilog.so \
- $(PRODUCT_OUT)/vendor/lib64/libcom.qti.chinodeutils.so \
  $(PRODUCT_OUT)/vendor/lib64/libdiag.so \
  $(PRODUCT_OUT)/vendor/lib64/libdisplayconfig.qti.so \
  $(PRODUCT_OUT)/vendor/lib64/libdrm.so \
