@@ -3893,6 +3893,9 @@ endef
 # MM Audio reach modules
 define ES_MOD_ORDER_R_AU
 smem-mailbox
+rfkill
+cnss_utils
+btpower
 frpc-adsprpc
 snd_event_dlkm
 q6_pdr_dlkm
@@ -3919,6 +3922,8 @@ wcd939x_slave_dlkm
 wcd939x_dlkm
 wsa883x_dlkm
 wsa884x_dlkm
+wsa885x_i2c_dlkm
+simple_amp_dlkm
 swr_dmic_dlkm
 swr_ctrl_dlkm
 lpass_cdc_dlkm
@@ -3927,7 +3932,11 @@ lpass_cdc_wsa2_macro_dlkm
 lpass_cdc_wsa_macro_dlkm
 lpass_cdc_va_macro_dlkm
 lpass_cdc_tx_macro_dlkm
+btfmcodec
+bt_fm_swr
+btfm_slim_codec
 lpass_bt_swr_dlkm
+hdmi_dlkm
 machine_dlkm
 endef
 
@@ -4042,7 +4051,16 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(INTERNAL_VENDOR_RAMDISK_FRAGMENT_TARGETS) $
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_PATH) $(ES_SYSTEM_DEPS)
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/ ;\
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lxc-data/; \
-        $(foreach fn, $(ES_MOD_ORDER_R_AU), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
+        $(foreach fn, $(ES_MOD_ORDER_R_AU), \
+          if [ -e "$(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko" ]; then \
+            $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug "$(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko"; \
+          elif [ -e "$(PRODUCT_OUT)/system_dlkm/lib/modules/$(fn).ko" ]; then \
+            cp "$(PRODUCT_OUT)/system_dlkm/lib/modules/$(fn).ko" "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko"; \
+          elif [ -e "$(PRODUCT_OUT)/system/lib/modules/$(fn).ko" ]; then \
+            cp "$(PRODUCT_OUT)/system/lib/modules/$(fn).ko" "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko"; \
+          else \
+            echo "ES: Module $(fn).ko not found in vendor_dlkm/system_dlkm/system"; \
+          fi;)\
         $(foreach fn, $(ES_MOD_ORDER_EARLY_VIDEO_APP), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
         $(foreach fn, $(ES_MOD_ORDER_AIS), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
 		$(foreach fn, $(ES_MOD_ORDER_LXC), $(LLVM_STRIP) -o $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$(fn).ko --strip-debug $(PRODUCT_OUT)/vendor_dlkm/lib/modules/$(fn).ko;)\
