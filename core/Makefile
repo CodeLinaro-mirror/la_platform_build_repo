@@ -3630,11 +3630,10 @@ ES_KO_DEPS := \
  $(ES_SYSTEM_DLKMIMAGE_MODULES_FILES) \
  $(ES_VENDOR_DLKMIMAGE_MODULES_FILES) \
 
-# List all modules that should be copied form system_dlkm/lib/modules to vendor_ramdisk/system/lib/modules
-# Donot load system ko directly , it will be loaded as vendor required
-# Not for volcano !!!
-define ES_MOD_COPY_FROM_SYS_DLKM
 
+# Modules load in sys
+define ES_MOD_ORDER_SYS
+rfkill
 endef
 
 # MM Display modules
@@ -3671,7 +3670,10 @@ endef
 # copy all modules.* files from directory $(1) to directory $(2)
 define copy-modules-files
 mkdir -p $(2); \
-for fl in $$(find $(1) -maxdepth 1 -name "modules.*" -type f 2>/dev/null); do \
+_src_dir=$(1); \
+_sub=$$(find $$_src_dir -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1); \
+[ -n "$$_sub" ] && _src_dir=$$_sub; \
+for fl in $$(find $$_src_dir -maxdepth 1 -name "modules.*" -type f 2>/dev/null); do \
   cp -f "$$fl" "$(2)/"; \
 done;
 endef
@@ -3685,11 +3687,20 @@ endef
 # $(3): destination directory B  (e.g. $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules)
 define copy-missing-ko-files
 for mod in $(1); do \
-  if [ ! -e "$(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/$$mod.ko" ]; then \
-    if [ -f "$(2)/$$mod.ko" ]; then \
-      cp -f "$(2)/$$mod.ko" "$(3)/"; \
+  _src_dir=$(2); \
+  _sub=$$(find $$_src_dir -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1); \
+  [ -n "$$_sub" ] && _src_dir=$$_sub; \
+  _ko_path=$$(find "$$_src_dir" -name "$$mod.ko" 2>/dev/null | head -1); \
+  if [ -z "$$_ko_path" ]; then \
+    echo "Warning: $$mod.ko not found under $(2), skipping." >&2; \
+  else \
+    _rel=$${_ko_path#$$_src_dir/}; \
+    _dest=$(3)/$$_rel; \
+    if [ ! -e "$$_dest" ]; then \
+      mkdir -p "$$(dirname "$$_dest")"; \
+      cp -f "$$_ko_path" "$$_dest"; \
     else \
-      echo "Warning: $(2)/$$mod.ko not found, skipping." >&2; \
+      echo "Warning: $$_dest already exists, skipping." >&2; \
     fi; \
   fi; \
 done;
@@ -3701,11 +3712,14 @@ endef
 # preserving the order from modules.load.  The output file is (re)created from scratch.
 #
 # $(1): space-separated list of module base-names (without .ko)
-# $(2): directory A that contains modules.load
+# $(2): directory A that contains modules.load (must be under $(TARGET_VENDOR_RAMDISK_OUT)/)
 # $(3): output file B to write the ordered module names into
 define gen-order-and-load-file
 echo -n > $(2)/$(3).load; \
-echo -n > $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/$(3).order; \
+_suffix=$$(echo "$(2)" | sed 's|$(TARGET_VENDOR_RAMDISK_OUT)/||'); \
+_order_dir=$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/$$_suffix; \
+mkdir -p $$_order_dir; \
+echo -n > $$_order_dir/$(3).order; \
 for load_entry in $$(cat $(2)/modules.load 2>/dev/null); do \
   mod_name=$$(basename "$$load_entry" .ko); \
   norm_mod=$$(echo "$$mod_name" | tr '-' '_'); \
@@ -3713,7 +3727,7 @@ for load_entry in $$(cat $(2)/modules.load 2>/dev/null); do \
     norm_want=$$(echo "$$want" | tr '-' '_'); \
     if [ "$$norm_mod" = "$$norm_want" ]; then \
       printf '%s\n' "$$load_entry" >> $(2)/$(3).load; \
-	  printf '%s\n' "$$load_entry" >> $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/$(3).order; \
+      printf '%s\n' "$$load_entry" >> $$_order_dir/$(3).order; \
       break; \
     fi; \
   done; \
@@ -3728,12 +3742,12 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(ES_NONE_LIB_DEPS) $(ES_LIB_DEPS) $(ES_EGL_L
 	echo "@@@@@@@@@@@ Start modules file process @@@@@@@@@@@" ;\
 	if ! grep -Fxq 'boot_stats' $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load; then echo boot_stats >> $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load; fi; \
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules; \
-	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/system/lib/modules; \
+	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/system; \
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules; \
 	$(call copy-modules-files,$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
-	$(call copy-modules-files,$(PRODUCT_OUT)/system_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/system/lib/modules)\
-	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_COPY_FROM_SYS_DLKM)),$(PRODUCT_OUT)/system_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/system/lib/modules)\
-	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_COPY_FROM_VND_DLKM)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
+	$(call copy-modules-files,$(PRODUCT_OUT)/system_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/system/)\
+	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_SYS)),$(PRODUCT_OUT)/system_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/system)\
+	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_SYS)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/system,modules_sys)\
 	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_DI)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
 	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_DI)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/,modules_di)\
 	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_END)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
