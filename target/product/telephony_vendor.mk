@@ -13,10 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+# Changes from Qualcomm Technologies, Inc. are provided under the following license:
+# Copyright (c) Qualcomm Technologies, Inc. and/or its subsidiaries.
+# SPDX-License-Identifier: BSD-3-Clause-Clear
 
 # This is the list of modules that are specific to products that have telephony
 # hardware, and install outside the system partition.
 
 # /vendor packages
+ifneq ($(TARGET_NO_TELEPHONY), true)
 PRODUCT_PACKAGES := \
-    rild \
+    rild
+endif
