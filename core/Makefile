@@ -3664,7 +3664,59 @@ endef
 
 #Early Audio APP modules
 define ES_MOD_ORDER_R_AU
-
+q6_notifier_dlkm
+spf_core_dlkm
+audpkt_ion_dlkm
+gpr_dlkm
+audio_pkt_dlkm
+q6_dlkm
+adsp_loader_dlkm
+audio_prm_dlkm
+pdr_interface
+qmi_helpers
+q6_pdr_dlkm
+pinctrl_lpi_dlkm
+swr_dlkm
+swr_ctrl_dlkm
+snd_event_dlkm
+wcd_core_dlkm
+mbhc_dlkm
+wcd9xxx_dlkm
+stub_dlkm
+lpass_bt_swr_dlkm
+machine_dlkm
+swr_haptics_dlkm
+hdmi_dlkm
+lpass_cdc_wsa2_macro_dlkm
+lpass_cdc_wsa_macro_dlkm
+lpass_cdc_va_macro_dlkm
+lpass_cdc_rx_macro_dlkm
+lpass_cdc_tx_macro_dlkm
+lpass_cdc_dlkm
+wsa884x_dlkm
+wsa883x_dlkm
+wcd937x_dlkm
+wcd937x_slave_dlkm
+wcd938x_dlkm
+wcd938x_slave_dlkm
+wcd9378_dlkm
+wcd9378_slave_dlkm
+swr_dmic_dlkm
+wcd939x_dlkm
+wcd939x_slave_dlkm
+sdca_registers_dlkm
+smp2p
+qrtr-smd
+qcom_glink
+qcom_glink_smem
+qcom_smd
+rproc_qcom_common
+cnss_utils
+slimbus
+btfmcodec
+btpower
+bt_fm_swr
+bt_fm_slim
 endef
 
 # copy all modules.* files from directory $(1) to directory $(2)
