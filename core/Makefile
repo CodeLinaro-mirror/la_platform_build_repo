@@ -3741,25 +3741,25 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(AVBTOOL) $(BOARD_AVB_VENDOR_BOOTIMAGE_KEY_P
 $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(ES_NONE_LIB_DEPS) $(ES_LIB_DEPS) $(ES_EGL_LIB_DEPS) $(ES_KO_DEPS)
 	echo "@@@@@@@@@@@ Start modules file process @@@@@@@@@@@" ;\
 	if ! grep -Fxq 'boot_stats' $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load; then echo boot_stats >> $(TARGET_VENDOR_RAMDISK_OUT)/lib/modules/modules.load; fi; \
-	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules; \
-	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/system; \
+	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib/modules; \
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules; \
-	$(call copy-modules-files,$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
-	$(call copy-modules-files,$(PRODUCT_OUT)/system_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/system/)\
-	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_SYS)),$(PRODUCT_OUT)/system_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/system)\
-	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_SYS)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/system,modules_sys)\
-	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_DI)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
-	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_DI)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/,modules_di)\
-	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_END)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
-	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_END)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/,modules_end)\
-	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_AIS)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
-	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_AIS)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/,modules_ais)\
-	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_RV)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
-	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_RV)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/,modules_rv)\
-	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_EARLY_VIDEO_APP)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
-	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_EARLY_VIDEO_APP)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/,modules_early_video_app)\
-	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_R_AU)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules)\
-	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_R_AU)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor/lib/modules/,modules_r_au)\
+	$(call copy-modules-files,$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules)\
+	sed -i 's|/vendor/lib/modules/|/vendor_early_services/vendor/lib/modules/|g' $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/modules.dep 2>/dev/null || true; \
+	$(call copy-modules-files,$(PRODUCT_OUT)/system_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib/modules/)\
+	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_SYS)),$(PRODUCT_OUT)/system_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib/modules)\
+	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_SYS)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib/modules,modules_sys)\
+	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_DI)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules)\
+	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_DI)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/,modules_di)\
+	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_END)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules)\
+	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_END)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/,modules_end)\
+	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_AIS)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules)\
+	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_AIS)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/,modules_ais)\
+	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_RV)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules)\
+	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_RV)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/,modules_rv)\
+	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_EARLY_VIDEO_APP)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules)\
+	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_EARLY_VIDEO_APP)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/,modules_early_video_app)\
+	$(call copy-missing-ko-files,$(subst $(newline), ,$(ES_MOD_ORDER_R_AU)),$(PRODUCT_OUT)/vendor_dlkm/lib/modules,$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules)\
+	$(call gen-order-and-load-file,$(subst $(newline), ,$(ES_MOD_ORDER_R_AU)),$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/lib/modules/,modules_r_au)\
 	echo "@@@@@@@@@@@ Start none library file process @@@@@@@@@@@" ;\
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/bin/bootstrap/ ;\
 	cp -ar $(PRODUCT_OUT)/vendor/firmware $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/ ;\
