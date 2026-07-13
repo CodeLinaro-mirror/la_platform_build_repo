@@ -3649,7 +3649,7 @@ endef
 
 # MM AIS modules
 define ES_MOD_ORDER_AIS
-
+camera
 endef
 
 # MM RVC modules
@@ -3827,6 +3827,17 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(ES_NONE_LIB_DEPS) $(ES_LIB_DEPS) $(ES_EGL_L
 	cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
 	cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/vendor_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
 	cp -rf $(PRODUCT_OUT)/obj/ETC/precompiled_sepolicy_intermediates/precompiled_sepolicy  $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
+	cp -rf $(PRODUCT_OUT)/vendor/lib64/libais*.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+	cp -rf $(PRODUCT_OUT)/vendor/lib64/libmmosal_vendor.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+	cp -rf $(PRODUCT_OUT)/vendor/lib64/libC2D2.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+	cp -rf $(PRODUCT_OUT)/vendor/lib64/libc2d30_bltlib.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+	cp -rf $(PRODUCT_OUT)/system/lib64/libapexsupport.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+	cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common-V6-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+	cp -rf $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator-V2-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+	cp -rf $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.hexlp-V2-ndk.so $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/ ;\
+	cp -rf $(PRODUCT_OUT)/vendor/bin/ais_server $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+	cp -rf $(PRODUCT_OUT)/vendor/bin/qcarcam_edrm_rvc $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+
 	echo "@@@@@@@@@@@ Start library file process @@@@@@@@@@@" ;\
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/egl/ ;\
 	$(foreach es_lib, $(ES_LIB_DEPS), cp $(es_lib) $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/;)\
