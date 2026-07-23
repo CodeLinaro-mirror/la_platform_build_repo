@@ -3711,6 +3711,8 @@ qcom_glink
 qcom_glink_smem
 qcom_smd
 rproc_qcom_common
+qcom_ramdump
+frpc-adsprpc
 cnss_utils
 slimbus
 btfmcodec
