@@ -3481,6 +3481,8 @@ ES_NONE_LIB_DEPS := \
  $(PRODUCT_OUT)/vendor/bin/pd-mapper \
  $(PRODUCT_OUT)/obj/ETC/precompiled_sepolicy_intermediates/precompiled_sepolicy \
  $(PRODUCT_OUT)/vendor/etc/selinux/vendor_file_contexts \
+ $(PRODUCT_OUT)/vendor/bin/ais_server \
+ $(PRODUCT_OUT)/vendor/bin/qcarcam_edrm_rvc \
 
 #################################### .so start ####################################
 # List .so files which needed by ES
@@ -3608,6 +3610,24 @@ ES_LIB_DEPS := \
  $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.display.mapper@1.1.so \
  $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.dsp@1.0.so \
  $(PRODUCT_OUT)/vendor/lib64/vendor.qti.hardware.hexlp-V2-ndk.so \
+ $(PRODUCT_OUT)/vendor/lib64/libais_client.so \
+ $(PRODUCT_OUT)/vendor/lib64/libais_config.so \
+ $(PRODUCT_OUT)/vendor/lib64/libais_imx766.so \
+ $(PRODUCT_OUT)/vendor/lib64/libais_log_proprietary.so \
+ $(PRODUCT_OUT)/vendor/lib64/libais_max9296b.so \
+ $(PRODUCT_OUT)/vendor/lib64/libais_max9296.so \
+ $(PRODUCT_OUT)/vendor/lib64/libais_sensorstub.so \
+ $(PRODUCT_OUT)/vendor/lib64/libais.so \
+ $(PRODUCT_OUT)/vendor/lib64/libais_test_util_edrm_proprietary.so \
+ $(PRODUCT_OUT)/vendor/lib64/libais_test_util_proprietary.so \
+ $(PRODUCT_OUT)/vendor/lib64/libais_tids90ub9724.so \
+ $(PRODUCT_OUT)/vendor/lib64/libais_tids90ub.so \
+ $(PRODUCT_OUT)/vendor/lib64/libmmosal_vendor.so \
+ $(PRODUCT_OUT)/vendor/lib64/libC2D2.so \
+ $(PRODUCT_OUT)/vendor/lib64/libc2d30_bltlib.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.common-V4-ndk.so \
+ $(PRODUCT_OUT)/system/lib64/android.hardware.graphics.allocator-V2-ndk.so \
+
 
 # List .so file needed by ES
 # It will copy to vendor_early_services/system/lib64/egl by script
@@ -3649,7 +3669,7 @@ endef
 
 # MM AIS modules
 define ES_MOD_ORDER_AIS
-
+camera
 endef
 
 # MM RVC modules
@@ -3827,6 +3847,9 @@ $(INTERNAL_VENDOR_RAMDISK_UPDATE): $(ES_NONE_LIB_DEPS) $(ES_LIB_DEPS) $(ES_EGL_L
 	cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/* $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
 	cp -rf $(PRODUCT_OUT)/vendor/etc/selinux/vendor_file_contexts $(TARGET_VENDOR_RAMDISK_OUT) ;\
 	cp -rf $(PRODUCT_OUT)/obj/ETC/precompiled_sepolicy_intermediates/precompiled_sepolicy  $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/etc/selinux/ ;\
+	cp -rf $(PRODUCT_OUT)/vendor/bin/ais_server $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+	cp -rf $(PRODUCT_OUT)/vendor/bin/qcarcam_edrm_rvc $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/vendor/bin/ ;\
+
 	echo "@@@@@@@@@@@ Start library file process @@@@@@@@@@@" ;\
 	mkdir -p $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/egl/ ;\
 	$(foreach es_lib, $(ES_LIB_DEPS), cp $(es_lib) $(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/system/lib64/;)\
