@@ -3752,9 +3752,8 @@ for fl in $$(find $$_src_dir -maxdepth 1 -name "modules.*" -type f 2>/dev/null);
 done;
 endef
 
-# For each module name in list $(1), check whether <module>.ko already exists
-# (as a regular file or a symlink) in directory $(3).  If it does not exist,
-# copy <module>.ko from directory $(2) into directory $(3).
+# For each module name in list $(1), find <module>.ko under directory $(2)
+# and copy it into directory $(3).
 #
 # $(1): space-separated list of module base-names (without .ko)
 # $(2): source directory A  (e.g. $(PRODUCT_OUT)/vendor_dlkm/lib/modules)
@@ -3770,12 +3769,8 @@ for mod in $(1); do \
   else \
     _rel=$${_ko_path#$$_src_dir/}; \
     _dest=$(3)/$$_rel; \
-    if [ ! -e "$$_dest" ]; then \
-      mkdir -p "$$(dirname "$$_dest")"; \
-      cp -f "$$_ko_path" "$$_dest"; \
-    else \
-      echo "Warning: $$_dest already exists, skipping." >&2; \
-    fi; \
+    mkdir -p "$$(dirname "$$_dest")"; \
+    cp -f "$$_ko_path" "$$_dest"; \
   fi; \
 done;
 endef
@@ -3790,10 +3785,7 @@ endef
 # $(3): output file B to write the ordered module names into
 define gen-order-and-load-file
 echo -n > $(2)/$(3).load; \
-_suffix=$$(echo "$(2)" | sed 's|$(TARGET_VENDOR_RAMDISK_OUT)/||'); \
-_order_dir=$(TARGET_VENDOR_RAMDISK_OUT)/vendor_early_services/$$_suffix; \
-mkdir -p $$_order_dir; \
-echo -n > $$_order_dir/$(3).order; \
+echo -n > $(2)/$(3).order; \
 for load_entry in $$(cat $(2)/modules.load 2>/dev/null); do \
   mod_name=$$(basename "$$load_entry" .ko); \
   norm_mod=$$(echo "$$mod_name" | tr '-' '_'); \
@@ -3801,7 +3793,7 @@ for load_entry in $$(cat $(2)/modules.load 2>/dev/null); do \
     norm_want=$$(echo "$$want" | tr '-' '_'); \
     if [ "$$norm_mod" = "$$norm_want" ]; then \
       printf '%s\n' "$$load_entry" >> $(2)/$(3).load; \
-      printf '%s\n' "$$load_entry" >> $$_order_dir/$(3).order; \
+      printf '%s\n' "$$load_entry" >> $(2)/$(3).order; \
       break; \
     fi; \
   done; \
