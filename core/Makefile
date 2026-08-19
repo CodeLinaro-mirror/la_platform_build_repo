@@ -3679,7 +3679,30 @@ endef
 
 #Early Video APP modules
 define ES_MOD_ORDER_EARLY_VIDEO_APP
-
+llcc-qcom
+gh_arm_drv
+gh_dbl
+gh_msgq
+proxy-consumer
+debug-regulator
+qcom_hwspinlock
+msm_dma_iommu_mapping
+debug_symbol
+gdsc-regulator
+smem
+gh_rm_drv
+qcom-scm
+gh_mem_notifier
+mdt_loader
+secure_buffer
+mem_buf_dev
+qcom_dma_heaps
+minidump
+qcom_ipc_logging
+crm
+clk-qcom
+videocc-volcano
+msm_video
 endef
 
 #Early Audio APP modules
