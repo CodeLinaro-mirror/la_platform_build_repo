@@ -60,8 +60,7 @@ PRODUCT_PACKAGES += \
 ifneq ($(TARGET_IS_QLMD), true)
 PRODUCT_PACKAGES += \
     LiveWallpapersPicker \
-    Tag \
-    android.hardware.biometrics.fingerprint@2.1
+    Tag
 endif #TARGET_IS_QLMD
 
 # For ringtones that rely on forward lock encryption
