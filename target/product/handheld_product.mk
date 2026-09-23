@@ -29,7 +29,6 @@ ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
 PRODUCT_PACKAGES += \
     Browser2 \
     Calendar \
-    Camera2 \
     Contacts \
     DeskClock \
     Gallery2 \
