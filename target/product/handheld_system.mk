@@ -96,8 +96,10 @@ PRODUCT_PACKAGES += \
 endif #TARGET_NO_TELEPHONY
 
 ifneq ($(TARGET_USES_QSPA), true)
+ifneq ($(TARGET_IS_QLMD), true)
 PRODUCT_PACKAGES += \
     PrintSpooler
+endif #TARGET_IS_QLMD
 endif
 
 ifneq ($(TARGET_HAS_LOW_RAM), true)
