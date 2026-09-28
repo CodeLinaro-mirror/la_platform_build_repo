@@ -22,6 +22,7 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/media_product.mk)
 
 # /product packages
 PRODUCT_PACKAGES += \
+    LatinIME \
     preinstalled-packages-platform-handheld-product.xml \
     SettingsIntelligence
 
@@ -32,7 +33,6 @@ PRODUCT_PACKAGES += \
     Contacts \
     DeskClock \
     Gallery2 \
-    LatinIME \
     QuickSearchBox \
     Music \
     frameworks-base-overlays
