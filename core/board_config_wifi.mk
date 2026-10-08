@@ -90,3 +90,6 @@ endif
 ifdef WIFI_HAL_RETRY_SET_MAC_ADDRESS
     $(call soong_config_set,wifi,hal_retry_set_mac_address,true)
 endif
+ifdef WIFI_HAL_INIT_SKIP_PRIMARY_WLAN0_IFACE_UP
+    $(call soong_config_set,wifi,wifi_hal_init_skip_primary_wlan0_iface_up,true)
+endif
