@@ -46,7 +46,6 @@ PRODUCT_HOST_PACKAGES += \
 
 # Base modules and settings for the vendor partition.
 PRODUCT_PACKAGES += \
-    com.android.hardware.cas \
     boringssl_self_test_vendor \
     dumpsys_vendor \
     fs_config_files_nonsystem \
@@ -118,3 +117,9 @@ ifneq (,$(filter userdebug eng,$(TARGET_BUILD_VARIANT)))
 PRODUCT_PACKAGES += \
     perf-setup-sh
 endif
+
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
+PRODUCT_PACKAGES += \
+    com.android.hardware.cas
+endif #TARGET_QCOM_IOT_LOW_RAM
+
