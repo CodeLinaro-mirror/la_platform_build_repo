@@ -87,3 +87,6 @@ endif
 ifeq ($(strip $(TARGET_SUPPORTS_WEARABLES)),true)
     $(call soong_config_set,target_supports_wearables,true)
 endif
+ifdef WIFI_HAL_INIT_SKIP_PRIMARY_WLAN0_IFACE_UP
+    $(call soong_config_set,wifi,wifi_hal_init_skip_primary_wlan0_iface_up,true)
+endif
