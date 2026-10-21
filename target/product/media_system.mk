@@ -27,7 +27,6 @@ PRODUCT_PACKAGES += \
     com.android.media.remotedisplay \
     com.android.media.remotedisplay.xml \
     CompanionDeviceManager \
-    drmserver \
     fsck.f2fs \
     HTMLViewer \
     libfilterpack_imageproc \
@@ -65,6 +64,12 @@ endif
 PRODUCT_VENDOR_PROPERTIES += \
     ro.logd.size.stats=64K \
     log.tag.stats_log=I
+
+ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
+PRODUCT_PACKAGES += \
+    drmserver
+endif #TARGET_QCOM_IOT_LOW_RAM
+
 
 # Enable CFI for security-sensitive components
 $(call inherit-product, $(SRC_TARGET_DIR)/product/cfi-common.mk)
