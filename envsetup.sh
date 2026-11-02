@@ -470,6 +470,7 @@ function _lunch_meat()
     export TARGET_BUILD_VARIANT=$(_get_build_var_cached TARGET_BUILD_VARIANT)
     export PLATFORM_VERSION=$(_get_build_var_cached PLATFORM_VERSION)
     export TARGET_RELEASE=$release
+    export BOARD_SHIPPING_API_LEVEL=$(_get_build_var_cached BOARD_SHIPPING_API_LEVEL)
     # Note this is the string "release", not the value of the variable.
     export TARGET_BUILD_TYPE=release
     # Undo any previous tapas or banchan setup
