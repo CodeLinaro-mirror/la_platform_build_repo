@@ -118,7 +118,6 @@ PRODUCT_PACKAGES += \
     ime \
     ims-common \
     incident \
-    incidentd \
     incident_helper \
     incident-helper-cmd \
     init.environ.rc \
@@ -391,7 +390,8 @@ ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
 PRODUCT_PACKAGES += \
     com.android.neuralnetworks \
     CtsShimPrebuilt \
-    CtsShimPrivPrebuilt
+    CtsShimPrivPrebuilt \
+    incidentd
 endif #TARGET_QCOM_IOT_LOW_RAM
 
 # VINTF data for system image

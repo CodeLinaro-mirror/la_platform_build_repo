@@ -45,7 +45,6 @@ PRODUCT_PACKAGES += \
     CertInstaller \
     CredentialManager \
     DeviceAsWebcam \
-    DeviceDiagnostics \
     DownloadProviderUi \
     ExternalStorageProvider \
     FusedLocation \
@@ -101,6 +100,7 @@ ifneq ($(TARGET_QCOM_IOT_LOW_RAM), true)
 PRODUCT_PACKAGES += \
     BuiltInPrintService \
     CalendarProvider \
+    DeviceDiagnostics \
     DocumentsUI \
     EasterEgg \
     MusicFX \
