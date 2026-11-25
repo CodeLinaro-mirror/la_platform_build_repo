@@ -28,6 +28,81 @@ include $(BUILD_SYSTEM)/tasks/tools/compatibility.mk
 cts: $(compatibility_zip) $(compatibility_tests_list_zip)
 $(call dist-for-goals, cts, $(compatibility_zip) $(compatibility_tests_list_zip))
 
+# Chunked CTS package (go/xts-cdc-based-packaging)
+# ============================================================
+# android-chunked-cts.zip is android-cts.zip with android-cts/testcases/
+# replaced by the content-defined chunks that cts_chunker writes to
+# android-cts/chunked-testcases/ (_chunks/ and _chunks_index.json), plus
+# android-cts/tools/cts_restorer. cts-tradefed restores testcases/ on its
+# first run. On Android 17 and later the Soong chunked-cts package builds
+# the same layout; this branch packages CTS with Make, so it's built here.
+#
+# Everything other than testcases/ and NOTICE.txt is copied from
+# android-cts.zip with zip2zip. zip2zip matches -x patterns with
+# pathtools.Match, which rejects a trailing '**' and only matches directory
+# entries with patterns that end in '/'.
+chunked_cts_source_zip := $(compatibility_zip)
+chunked_cts_testcases := $(HOST_OUT)/cts/android-cts/testcases
+chunked_cts_out := $(HOST_OUT)/chunked-cts
+chunked_cts_zip := $(chunked_cts_out)/android-chunked-cts.zip
+chunked_cts_notice := $(call intermediates-dir-for,PACKAGING,chunked-cts,HOST)/NOTICE.txt
+chunked_cts_chunker := $(HOST_OUT_EXECUTABLES)/cts_chunker
+chunked_cts_restorer := $(HOST_OUT_EXECUTABLES)/cts_restorer
+chunked_cts_copied_restorer := $(chunked_cts_out)/android-cts/tools/cts_restorer
+
+$(chunked_cts_zip): PRIVATE_SOURCE_ZIP := $(chunked_cts_source_zip)
+$(chunked_cts_zip): PRIVATE_TESTCASES := $(chunked_cts_testcases)
+$(chunked_cts_zip): PRIVATE_OUT := $(chunked_cts_out)
+$(chunked_cts_zip): PRIVATE_NOTICE := $(chunked_cts_notice)
+$(chunked_cts_zip): PRIVATE_CHUNKER := $(chunked_cts_chunker)
+$(chunked_cts_zip): PRIVATE_RESTORER := $(chunked_cts_restorer)
+$(chunked_cts_zip): $(chunked_cts_source_zip) $(chunked_cts_notice) $(chunked_cts_chunker) \
+    $(chunked_cts_restorer) $(SOONG_ZIP) $(ZIP2ZIP) $(MERGE_ZIPS)
+	rm -rf $(PRIVATE_OUT)/android-cts $@ $@.base.zip $@.chunks.zip
+	mkdir -p $(PRIVATE_OUT)/android-cts/tools
+	$(PRIVATE_CHUNKER) --source-dir-path $(PRIVATE_TESTCASES) \
+	  --output-dir-path $(PRIVATE_OUT)/android-cts/chunked-testcases
+	cp $(PRIVATE_RESTORER) $(PRIVATE_OUT)/android-cts/tools/
+	cp $(PRIVATE_NOTICE) $(PRIVATE_OUT)/android-cts/NOTICE.txt
+	$(ZIP2ZIP) -i $(PRIVATE_SOURCE_ZIP) -o $@.base.zip \
+	  -x 'android-cts/NOTICE.txt' \
+	  -x 'android-cts/testcases/' \
+	  -x 'android-cts/testcases/**/*' \
+	  -x 'android-cts/testcases/**/*/'
+	$(SOONG_ZIP) -d -o $@.chunks.zip -C $(PRIVATE_OUT) \
+	  -f $(PRIVATE_OUT)/android-cts/NOTICE.txt \
+	  -f $(PRIVATE_OUT)/android-cts/tools/cts_restorer \
+	  -D $(PRIVATE_OUT)/android-cts/chunked-testcases -sha256
+	$(MERGE_ZIPS) $@ $@.base.zip $@.chunks.zip
+	rm -f $@.base.zip $@.chunks.zip
+
+# The package ships cts_restorer, so its NOTICE.txt is regenerated to cover
+# the restorer's third-party crates in addition to android-cts.zip. The second
+# root mapping lists the files that come from android-cts.zip under
+# /android-cts/, so they keep their "used by" attribution in NOTICE.txt.
+$(if $(strip $(ALL_TARGETS.$(chunked_cts_restorer).META_LIC)),\
+  $(call declare-copy-target-license-metadata,$(chunked_cts_copied_restorer),$(chunked_cts_restorer)),\
+  $(warning $(chunked_cts_restorer) has no license metadata))
+$(call declare-1p-container,$(chunked_cts_zip),)
+$(call declare-container-license-deps,$(chunked_cts_zip),\
+  $(chunked_cts_source_zip) $(chunked_cts_copied_restorer),\
+  $(chunked_cts_out)/:/ $(chunked_cts_source_zip)/:/android-cts/)
+$(eval $(call text-notice-rule,$(chunked_cts_notice),"Test suites","Notices for files contained in the test suites filesystem image:",$(chunked_cts_zip),$(chunked_cts_zip)))
+$(call declare-0p-target,$(chunked_cts_notice))
+
+.PHONY: chunked-cts
+chunked-cts: $(chunked_cts_zip)
+$(call dist-for-goals, chunked-cts, $(chunked_cts_zip))
+
+chunked_cts_source_zip :=
+chunked_cts_testcases :=
+chunked_cts_out :=
+chunked_cts_zip :=
+chunked_cts_notice :=
+chunked_cts_chunker :=
+chunked_cts_restorer :=
+chunked_cts_copied_restorer :=
+
 .PHONY: cts_v2
 cts_v2: cts
 
